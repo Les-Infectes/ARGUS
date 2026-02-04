@@ -1,0 +1,1460 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import time
+import re
+from collections import defaultdict, deque
+from typing import Dict, List, Tuple, Optional, Set
+
+# ============================================================================
+# TIER CLASSIFICATION - Scientific approach (v2)
+# ============================================================================
+#
+# Architecture:
+#   1. SEED (statique)     : Domain, DCs, KRBTGT, groupes critiques, DCSync
+#   2. CLOSURE (hérité)    : Droits de contrôle direct sur Tier 0 (whitelist stricte)
+#   3. INDIRECT (via DC)   : AdminTo DC, ReadLAPSPassword DC, GPO sur OU DC
+#   4. MEMBRES             : Membres directs des groupes Tier 0
+#   5. DISTANCE            : BFS pour Tier 1/2/3
+#
+# Principes:
+#   - Tier 0 = contrôle IMMÉDIAT du domaine
+#   - Sessions/CanRDP = opportunité, pas Tier strict
+#   - AllExtendedRights/GenericWrite = ignorés (attribute-aware requis)
+#   - DC-only pour machines Tier 0 (pas Exchange/ADFS pour l'instant)
+# ============================================================================
+
+# Well-known RID suffixes for Tier 0 SEED (domain-relative)
+TIER0_RID_SUFFIXES = [
+    "-500",   # Administrator account (builtin)
+    "-502",   # KRBTGT (Kerberos TGT account)
+    "-512",   # Domain Admins
+    "-516",   # Domain Controllers (group)
+    "-518",   # Schema Admins
+    "-519",   # Enterprise Admins
+    "-544",   # Administrators (BUILTIN)
+    "-548",   # Account Operators
+    "-549",   # Server Operators
+    "-550",   # Print Operators
+    "-551",   # Backup Operators
+]
+
+# DCSync rights = instant domain compromise
+TIER0_DCSYNC_RIGHTS = {
+    "DCSync",
+    "GetChanges",
+    "GetChangesAll",
+    "GetChangesInFilteredSet",
+}
+
+# TIER 0 CLOSURE - Whitelist STRICTE
+# Ces droits sur un objet Tier 0 = devenir Tier 0
+TIER0_CLOSURE_RIGHTS = {
+    # Contrôle total
+    "GenericAll",
+    "WriteDacl",       # Peut se donner GenericAll
+    "WriteOwner",      # Peut devenir owner → WriteDacl
+    "Owns",            # Ownership = contrôle
+    # Modification de groupe
+    "AddMember",       # Sur groupe Tier 0 = devenir membre
+    "WriteMember",     # Alias AddMember
+    # Takeover de compte
+    "ForceChangePassword",  # Reset password sans connaître l'ancien
+    "ResetPassword",        # Alias
+    # Shadow Credentials
+    "AddKeyCredentialLink",
+    "WriteKeyCredentialLink",
+}
+
+# EXCLUS de la closure automatique (nécessitent analyse d'attribut)
+# - GenericWrite : dépend de l'attribut modifié
+# - AllExtendedRights : inclut plusieurs droits, trop de faux positifs
+# - WriteProperty : attribute-aware requis
+# - ChangePassword : nécessite l'ancien mot de passe
+
+# Droits d'accès machine (opportunité, pas Tier strict)
+MACHINE_ACCESS_RIGHTS = {
+    "AdminTo",
+    "CanRDP",
+    "CanPSRemote",
+    "ExecuteDCOM",
+    "DCOM",
+}
+
+# Droits de session (opportunité uniquement)
+SESSION_RIGHTS = {
+    "HasSession",
+    "LoggedOn",
+}
+
+# Tous les droits significatifs pour la construction du graphe
+ALL_PRIVILEGE_RIGHTS = {
+    # DCSync
+    "DCSync", "GetChanges", "GetChangesAll", "GetChangesInFilteredSet",
+    # Contrôle direct
+    "GenericAll", "GenericWrite", "WriteDacl", "WriteOwner", "Owns",
+    "AllExtendedRights", "ForceChangePassword", "ResetPassword",
+    "AddMember", "WriteMember",
+    # Credentials
+    "ReadLAPSPassword", "ReadGMSAPassword",
+    # Shadow Credentials
+    "AddKeyCredentialLink", "WriteKeyCredentialLink",
+    # GPO
+    "WriteGPO", "EditGPO",
+}
+
+WELL_KNOWN_PREFIXES = (
+    "S-1-5-32-",  # BUILTIN
+    "S-1-1-",     # World
+    "S-1-5-7",    # ANONYMOUS LOGON
+    "S-1-5-11",   # Authenticated Users
+    "S-1-5-18",   # LOCAL SYSTEM
+    "S-1-5-19",   # LOCAL SERVICE
+    "S-1-5-20",   # NETWORK SERVICE
+)
+
+TYPE_BY_META = {
+    "users": "User",
+    "groups": "Group",
+    "computers": "Computer",
+    "ous": "OU",
+    "gpos": "GPO",
+    "containers": "Container",
+    "domains": "Domain",
+}
+
+
+# ============================================================================
+# TIER CLASSIFICATION FUNCTIONS (v2)
+# ============================================================================
+
+def get_dc_computers(by_type: Dict[str, dict]) -> Set[str]:
+    """
+    Identify Domain Controllers by userAccountControl flag.
+    SERVER_TRUST_ACCOUNT = 0x2000 (8192) identifies DCs.
+    """
+    dc_ids = set()
+    computers = by_type.get("computers", {}).get("data", [])
+    for comp in computers:
+        props = comp.get("Properties", {}) or {}
+        uac = props.get("useraccountcontrol", 0)
+        cid = comp.get("ObjectIdentifier")
+        if cid and (uac & 0x2000):  # DC flag
+            dc_ids.add(cid)
+    return dc_ids
+
+
+def get_ous_containing_dcs(by_type: Dict[str, dict], dc_ids: Set[str]) -> Set[str]:
+    """
+    Find OUs that contain Domain Controllers (for LAPS/GPO propagation).
+    """
+    ou_ids = set()
+    ous = by_type.get("ous", {}).get("data", [])
+
+    # Build OU → children index from computers
+    computers = by_type.get("computers", {}).get("data", [])
+    for comp in computers:
+        cid = comp.get("ObjectIdentifier")
+        if cid not in dc_ids:
+            continue
+        # Extract OU from distinguishedName
+        props = comp.get("Properties", {}) or {}
+        dn = props.get("distinguishedname", "")
+        # Find parent OU in DN
+        for ou in ous:
+            ou_props = ou.get("Properties", {}) or {}
+            ou_dn = ou_props.get("distinguishedname", "")
+            if ou_dn and dn.endswith(ou_dn):
+                ou_ids.add(ou.get("ObjectIdentifier"))
+
+    return ou_ids
+
+
+def get_gpos_linked_to_dc_ous(by_type: Dict[str, dict], dc_ou_ids: Set[str]) -> Set[str]:
+    """
+    Find GPOs linked to OUs containing DCs.
+    """
+    gpo_ids = set()
+
+    # Check GPO links on OUs
+    ous = by_type.get("ous", {}).get("data", [])
+    for ou in ous:
+        ou_id = ou.get("ObjectIdentifier")
+        if ou_id not in dc_ou_ids:
+            continue
+        # Check Links on this OU
+        links = ou.get("Links", []) or []
+        for link in links:
+            gpo_id = link.get("GUID") or link.get("ObjectIdentifier")
+            if gpo_id:
+                gpo_ids.add(gpo_id)
+
+    # Also check domain-level GPO links
+    domains = by_type.get("domains", {}).get("data", [])
+    for domain in domains:
+        links = domain.get("Links", []) or []
+        for link in links:
+            gpo_id = link.get("GUID") or link.get("ObjectIdentifier")
+            if gpo_id:
+                gpo_ids.add(gpo_id)
+
+    return gpo_ids
+
+
+def identify_tier0_seed(nodes_by_id: Dict[str, dict], by_type: Dict[str, dict]) -> Set[str]:
+    """
+    PHASE 1: TIER 0 SEED (Statique)
+
+    Identify base Tier 0 objects using technical criteria:
+    - Domain objects
+    - DC computers (UAC 0x2000)
+    - KRBTGT
+    - Critical groups (DA/EA/Schema Admins/Builtin Admins) by SID
+    - Principals with DCSync rights on Domain
+
+    Returns: Set of node IDs classified as Tier 0 seed
+    """
+    tier0 = set()
+
+    # 1. Domain objects
+    for nid, node in nodes_by_id.items():
+        if node.get("type") == "Domain":
+            tier0.add(nid)
+
+    # 2. Well-known Tier 0 groups/accounts by SID suffix (RID)
+    for nid, node in nodes_by_id.items():
+        props = node.get("_properties", {}) or {}
+        sid = props.get("objectsid", "")
+        if sid and any(sid.endswith(suffix) for suffix in TIER0_RID_SUFFIXES):
+            tier0.add(nid)
+
+    # 3. Domain Controllers by UAC flag
+    dc_ids = get_dc_computers(by_type)
+    tier0.update(dc_ids)
+
+    # 4. AdminSDHolder (special AD object)
+    for nid, node in nodes_by_id.items():
+        props = node.get("_properties", {}) or {}
+        dn = props.get("distinguishedname", "")
+        if dn and "CN=ADMINSDHOLDER" in dn.upper():
+            tier0.add(nid)
+
+    # 5. DCSync rights holders
+    domain_ids = {nid for nid, node in nodes_by_id.items() if node.get("type") == "Domain"}
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            if target_id not in domain_ids:
+                continue
+            for ace in obj.get("Aces", []) or []:
+                principal = ace.get("PrincipalSID")
+                right = ace.get("RightName")
+                if right in TIER0_DCSYNC_RIGHTS and principal:
+                    tier0.add(principal)
+
+    return tier0
+
+
+def expand_tier0_closure(
+    tier0_seed: Set[str],
+    nodes_by_id: Dict[str, dict],
+    by_type: Dict[str, dict],
+    max_iterations: int = 10
+) -> Set[str]:
+    """
+    PHASE 2: TIER 0 CLOSURE (Hérité) - Whitelist stricte
+
+    Expand Tier 0 with objects having critical control rights over Tier 0 objects.
+    Uses TIER0_CLOSURE_RIGHTS (strict whitelist).
+
+    GenericWrite/AllExtendedRights are EXCLUDED (need attribute-aware analysis).
+    """
+    tier0 = set(tier0_seed)
+    iteration = 0
+    total_added = 0
+
+    while iteration < max_iterations:
+        iteration += 1
+        added_this_round = 0
+
+        for meta_type, content in by_type.items():
+            for obj in content.get("data", []):
+                target_id = obj.get("ObjectIdentifier")
+
+                # Skip if target is not Tier 0
+                if target_id not in tier0:
+                    continue
+
+                # Check ACEs on this Tier 0 object
+                for ace in obj.get("Aces", []) or []:
+                    principal = ace.get("PrincipalSID")
+                    right = ace.get("RightName")
+
+                    # Only CLOSURE_RIGHTS promote to Tier 0
+                    if principal and right in TIER0_CLOSURE_RIGHTS:
+                        if principal not in tier0:
+                            tier0.add(principal)
+                            added_this_round += 1
+
+        total_added += added_this_round
+
+        # Fixpoint: stop if no new objects
+        if added_this_round == 0:
+            break
+
+    if total_added > 0:
+        print(f"  ✓ Closure: +{total_added} objects with control rights over Tier 0 ({iteration} iterations)")
+
+    return tier0
+
+
+def expand_tier0_indirect(
+    tier0_closure: Set[str],
+    nodes_by_id: Dict[str, dict],
+    by_type: Dict[str, dict]
+) -> Set[str]:
+    """
+    PHASE 3: TIER 0 INDIRECT (via DC) - Déterministe
+
+    Expand Tier 0 with:
+    - AdminTo on DC → Tier 0
+    - ReadLAPSPassword on DC (or OU containing DC) → Tier 0
+    - WriteGPO/GenericAll on GPO linked to DC OU → Tier 0
+    """
+    tier0 = set(tier0_closure)
+    dc_ids = get_dc_computers(by_type)
+    dc_ou_ids = get_ous_containing_dcs(by_type, dc_ids)
+    gpos_on_dc = get_gpos_linked_to_dc_ous(by_type, dc_ou_ids)
+
+    added_adminto = 0
+    added_laps = 0
+    added_gpo = 0
+
+    # Scan all computers for AdminTo and ReadLAPSPassword
+    computers = by_type.get("computers", {}).get("data", [])
+    for comp in computers:
+        cid = comp.get("ObjectIdentifier")
+        is_dc = cid in dc_ids
+
+        # AdminTo on DC → Tier 0
+        if is_dc:
+            la = comp.get("LocalAdmins", {}) or {}
+            for r in la.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid and pid not in tier0:
+                    tier0.add(pid)
+                    added_adminto += 1
+
+        # Check ACEs for ReadLAPSPassword
+        for ace in comp.get("Aces", []) or []:
+            principal = ace.get("PrincipalSID")
+            right = ace.get("RightName")
+
+            # ReadLAPSPassword on DC → Tier 0
+            if right == "ReadLAPSPassword" and is_dc:
+                if principal and principal not in tier0:
+                    tier0.add(principal)
+                    added_laps += 1
+
+    # ReadLAPSPassword on OU containing DC → Tier 0
+    ous = by_type.get("ous", {}).get("data", [])
+    for ou in ous:
+        ou_id = ou.get("ObjectIdentifier")
+        if ou_id not in dc_ou_ids:
+            continue
+        for ace in ou.get("Aces", []) or []:
+            principal = ace.get("PrincipalSID")
+            right = ace.get("RightName")
+            if right == "ReadLAPSPassword" and principal:
+                if principal not in tier0:
+                    tier0.add(principal)
+                    added_laps += 1
+
+    # WriteGPO on GPO linked to DC OU → Tier 0
+    gpos = by_type.get("gpos", {}).get("data", [])
+    for gpo in gpos:
+        gpo_id = gpo.get("ObjectIdentifier")
+        if gpo_id not in gpos_on_dc:
+            continue
+        for ace in gpo.get("Aces", []) or []:
+            principal = ace.get("PrincipalSID")
+            right = ace.get("RightName")
+            # WriteGPO, EditGPO, or GenericAll on GPO linked to DC
+            if right in {"WriteGPO", "EditGPO", "GenericAll", "WriteDacl", "WriteOwner"}:
+                if principal and principal not in tier0:
+                    tier0.add(principal)
+                    added_gpo += 1
+
+    if added_adminto > 0:
+        print(f"  ✓ Indirect: +{added_adminto} objects with AdminTo on DC")
+    if added_laps > 0:
+        print(f"  ✓ Indirect: +{added_laps} objects with ReadLAPSPassword on DC/OU")
+    if added_gpo > 0:
+        print(f"  ✓ Indirect: +{added_gpo} objects with WriteGPO on DC-linked GPO")
+
+    return tier0
+
+
+def expand_tier0_members(
+    tier0_indirect: Set[str],
+    nodes_by_id: Dict[str, dict],
+    by_type: Dict[str, dict]
+) -> Set[str]:
+    """
+    PHASE 4: TIER 0 MEMBERS
+
+    Add direct members of Tier 0 groups to Tier 0.
+    If you are member of Domain Admins, you ARE Domain Admin.
+    """
+    tier0 = set(tier0_indirect)
+    added = 0
+
+    groups = by_type.get("groups", {}).get("data", [])
+    for group in groups:
+        gid = group.get("ObjectIdentifier")
+        if gid not in tier0:
+            continue
+
+        # Add all members of this Tier 0 group
+        for member in group.get("Members", []) or []:
+            mid = member.get("ObjectIdentifier")
+            if mid and mid not in tier0:
+                tier0.add(mid)
+                added += 1
+
+    if added > 0:
+        print(f"  ✓ Members: +{added} members of Tier 0 groups")
+
+    return tier0
+
+
+def classify_objects_by_tier(
+    nodes_by_id: Dict[str, dict],
+    edges: List[dict],
+    tier0_nodes: Set[str],
+    max_distance: int = 10
+) -> Dict[str, int]:
+    """
+    PHASE 5: DISTANCE CALCULATION
+
+    Classify all AD objects into Tier 0/1/2/3 based on shortest path distance to Tier 0.
+
+    Classification rules:
+    - Tier 0: Objects in tier0_nodes (already computed)
+    - Tier 1: Distance 1-2 hops from Tier 0 (high privilege, close to domain control)
+    - Tier 2: Distance 3-5 hops from Tier 0 (standard servers, workstations)
+    - Tier 3: Distance 6+ hops or unreachable (isolated/standard users)
+
+    Note: tier = min(tier, new_tier) to avoid promotion loops.
+
+    Returns: Dict mapping node_id -> tier_number (0, 1, 2, or 3)
+    """
+    classification = {}
+
+    # Build adjacency list for graph traversal
+    adjacency = defaultdict(list)
+    for e in edges:
+        adjacency[e["src"]].append(e["dst"])
+
+    def shortest_distance_to_tier0(node_id: str) -> int:
+        """BFS to find shortest path distance to any Tier 0 node."""
+        if node_id in tier0_nodes:
+            return 0
+
+        visited = {node_id}
+        queue = deque([(node_id, 0)])
+
+        while queue:
+            current, dist = queue.popleft()
+
+            if dist >= max_distance:
+                continue
+
+            for neighbor in adjacency.get(current, []):
+                if neighbor in tier0_nodes:
+                    return dist + 1
+
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append((neighbor, dist + 1))
+
+        return 999  # Unreachable
+
+    # Classify all nodes
+    for nid in nodes_by_id.keys():
+        if nid in tier0_nodes:
+            classification[nid] = 0
+        else:
+            distance = shortest_distance_to_tier0(nid)
+
+            if distance <= 2:
+                classification[nid] = 1  # Tier 1: 1-2 hops
+            elif distance <= 5:
+                classification[nid] = 2  # Tier 2: 3-5 hops
+            else:
+                classification[nid] = 3  # Tier 3: 6+ hops or unreachable
+
+    return classification
+
+
+def compute_full_tier_classification(
+    nodes_by_id: Dict[str, dict],
+    edges: List[dict],
+    by_type: Dict[str, dict]
+) -> Tuple[Set[str], Dict[str, int]]:
+    """
+    Full Tier classification pipeline:
+    1. SEED: Domain, DCs, KRBTGT, critical groups, DCSync
+    2. CLOSURE: Control rights over Tier 0 (whitelist stricte)
+    3. INDIRECT: AdminTo DC, ReadLAPSPassword DC, GPO on DC OU
+    4. MEMBERS: Direct members of Tier 0 groups
+    5. DISTANCE: BFS for Tier 1/2/3
+
+    Returns: (tier0_nodes, classification_dict)
+    """
+    print("\n[TIER CLASSIFICATION v2] Starting scientific classification...")
+
+    # Phase 1: SEED
+    tier0 = identify_tier0_seed(nodes_by_id, by_type)
+    print(f"  ✓ Seed: {len(tier0)} Tier 0 objects (Domain, DCs, KRBTGT, critical groups, DCSync)")
+
+    # Phase 2: CLOSURE
+    tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type, max_iterations=10)
+
+    # Phase 3: INDIRECT (via DC)
+    tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
+
+    # Phase 4: MEMBERS of Tier 0 groups
+    tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
+
+    print(f"  ✓ Final Tier 0: {len(tier0)} objects")
+
+    # Phase 5: DISTANCE for Tier 1/2/3
+    print("\n[TIER CLASSIFICATION v2] Computing distances...")
+    classification = classify_objects_by_tier(nodes_by_id, edges, tier0, max_distance=10)
+
+    # Count objects per tier
+    tier_counts = defaultdict(int)
+    for tier in classification.values():
+        tier_counts[tier] += 1
+
+    print(f"  ✓ Tier 0: {tier_counts[0]} objects (domain control)")
+    print(f"  ✓ Tier 1: {tier_counts[1]} objects (1-2 hops from Tier 0)")
+    print(f"  ✓ Tier 2: {tier_counts[2]} objects (3-5 hops from Tier 0)")
+    print(f"  ✓ Tier 3: {tier_counts[3]} objects (6+ hops or unreachable)")
+
+    return tier0, classification
+
+
+def get_tier_targets(tier: int, classification: Dict[str, int], nodes_by_id: Dict[str, dict]) -> List[Tuple[str, str, str]]:
+    """
+    Get all targets for a specific tier.
+
+    Returns: List of (goal_type, node_id, node_name) tuples
+    """
+    targets = []
+
+    for nid, tier_level in classification.items():
+        if tier_level == tier:
+            node = nodes_by_id.get(nid, {})
+            node_type = node.get("type", "Unknown").lower()
+            node_name = node.get("name", nid)
+            targets.append((node_type, nid, node_name))
+
+    return targets
+
+
+def is_well_known_sid(sid: str) -> bool:
+    return sid.startswith(WELL_KNOWN_PREFIXES)
+
+
+def load_json_files(data_dir: str) -> Dict[str, dict]:
+    files = [f for f in os.listdir(data_dir) if f.endswith(".json")]
+    by_type = {}
+    for fname in files:
+        path = os.path.join(data_dir, fname)
+        with open(path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        meta_type = content.get("meta", {}).get("type")
+        if meta_type:
+            by_type[meta_type] = content
+        else:
+            # Fallback to filename heuristic
+            for key in TYPE_BY_META.keys():
+                if fname.endswith(f"_{key}.json"):
+                    by_type[key] = content
+                    break
+    return by_type
+
+
+def build_node_index(by_type: Dict[str, dict]) -> Tuple[Dict[str, dict], Dict[str, List[str]]]:
+    nodes_by_id = {}
+    key_to_ids: Dict[str, Set[str]] = defaultdict(set)
+    for meta_type, content in by_type.items():
+        node_type = TYPE_BY_META.get(meta_type, meta_type)
+        for obj in content.get("data", []):
+            oid = obj.get("ObjectIdentifier")
+            if not oid:
+                continue
+            props = obj.get("Properties", {}) or {}
+            name = props.get("name") or props.get("samaccountname") or oid
+            node = {
+                "id": oid,
+                "type": node_type,
+                "name": name,
+                "_properties": props,
+            }
+            nodes_by_id[oid] = node
+
+            # Index keys for lookup
+            candidates: Set[str] = set()
+            candidates.add(str(oid))
+            if name:
+                candidates.add(str(name))
+            sam = props.get("samaccountname")
+            if sam:
+                candidates.add(str(sam))
+            domain = props.get("domain")
+            if domain and sam:
+                d = str(domain)
+                s = str(sam)
+                candidates.add(f"{d}\\{s}")
+                candidates.add(f"{s}@{d}")
+            for c in candidates:
+                key_to_ids[c.lower()].add(str(oid))
+    # Convert to list for JSON-friendly error messages
+    key_to_ids_out: Dict[str, List[str]] = {k: sorted(v) for k, v in key_to_ids.items()}
+    return nodes_by_id, key_to_ids_out
+
+
+def resolve_start_node(identifier: str, key_to_ids: Dict[str, List[str]]) -> str:
+    key = identifier.lower()
+    if key in key_to_ids:
+        ids = key_to_ids[key]
+        if len(ids) == 1:
+            return ids[0]
+        raise ValueError(f"Identifier ambiguous: {identifier} -> {ids[:5]}")
+
+    # Try DOMAIN\\user -> user@DOMAIN
+    if "\\" in identifier:
+        domain, user = identifier.split("\\", 1)
+        alt = f"{user}@{domain}".lower()
+        if alt in key_to_ids:
+            ids = key_to_ids[alt]
+            if len(ids) == 1:
+                return ids[0]
+            raise ValueError(f"Identifier ambiguous: {identifier} -> {ids[:5]}")
+
+    raise ValueError(f"Identifier not found: {identifier}")
+
+
+def compute_effective_principals(
+    start_id: str,
+    member_to_groups: Dict[str, List[str]],
+    include_well_known: bool,
+) -> List[str]:
+    effective = []
+    seen = set()
+    queue = deque([start_id])
+    while queue:
+        cur = queue.popleft()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        if (cur != start_id) and (not include_well_known) and is_well_known_sid(cur):
+            continue
+        effective.append(cur)
+        for grp in member_to_groups.get(cur, []):
+            if grp not in seen:
+                queue.append(grp)
+    return effective
+
+
+def add_edge(edges, src, dst, kind, right, inherited=False, confidence="observed"):
+    edges.append(
+        {
+            "src": src,
+            "dst": dst,
+            "kind": kind,
+            "right": right,
+            "inherited": inherited,
+            "source": "bloodhound",
+            "confidence": confidence,
+        }
+    )
+
+
+def build_observed_edges(
+    principals,
+    member_to_groups,
+    by_type,
+    include_sessions,
+    start_id: str,
+    right_whitelist: Optional[Set[str]],
+):
+    edges = []
+
+    # MemberOf edges among principals
+    for principal in principals:
+        for grp in member_to_groups.get(principal, []):
+            if grp in principals:
+                add_edge(edges, principal, grp, "memberOf", "MemberOf", inherited=False)
+
+    # ACL edges from ACEs
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            # We don't care about "who has rights over the start object" for the ego-graph:
+            # the goal is escalation paths *from* start, not a full inbound ACL view.
+            if target_id == start_id:
+                continue
+            for ace in obj.get("Aces", []) or []:
+                principal = ace.get("PrincipalSID")
+                right = ace.get("RightName")
+                if principal in principals and right and (right_whitelist is None or right in right_whitelist):
+                    inherited = bool(ace.get("IsInherited"))
+                    add_edge(edges, principal, target_id, "ace", right, inherited=inherited)
+
+    # Machine access + sessions
+    computers = by_type.get("computers", {}).get("data", [])
+    for comp in computers:
+        cid = comp.get("ObjectIdentifier")
+        la = comp.get("LocalAdmins", {}) or {}
+        for r in la.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid in principals:
+                add_edge(edges, pid, cid, "local_admin", "AdminTo")
+
+        rdp = comp.get("RemoteDesktopUsers", {}) or {}
+        for r in rdp.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid in principals:
+                add_edge(edges, pid, cid, "rdp", "CanRDP")
+
+        psr = comp.get("PSRemoteUsers", {}) or {}
+        for r in psr.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid in principals:
+                add_edge(edges, pid, cid, "psremote", "CanPSRemote")
+
+        dcom = comp.get("DcomUsers", {}) or {}
+        for r in dcom.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid in principals:
+                add_edge(edges, pid, cid, "dcom", "DCOM")
+
+        if include_sessions:
+            sessions = comp.get("Sessions", {}) or {}
+            for r in sessions.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid in principals:
+                    add_edge(edges, pid, cid, "session", "HasSession")
+
+            priv = comp.get("PrivilegedSessions", {}) or {}
+            for r in priv.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid in principals:
+                    add_edge(edges, pid, cid, "session", "HasSession", confidence="high")
+
+            reg = comp.get("RegistrySessions", {}) or {}
+            for r in reg.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid in principals:
+                    add_edge(edges, pid, cid, "session", "LoggedOn")
+
+    return edges
+
+
+def is_high_value(node: dict) -> bool:
+    name = (node.get("name") or "").upper()
+    ntype = node.get("type")
+    keywords = (
+        "DOMAIN ADMINS",
+        "ENTERPRISE ADMINS",
+        "ADMINISTRATORS",
+        "DOMAIN CONTROLLERS",
+        "KRBTGT",
+    )
+    if any(k in name for k in keywords):
+        return True
+    if ntype in ("Domain", "OU", "GPO") and name:
+        return True
+    return False
+
+
+def classify_edge_severity(edge: dict, nodes_by_id: Dict[str, dict]) -> str:
+    right_raw = (edge.get("right") or "")
+    right = right_raw.upper()
+    right_norm = re.sub(r"[^A-Z0-9]", "", right)
+    dst = nodes_by_id.get(edge.get("dst"), {})
+    dst_type = (dst.get("type") or "").upper()
+    dst_name = (dst.get("name") or "").upper()
+    src = nodes_by_id.get(edge.get("src"), {})
+    src_name = (src.get("name") or "").upper()
+
+    # CRITICAL
+    if right_norm in {"DCSYNC", "GETCHANGES", "GETCHANGESALL", "GETCHANGESINFILTEREDSET"}:
+        return "critical"
+    if edge.get("kind") == "memberOf" and ("DOMAIN ADMINS" in dst_name or "ENTERPRISE ADMINS" in dst_name):
+        return "critical"
+    if "KRBTGT" in dst_name and right_norm in {"GENERICALL", "WRITEDACL", "WRITEOWNER", "ALLEXTENDEDRIGHTS", "FORCECHANGEPASSWORD"}:
+        return "critical"
+    if "NTDS" in dst_name and right:
+        return "critical"
+
+    # HIGH
+    if dst_type == "DOMAIN" and right_norm in {"WRITEDACL", "WRITEOWNER", "GENERICALL"}:
+        return "high"
+    if "ADMINSDHOLDER" in dst_name and right_norm in {"WRITEDACL", "WRITEOWNER", "GENERICALL"}:
+        return "high"
+    if dst_type == "GPO" and "DOMAIN CONTROLLERS" in dst_name and right_norm in {"WRITEDACL", "WRITEOWNER", "GENERICALL"}:
+        return "high"
+    if "ADCS" in dst_name or "ESC" in right:
+        return "high"
+
+    # MEDIUM
+    if right_norm in {"ADMINTO", "CANRDP", "CANPSREMOTE"} and "DC" in dst_name:
+        return "medium"
+    if right_norm in {"HASSESSION", "LOGGEDON"} and "DOMAIN ADMINS" in src_name:
+        return "medium"
+    if "LAPS" in right or "GMSA" in right:
+        return "medium"
+    if "RBCD" in right:
+        return "medium"
+
+    # LOW
+    if "SHADOW" in right:
+        return "low"
+    if "WRITEMEMBER" in right_norm:
+        return "low"
+    if dst_type == "OU" and right_norm in {"GENERICALL", "WRITEDACL", "WRITEOWNER"}:
+        return "low"
+    if "SIDHISTORY" in right:
+        return "low"
+
+    return ""
+
+
+def k_shortest_loopless_paths(
+    start_id: str,
+    target_id: str,
+    edges: List[dict],
+    k: int = 5,
+    max_depth: int = 12,
+) -> Tuple[List[List[str]], List[List[dict]]]:
+    """Yen's algorithm (bounded) for k shortest loopless paths in an unweighted directed graph."""
+    adjacency = defaultdict(list)
+    edge_map = defaultdict(list)
+    for e in edges:
+        adjacency[e["src"]].append(e["dst"])
+        edge_map[(e["src"], e["dst"])].append(e)
+
+    def shortest_node_path_from(source_id: str, blocked_nodes=set(), blocked_edges=set()):
+        q = deque([source_id])
+        parent = {source_id: None}
+        depth = {source_id: 0}
+        while q:
+            cur = q.popleft()
+            if cur == target_id:
+                break
+            if depth[cur] >= max_depth:
+                continue
+            for nxt in adjacency.get(cur, []):
+                if nxt in blocked_nodes:
+                    continue
+                if (cur, nxt) in blocked_edges:
+                    continue
+                if nxt not in parent:
+                    parent[nxt] = cur
+                    depth[nxt] = depth[cur] + 1
+                    q.append(nxt)
+        if target_id not in parent:
+            return None
+        # reconstruct
+        path = []
+        cur = target_id
+        while cur is not None:
+            path.append(cur)
+            cur = parent[cur]
+        return list(reversed(path))
+
+    def node_path_to_edge_path(node_path):
+        edge_path = []
+        for a, b in zip(node_path, node_path[1:]):
+            candidates = edge_map.get((a, b))
+            if candidates:
+                edge_path.append(candidates[0])
+        return edge_path
+
+    first = shortest_node_path_from(start_id)
+    if not first:
+        return [], []
+    A = [first]  # accepted node paths
+    B = []       # heap of candidate node paths: (len, path_tuple)
+    seen_candidates = set()
+
+    import heapq
+
+    def push_candidate(path):
+        if len(path) < 2:
+            return
+        if (len(path) - 1) > max_depth:
+            return
+        t = tuple(path)
+        if t in seen_candidates:
+            return
+        seen_candidates.add(t)
+        heapq.heappush(B, (len(path), t))
+
+    for _ in range(1, k):
+        prev = A[-1]
+        for i in range(len(prev) - 1):
+            spur_node = prev[i]
+            root_path = prev[: i + 1]
+
+            blocked_nodes = set(root_path[:-1])
+            blocked_edges = set()
+
+            # remove edges that would duplicate the same root_path in previous accepted paths
+            for p in A:
+                if len(p) > i and p[: i + 1] == root_path:
+                    blocked_edges.add((p[i], p[i + 1]))
+
+            spur_path = shortest_node_path_from(spur_node, blocked_nodes=blocked_nodes, blocked_edges=blocked_edges)
+            if not spur_path:
+                continue
+
+            candidate = root_path[:-1] + spur_path
+            if candidate not in A:
+                push_candidate(candidate)
+
+        if not B:
+            break
+        _, cand = heapq.heappop(B)
+        A.append(list(cand))
+
+    node_paths = [p for p in A if len(p) >= 2]
+    edge_paths = [node_path_to_edge_path(p) for p in node_paths]
+    return node_paths, edge_paths
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build BloodHound attack paths using Tier-based classification.")
+    parser.add_argument("--data-dir", required=True, help="Path to BloodHound JSON folder")
+    parser.add_argument("--start", required=True, help="Start node identifier")
+    parser.add_argument("--out", default="graph.json", help="Output JSON path")
+    parser.add_argument(
+        "--mode",
+        choices=["0", "1", "2", "3"],
+        default="0",
+        help=(
+            "Tier-based analysis mode:\n"
+            "  0 = ALL paths to Tier 0 (Domain, DCs, Domain Admins, KRBTGT) - no limit\n"
+            "  1 = 30 shortest paths to Tier 1 (high-privilege accounts, 1-2 hops from Tier 0)\n"
+            "  2 = 30 shortest paths to Tier 2 (standard servers/workstations, 3-5 hops from Tier 0)\n"
+            "  3 = 40 shortest paths to Tier 3 (isolated users/systems, 6+ hops from Tier 0)\n"
+            "\nClassification uses 5-phase algorithm: SEED → CLOSURE → INDIRECT → MEMBERS → DISTANCE."
+        ),
+    )
+    args = parser.parse_args()
+
+    # Fixed defaults for global cartography
+    include_sessions = False
+    include_well_known = False
+    max_nodes = 5000
+    max_edges = 20000
+    max_depth = 10
+    max_controlled = 500
+    max_time = 3.0
+
+    by_type = load_json_files(args.data_dir)
+    nodes_by_id, key_to_ids = build_node_index(by_type)
+
+    # All modes use ALL BloodHound rights (no filtering)
+    acl_rights = None
+
+    start_id = resolve_start_node(args.start, key_to_ids)
+
+    # Build member -> groups index
+    member_to_groups = defaultdict(list)
+    group_to_members = defaultdict(list)
+    groups = by_type.get("groups", {}).get("data", [])
+    for g in groups:
+        gid = g.get("ObjectIdentifier")
+        for m in g.get("Members", []) or []:
+            mid = m.get("ObjectIdentifier")
+            if mid and gid:
+                member_to_groups[mid].append(gid)
+                group_to_members[gid].append(mid)
+
+    effective_principals = compute_effective_principals(
+        start_id, member_to_groups, include_well_known
+    )
+    edges = build_observed_edges(
+        set(effective_principals),
+        member_to_groups,
+        by_type,
+        include_sessions,
+        start_id,
+        acl_rights,
+    )
+
+    # Derived expansion: "can become admin when you want" (bounded).
+    # We reuse ALL_PRIVILEGE_RIGHTS here to avoid introducing another rights list.
+    derived_edges = []
+
+    promotable_out = defaultdict(list)
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            for ace in obj.get("Aces", []) or []:
+                principal = ace.get("PrincipalSID")
+                right = ace.get("RightName")
+                if right in ALL_PRIVILEGE_RIGHTS and principal and target_id:
+                    inherited = bool(ace.get("IsInherited"))
+                    promotable_out[principal].append((target_id, right, inherited))
+
+    def node_type(nid: str) -> str:
+        n = nodes_by_id.get(nid, {})
+        return n.get("type", "Unknown")
+
+    def add_controlled(nid: str, parent=None, via=None, depth=0):
+        if nid in visited:
+            return
+        visited.add(nid)
+        controlled.add(nid)
+        queue.append((nid, depth))
+        if parent and via:
+            derived_edges.append(
+                {
+                    "src": parent,
+                    "dst": nid,
+                    "kind": "derived",
+                    "right": via,
+                    "inherited": False,
+                    "source": "bloodhound",
+                    "confidence": "derived",
+                }
+            )
+
+    start_time = time.time()
+    controlled = set(effective_principals)
+    visited = set(effective_principals)
+    queue = deque((nid, 0) for nid in effective_principals)
+
+    while queue:
+        if time.time() - start_time > max_time:
+            break
+
+        cur, depth = queue.popleft()
+        if depth >= max_depth:
+            continue
+
+        # If we control a group, we control its members
+        if node_type(cur) == "Group":
+            for mid in group_to_members.get(cur, []):
+                if len(controlled) >= max_controlled:
+                    break
+                add_controlled(mid, parent=cur, via="GroupMember", depth=depth + 1)
+
+        # If we control an identity, we get its group memberships
+        for gid in member_to_groups.get(cur, []):
+            if len(controlled) >= max_controlled:
+                break
+            add_controlled(gid, parent=cur, via="MemberOf", depth=depth + 1)
+
+        # Promote via rights (primitives)
+        for target_id, right, inherited in promotable_out.get(cur, []):
+            if len(controlled) >= max_controlled:
+                break
+            ttype = node_type(target_id)
+            if ttype in ("User", "Group"):
+                add_controlled(target_id, parent=cur, via=right, depth=depth + 1)
+            elif ttype in ("Computer", "Domain", "GPO", "OU"):
+                derived_edges.append(
+                    {
+                        "src": cur,
+                        "dst": target_id,
+                        "kind": "derived",
+                        "right": right,
+                        "inherited": inherited,
+                        "source": "bloodhound",
+                        "confidence": "derived",
+                    }
+                )
+
+    # Rebuild observed edges based on controlled identities and append derived edges
+    edges_observed = build_observed_edges(
+        controlled,
+        member_to_groups,
+        by_type,
+        include_sessions,
+        start_id,
+        acl_rights,
+    )
+    edges = edges_observed + derived_edges
+
+    # Collect nodes for edges + principals
+    node_ids = set(effective_principals)
+    for e in edges:
+        node_ids.add(e["src"])
+        node_ids.add(e["dst"])
+
+    # Severity tagging for visualization
+    for e in edges:
+        severity = classify_edge_severity(e, nodes_by_id)
+        if severity:
+            e["severity"] = severity
+
+    # ========================================================================
+    # TIER-BASED CLASSIFICATION AND PATH FINDING (v2)
+    # ========================================================================
+
+    # Build COMPLETE edge set for path finding (not limited to effective_principals)
+    # This allows finding paths through intermediate nodes (DC → Domain, etc.)
+    all_ad_edges = []
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            if not target_id:
+                continue
+            # ACE edges
+            for ace in obj.get("Aces", []) or []:
+                principal = ace.get("PrincipalSID")
+                right = ace.get("RightName")
+                if principal and right and right in ALL_PRIVILEGE_RIGHTS:
+                    inherited = bool(ace.get("IsInherited"))
+                    all_ad_edges.append({
+                        "src": principal,
+                        "dst": target_id,
+                        "kind": "ace",
+                        "right": right,
+                        "inherited": inherited,
+                        "source": "bloodhound",
+                        "confidence": "observed",
+                    })
+            # MemberOf edges
+            for member in obj.get("Members", []) or []:
+                mid = member.get("ObjectIdentifier")
+                if mid:
+                    all_ad_edges.append({
+                        "src": mid,
+                        "dst": target_id,
+                        "kind": "memberOf",
+                        "right": "MemberOf",
+                        "inherited": False,
+                        "source": "bloodhound",
+                        "confidence": "observed",
+                    })
+
+    # Add computer-specific edges (LocalAdmin, RDP, PSRemote, DCOM)
+    computers = by_type.get("computers", {}).get("data", [])
+    for comp in computers:
+        cid = comp.get("ObjectIdentifier")
+        if not cid:
+            continue
+        # LocalAdmins → AdminTo
+        la = comp.get("LocalAdmins", {}) or {}
+        for r in la.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid:
+                all_ad_edges.append({
+                    "src": pid, "dst": cid, "kind": "local_admin", "right": "AdminTo",
+                    "inherited": False, "source": "bloodhound", "confidence": "observed",
+                })
+        # RDP users → CanRDP
+        rdp = comp.get("RemoteDesktopUsers", {}) or {}
+        for r in rdp.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid:
+                all_ad_edges.append({
+                    "src": pid, "dst": cid, "kind": "rdp", "right": "CanRDP",
+                    "inherited": False, "source": "bloodhound", "confidence": "observed",
+                })
+        # PSRemote users → CanPSRemote
+        psr = comp.get("PSRemoteUsers", {}) or {}
+        for r in psr.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid:
+                all_ad_edges.append({
+                    "src": pid, "dst": cid, "kind": "psremote", "right": "CanPSRemote",
+                    "inherited": False, "source": "bloodhound", "confidence": "observed",
+                })
+        # DCOM users → DCOM
+        dcom = comp.get("DcomUsers", {}) or {}
+        for r in dcom.get("Results", []) or []:
+            pid = r.get("ObjectIdentifier")
+            if pid:
+                all_ad_edges.append({
+                    "src": pid, "dst": cid, "kind": "dcom", "right": "DCOM",
+                    "inherited": False, "source": "bloodhound", "confidence": "observed",
+                })
+
+    # Full Tier classification pipeline:
+    # 1. SEED: Domain, DCs, KRBTGT, critical groups, DCSync
+    # 2. CLOSURE: Control rights over Tier 0 (whitelist stricte)
+    # 3. INDIRECT: AdminTo DC, ReadLAPSPassword DC, GPO on DC OU
+    # 4. MEMBERS: Direct members of Tier 0 groups
+    # 5. DISTANCE: BFS for Tier 1/2/3
+    tier0_nodes, tier_classification = compute_full_tier_classification(nodes_by_id, all_ad_edges, by_type)
+
+    # Count objects per tier
+    tier_counts = defaultdict(int)
+    for tier in tier_classification.values():
+        tier_counts[tier] += 1
+
+    # Step 4: Get targets for the requested mode
+    target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2
+    tier_name = ["Tier 0", "Tier 1", "Tier 2", "Tier 3"][target_tier]
+
+    # Progressive path limits:
+    # - Tier 0: ALL paths (no limit) - critical targets must all be visible
+    # - Tier 1: 30 paths - high-privilege scope
+    # - Tier 2/3: moderate limits
+    max_paths_by_tier = {
+        0: 9999,  # Tier 0: ALL paths (no artificial limit)
+        1: 30,    # Tier 1: high-privilege scope
+        2: 30,    # Tier 2: broader view
+        3: 40,    # Tier 3: widest view (isolated/distant objects)
+    }
+    max_paths = max_paths_by_tier[target_tier]
+
+    tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
+    print(f"\n[MODE {args.mode}] Finding paths to {tier_name} targets...")
+    print(f"  ✓ Found {len(tier_targets)} {tier_name} targets")
+
+    if tier_targets:
+        # Show sample of targets
+        sample_size = min(10, len(tier_targets))
+        for goal_type, _, name in tier_targets[:sample_size]:
+            print(f"    - {goal_type}: {name}")
+        if len(tier_targets) > sample_size:
+            print(f"    ... and {len(tier_targets) - sample_size} more")
+
+    # Step 5: Compute shortest paths to tier targets (using complete AD edge set)
+    all_paths = []
+    for goal_type, target_id, target_name in tier_targets:
+        # Skip if target is the start node
+        if target_id == start_id:
+            continue
+
+        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_ad_edges, k=3, max_depth=12)
+        for path in node_paths:
+            all_paths.append({
+                "goal": goal_type,
+                "target_id": target_id,
+                "target_name": target_name,
+                "nodes": path,
+                "length": max(0, len(path) - 1),
+                "tier": target_tier,
+            })
+
+    # Step 6: Select paths - simple approach:
+    # - Sort by path length (shortest first)
+    # - One path per unique target (primary), then alternatives
+    # - No special prioritization (Domain is Tier 0 like others)
+    all_paths.sort(key=lambda p: p["length"])
+
+    seen_targets = set()
+    primary_paths = []
+    alternative_paths = []
+
+    for p in all_paths:
+        if p["target_id"] not in seen_targets:
+            primary_paths.append(p)
+            seen_targets.add(p["target_id"])
+        else:
+            alternative_paths.append(p)
+
+    # For Tier 0: include ALL primary paths (all unique targets)
+    # For other tiers: limit to max_paths
+    if target_tier == 0:
+        selected_paths = primary_paths  # ALL Tier 0 targets
+        # Add alternative paths if we want multiple paths per target
+        selected_paths.extend(alternative_paths[:max(0, max_paths - len(primary_paths))])
+    else:
+        selected_paths = primary_paths[:max_paths]
+        remaining_slots = max_paths - len(selected_paths)
+        if remaining_slots > 0:
+            selected_paths.extend(alternative_paths[:remaining_slots])
+
+    print(f"  ✓ Selected {len(selected_paths)} paths to {tier_name} ({len(primary_paths)} unique targets)")
+
+    # Step 7: Build edge map for path visualization (using complete AD edge set)
+    edge_map = defaultdict(list)
+    for e in all_ad_edges:
+        edge_map[(e["src"], e["dst"])].append(e)
+
+    def edges_for_node_path(node_path):
+        out = []
+        for a, b in zip(node_path, node_path[1:]):
+            if edge_map.get((a, b)):
+                out.append(edge_map[(a, b)][0])
+        return out
+
+    # Step 8: Extract nodes and edges for selected paths
+    nodes_in_paths = {start_id}
+    edges_in_paths = []
+    domain_edge_paths = []
+
+    for p in selected_paths:
+        node_path = p["nodes"]
+        for nid in node_path:
+            nodes_in_paths.add(nid)
+        ep = edges_for_node_path(node_path)
+        edges_in_paths.extend(ep)
+
+        # Track domain paths for shortest path marking
+        if p["goal"] == "domain":
+            domain_edge_paths.append(ep)
+
+    # Step 9: Mark shortest path (prefer domain if available)
+    shortest_ep = None
+    if domain_edge_paths:
+        shortest_ep = min(domain_edge_paths, key=len)
+    elif selected_paths:
+        shortest_ep = edges_for_node_path(selected_paths[0]["nodes"])
+
+    if shortest_ep:
+        for e in shortest_ep:
+            e["is_shortest"] = True
+
+    # Step 10: Deduplicate edges
+    def edge_key(e):
+        return (e.get("src"), e.get("dst"), e.get("kind"), e.get("right"), e.get("confidence"))
+
+    dedup = {}
+    for e in edges_in_paths:
+        dedup[edge_key(e)] = e
+    edges = list(dedup.values())
+
+    node_ids = set(nodes_in_paths)
+    paths_info = selected_paths
+
+    # Identify target nodes (final nodes in paths) to highlight them
+    target_node_ids = set()
+    for path in selected_paths:
+        target_node_ids.add(path["target_id"])
+
+    # ========================================================================
+    # OUTPUT GENERATION
+    # ========================================================================
+
+    # Limit edges if needed
+    if len(edges) > max_edges:
+        edges = edges[: max_edges]
+
+    nodes = []
+    for nid in node_ids:
+        n = nodes_by_id.get(nid)
+        if not n:
+            n = {"id": nid, "type": "Unknown", "name": nid, "_properties": {}}
+        props = n.get("_properties", {}) or {}
+        display_name = n["name"]
+        if n["type"] == "Computer":
+            # Prefer FQDN-style name for display
+            display_name = n["name"]
+        # Add tier classification for color coding
+        node_tier = tier_classification.get(n["id"], 3)  # Default to Tier 3 if not found
+        is_target = n["id"] in target_node_ids  # Mark target nodes to highlight them
+
+        nodes.append(
+            {
+                "id": n["id"],
+                "type": n["type"],
+                "name": n["name"],
+                "display_name": display_name,
+                "tier": node_tier,
+                "is_target": is_target,
+            }
+        )
+
+    if len(nodes) > max_nodes:
+        nodes = nodes[: max_nodes]
+
+    # Coverage estimation
+    def collected_status(items, key):
+        flags = []
+        for it in items:
+            if key in it:
+                val = it.get(key, {}) or {}
+                if "Collected" in val:
+                    flags.append(bool(val.get("Collected")))
+        if not flags:
+            return False
+        if all(flags):
+            return True
+        if not any(flags):
+            return False
+        return "partial"
+
+    computers = by_type.get("computers", {}).get("data", [])
+    coverage = {
+        "acl": True if any("Aces" in obj for content in by_type.values() for obj in content.get("data", [])) else False,
+        "local_admin": collected_status(computers, "LocalAdmins"),
+        "sessions": collected_status(computers, "Sessions"),
+    }
+
+    summary = {
+        "groups": sum(1 for n in nodes if n["type"] == "Group"),
+        "machines_admin": sum(1 for e in edges if e["right"] == "AdminTo"),
+        "objects_controlled": sum(1 for e in edges if e["kind"] == "ace"),
+    }
+
+    # paths_info is filled by mode 2 (optional)
+
+    # Modes focus: 1 and 2
+
+    edges_observed = [e for e in edges if e.get("confidence") == "observed"]
+    edges_derived = [e for e in edges if e.get("confidence") == "derived"]
+
+    observed_node_ids = set(effective_principals)
+    for e in edges_observed:
+        observed_node_ids.add(e["src"])
+        observed_node_ids.add(e["dst"])
+
+    nodes_observed = [n for n in nodes if n["id"] in observed_node_ids]
+    nodes_derived = [n for n in nodes if n["id"] not in observed_node_ids]
+
+    # Determine view name based on mode (tier)
+    tier_names = {
+        "0": "tier0",
+        "1": "tier1",
+        "2": "tier2",
+        "3": "tier3",
+    }
+    view = tier_names.get(args.mode, "tier0")
+
+    output = {
+        "start_node": start_id,
+        "mode": args.mode,
+        "view": view,
+        "tier": target_tier,
+        "tier_name": tier_name,
+        "tier_classification": {
+            "tier0_count": tier_counts[0],
+            "tier1_count": tier_counts[1],
+            "tier2_count": tier_counts[2],
+            "tier3_count": tier_counts[3],
+        },
+        "coverage": coverage,
+        "nodes": nodes,
+        "nodes_observed": nodes_observed,
+        "nodes_derived": nodes_derived,
+        "edges": edges,
+        "edges_observed": edges_observed,
+        "edges_derived": edges_derived,
+        "summary": summary,
+        "paths": paths_info,
+        "disclaimer": "Classification Tier v2: SEED → CLOSURE → INDIRECT (DC) → MEMBERS → DISTANCE. Sessions = opportunité.",
+    }
+
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2)
+
+    print(f"Wrote {args.out} with {len(nodes)} nodes and {len(edges)} edges")
+
+
+if __name__ == "__main__":
+    main()
