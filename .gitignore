@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# Resultats et donnees sensibles
+results/
+bh/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
