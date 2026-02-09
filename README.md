@@ -1,12 +1,14 @@
 # CartoAD — Cartographie Unifiee Reseau & Identite AD
 
 **CartoAD** est un outil de cartographie qui fusionne dans une interface interactive :
+
 - **Cartographie reseau** : infrastructure physique (IP, MAC, services, topologie)
 - **Cartographie Active Directory** : identites, permissions, chemins d'attaque
 
 ## Innovation
 
 Premiere solution open source fusionnant automatiquement :
+
 - Infrastructure physique (scan reseau nmap)
 - Graphe identite (analyse BloodHound)
 - Ponts intelligents (Computer AD <-> Machine reseau)
@@ -35,11 +37,12 @@ cartographie/
 ## Installation
 
 ### Pre-requis
+
 - Python 3.8+
 - nmap, traceroute (avec sudo)
 - bloodhound-python
 
-### Installation
+### Quick Stzrt
 
 ```bash
 # 1. Creer environnement virtuel
@@ -76,14 +79,16 @@ sudo .env/bin/python3 run_full_scan.py \
 ```
 
 **Etapes executees automatiquement** :
+
 1. Scan reseau -> `network_scan.json`
 2. Collecte BloodHound -> `bloodhound_data/`
 3. Mapping hostname -> `hostname_mapping.json`
 4. Generation graphes -> `graph_tier0.json` ... `graph_tier3.json`
 
 **Options** :
+
 | Option | Description |
-|--------|-------------|
+| --------- | ------------- |
 | `--skip-network` | Sauter le scan reseau |
 | `--skip-bloodhound --bh-dir <path>` | Utiliser des donnees BH existantes |
 | `--skip-enrichment` | Sauter le mapping hostname |
@@ -98,6 +103,7 @@ sudo .env/bin/python3 run_full_scan.py \
 #### 1. Scan reseau
 
 **Classe C** (192.168.x.0/24) :
+
 ```bash
 sudo python3 global_network_scan_classeC.py \
     --ip_cidr 192.168.30.0/24 \
@@ -108,6 +114,7 @@ sudo python3 global_network_scan_classeC.py \
 ```
 
 **Classe A/B** (10.0.0.0/8) :
+
 ```bash
 sudo python3 global_network_scan_classeAB.py \
     --ip_cidr 10.100.50.0/20 \
@@ -140,6 +147,7 @@ python3 enrich_network_mapping.py \
 #### 4. Generation des graphes
 
 **Tous les tiers** :
+
 ```bash
 python3 run_all_modes.py \
     --data-dir bh/jsonBoxDomain \
@@ -148,6 +156,7 @@ python3 run_all_modes.py \
 ```
 
 **Un seul tier** :
+
 ```bash
 python3 graph_builder.py \
     --data-dir bh/jsonBoxDomain \
@@ -177,6 +186,7 @@ python3 -m http.server 8000
 ```
 
 **Etapes** :
+
 1. Charger `network_scan.json` (reseau)
 2. Charger `hostname_mapping.json` (optionnel, ameliore les ponts)
 3. Charger un ou plusieurs `graph_tierX.json` (AD) - selection multiple possible
@@ -184,11 +194,13 @@ python3 -m http.server 8000
 5. Cliquer "Afficher AD" pour activer/desactiver l'overlay
 
 **Changement de tier rapide** :
+
 - Charger plusieurs fichiers tier en une seule selection (Ctrl+clic)
 - Les boutons Tier apparaissent automatiquement
 - Cliquer sur un tier pour switcher sans recharger le reseau
 
 **Organisation visuelle** :
+
 - Partie haute : Cartographie reseau (IP, MAC, services)
 - Partie basse : Chemins AD (identites, permissions)
 - Ponts : Liens entre machines physiques et Computer AD
@@ -200,11 +212,11 @@ python3 -m http.server 8000
 ```bash
 # 1. Pipeline complet (utiliser le Python du virtualenv)
 sudo .env/bin/python3 run_full_scan.py \
-    --ip-cidr 192.168.30.0/24 \
-    --gateway 192.168.30.1 \
-    --dns 192.168.30.254 \
+    --ip-cidr <MON_IP>/<MASQUE> \
+    --gateway <MA_GATEWAY> \
+    --dns <DOMAIN_DNS_IP> \
     --domain domain.local \
-    --dc-ip 192.168.30.254 \
+    --dc-ip <DC_IP> \
     --user compromised.user \
     --password 'P@ssw0rd' \
     --start "compromised.user@domain.local" \
@@ -223,6 +235,7 @@ cat results/*/graph_tier0.json | jq '.paths[0]'
 ## Documentation technique
 
 Voir [TECHNICAL.md](TECHNICAL.md) pour :
+
 - Algorithmes de scan reseau
 - Collecte BloodHound et donnees AD
 - Algorithme de mapping hostname/IP
