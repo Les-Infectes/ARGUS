@@ -8,21 +8,35 @@ from collections import defaultdict, deque
 from typing import Dict, List, Tuple, Optional, Set
 
 # ============================================================================
-# TIER CLASSIFICATION - Scientific approach (v2)
+# TIER CLASSIFICATION - Scientific approach (v4)
 # ============================================================================
 #
-# Architecture:
+# TIER 0 — Contrôle DÉTERMINISTE du domaine :
 #   1. SEED (statique)     : Domain, DCs, KRBTGT, groupes critiques, DCSync
 #   2. CLOSURE (hérité)    : Droits de contrôle direct sur Tier 0 (whitelist stricte)
 #   3. INDIRECT (via DC)   : AdminTo DC, ReadLAPSPassword DC, GPO sur OU DC
 #   4. MEMBRES             : Membres directs des groupes Tier 0
-#   5. DISTANCE            : BFS pour Tier 1/2/3
+#   5. DISTANCE BFS        : Tier 2/3 par distance (strict: MemberOf + ACE + AdminTo)
+#   6. DC REMOTE ACCESS    : CanRDP/CanPSRemote/DCOM sur DC → Tier 0
 #
-# Principes:
-#   - Tier 0 = contrôle IMMÉDIAT du domaine
-#   - Sessions/CanRDP = opportunité, pas Tier strict
-#   - AllExtendedRights/GenericWrite = ignorés (attribute-aware requis)
-#   - DC-only pour machines Tier 0 (pas Exchange/ADFS pour l'instant)
+# TIER 1 — Important, non-déterministe, à investiguer :
+#   7. PROMOTIONS DIRECTES Tier 1 :
+#      a. Accès machine non-DC : AdminTo/CanRDP/CanPSRemote/DCOM
+#      b. ReadLAPSPassword sur machine non-DC
+#      c. Groupes Tier 1 : Cert Publishers, DnsAdmins
+#      d. Sessions : HasSession/LoggedOn (non-déterministe mais credentials visibles)
+#
+# TIER 2/3 — Distance BFS depuis Tier 0 :
+#   - Tier 1 : 1-2 hops OU promotion directe
+#   - Tier 2 : 3-5 hops
+#   - Tier 3 : 6+ hops ou unreachable
+#
+# Principes :
+#   - Tier 0 = contrôle IMMÉDIAT et DÉTERMINISTE du domaine
+#   - Tier 1 = pas sûr mais important, privesc locale possible, à investiguer
+#   - AdminTo = héritage d'identité machine (dump credentials)
+#   - CanRDP/CanPSRemote/DCOM = accès distant, PAS d'héritage d'identité
+#   - Computers = noeuds terminaux dans les chemins visuels
 # ============================================================================
 
 # Well-known RID suffixes for Tier 0 SEED (domain-relative)
@@ -73,19 +87,39 @@ TIER0_CLOSURE_RIGHTS = {
 # - WriteProperty : attribute-aware requis
 # - ChangePassword : nécessite l'ancien mot de passe
 
-# Droits d'accès machine (opportunité, pas Tier strict)
-MACHINE_ACCESS_RIGHTS = {
+# Accès admin : héritage d'identité valide (contrôle total de la machine)
+# AdminTo = admin local → peut dumper credentials → hérite de l'identité machine
+ADMIN_ACCESS_RIGHTS = {
     "AdminTo",
+}
+
+# Accès distant : accès machine SANS héritage d'identité
+# CanRDP/CanPSRemote/DCOM ne donnent PAS les groupes/ACE de la machine
+# Exclu du BFS de classification, inclus comme edges terminaux dans les chemins
+REMOTE_ACCESS_RIGHTS = {
     "CanRDP",
     "CanPSRemote",
     "ExecuteDCOM",
     "DCOM",
 }
 
-# Droits de session (opportunité uniquement)
+# Droits de session : non-déterministes mais importants (credentials visibles)
+# Inclus dans path_edges et promotion Tier 1
 SESSION_RIGHTS = {
     "HasSession",
     "LoggedOn",
+}
+
+# ============================================================================
+# TIER 1 — Important, non-déterministe, à investiguer
+# ============================================================================
+
+# Groupes dont les membres → Tier 1 direct (pas besoin de BFS)
+# Note : Remote Management Users / Remote Desktop Users ne sont PAS ici
+# car Phase 7a couvre déjà les accès machine via les collectors BloodHound
+TIER1_GROUP_NAMES = {
+    "CERT PUBLISHERS",          # Attaques ESC sur PKI
+    "DNSADMINS",                # Injection DLL dns.exe potentielle
 }
 
 # Tous les droits significatifs pour la construction du graphe
@@ -131,8 +165,10 @@ TYPE_BY_META = {
 
 def get_dc_computers(by_type: Dict[str, dict]) -> Set[str]:
     """
-    Identify Domain Controllers by userAccountControl flag.
-    SERVER_TRUST_ACCOUNT = 0x2000 (8192) identifies DCs.
+    Identify Domain Controllers via multiple detection methods:
+    1. userAccountControl flag SERVER_TRUST_ACCOUNT (0x2000 = 8192)
+    2. PrimaryGroupSID ending in -516 (Domain Controllers group)
+    Some BloodHound exports have UAC=0 so PrimaryGroupSID is a reliable fallback.
     """
     dc_ids = set()
     computers = by_type.get("computers", {}).get("data", [])
@@ -140,7 +176,15 @@ def get_dc_computers(by_type: Dict[str, dict]) -> Set[str]:
         props = comp.get("Properties", {}) or {}
         uac = props.get("useraccountcontrol", 0)
         cid = comp.get("ObjectIdentifier")
-        if cid and (uac & 0x2000):  # DC flag
+        if not cid:
+            continue
+        # Method 1: UAC flag
+        if uac & 0x2000:
+            dc_ids.add(cid)
+            continue
+        # Method 2: PrimaryGroupSID = Domain Controllers (-516)
+        pgsid = comp.get("PrimaryGroupSID", "")
+        if pgsid and pgsid.endswith("-516"):
             dc_ids.add(cid)
     return dc_ids
 
@@ -223,9 +267,15 @@ def identify_tier0_seed(nodes_by_id: Dict[str, dict], by_type: Dict[str, dict]) 
             tier0.add(nid)
 
     # 2. Well-known Tier 0 groups/accounts by SID suffix (RID)
+    # Check both objectsid property AND ObjectIdentifier (BUILTIN groups
+    # like S-1-5-32-551 have no objectsid in BloodHound, only an
+    # ObjectIdentifier like "DOMAIN.HTB-S-1-5-32-551")
     for nid, node in nodes_by_id.items():
         props = node.get("_properties", {}) or {}
         sid = props.get("objectsid", "")
+        # Fallback: extract SID from ObjectIdentifier (format: DOMAIN-S-1-5-...)
+        if not sid and "-S-1-" in nid:
+            sid = nid[nid.index("S-1-"):]
         if sid and any(sid.endswith(suffix) for suffix in TIER0_RID_SUFFIXES):
             tier0.add(nid)
 
@@ -501,23 +551,38 @@ def classify_objects_by_tier(
 def compute_full_tier_classification(
     nodes_by_id: Dict[str, dict],
     edges: List[dict],
-    by_type: Dict[str, dict]
+    by_type: Dict[str, dict],
+    dc_remote_access: Optional[Dict[str, Set[str]]] = None,
 ) -> Tuple[Set[str], Dict[str, int]]:
     """
-    Full Tier classification pipeline:
+    Full Tier classification pipeline (v4):
+
+    TIER 0 — Déterministe :
     1. SEED: Domain, DCs, KRBTGT, critical groups, DCSync
     2. CLOSURE: Control rights over Tier 0 (whitelist stricte)
     3. INDIRECT: AdminTo DC, ReadLAPSPassword DC, GPO on DC OU
     4. MEMBERS: Direct members of Tier 0 groups
-    5. DISTANCE: BFS for Tier 1/2/3
+    5. DISTANCE BFS: strict (MemberOf + ACE + AdminTo, sans remote/sessions)
+    6. DC REMOTE ACCESS: CanRDP/CanPSRemote/DCOM sur DC → Tier 0
+
+    TIER 1 — Important, non-déterministe :
+    7. PROMOTIONS DIRECTES :
+       a. Machine access non-DC (AdminTo/CanRDP/CanPSRemote/DCOM)
+       b. ReadLAPSPassword non-DC
+       c. Groupes Tier 1 (Cert Publishers, DnsAdmins)
+       d. Sessions (HasSession/LoggedOn)
 
     Returns: (tier0_nodes, classification_dict)
     """
-    print("\n[TIER CLASSIFICATION v2] Starting scientific classification...")
+    print("\n[TIER CLASSIFICATION v4] Starting scientific classification...")
+
+    # ====================================================================
+    # TIER 0 — Contrôle déterministe du domaine
+    # ====================================================================
 
     # Phase 1: SEED
     tier0 = identify_tier0_seed(nodes_by_id, by_type)
-    print(f"  ✓ Seed: {len(tier0)} Tier 0 objects (Domain, DCs, KRBTGT, critical groups, DCSync)")
+    print(f"  \u2713 Phase 1 SEED: {len(tier0)} Tier 0 objects")
 
     # Phase 2: CLOSURE
     tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type, max_iterations=10)
@@ -528,21 +593,117 @@ def compute_full_tier_classification(
     # Phase 4: MEMBERS of Tier 0 groups
     tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
 
-    print(f"  ✓ Final Tier 0: {len(tier0)} objects")
+    print(f"  \u2713 Final Tier 0: {len(tier0)} objects")
 
-    # Phase 5: DISTANCE for Tier 1/2/3
-    print("\n[TIER CLASSIFICATION v2] Computing distances...")
+    # Phase 5: DISTANCE BFS for Tier 1/2/3 (strict edges only)
+    print("\n[DISTANCE BFS] Computing distances (strict: MemberOf + ACE + AdminTo)...")
     classification = classify_objects_by_tier(nodes_by_id, edges, tier0, max_distance=10)
 
-    # Count objects per tier
+    # Phase 6: DC remote access → Tier 0
+    if dc_remote_access:
+        promoted_to_tier0 = 0
+        for principal_id in dc_remote_access:
+            current_tier = classification.get(principal_id, 3)
+            if current_tier > 0:
+                classification[principal_id] = 0
+                tier0.add(principal_id)
+                promoted_to_tier0 += 1
+        if promoted_to_tier0 > 0:
+            print(f"  \u2713 Phase 6 DC remote: {promoted_to_tier0} principals → Tier 0 (CanRDP/CanPSRemote/DCOM on DC)")
+
+    # ====================================================================
+    # TIER 1 — Important, non-déterministe, à investiguer
+    # ====================================================================
+    print("\n[TIER 1 PROMOTIONS] Identifying important non-deterministic access...")
+    dc_ids = get_dc_computers(by_type)
+    computers_data = by_type.get("computers", {}).get("data", [])
+    promoted_tier1 = 0
+
+    # Phase 7a: Machine access on non-DC (AdminTo/CanRDP/CanPSRemote/DCOM)
+    machine_access_holders = set()
+    for comp in computers_data:
+        cid = comp.get("ObjectIdentifier")
+        if not cid or cid in dc_ids:
+            continue  # Skip DCs (already Tier 0 via Phase 3/6)
+        for collector_key in ("LocalAdmins", "RemoteDesktopUsers", "PSRemoteUsers", "DcomUsers"):
+            collector = comp.get(collector_key, {}) or {}
+            for r in collector.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid:
+                    machine_access_holders.add(pid)
+
+    for pid in machine_access_holders:
+        current_tier = classification.get(pid, 3)
+        if current_tier > 1:
+            classification[pid] = 1
+            promoted_tier1 += 1
+
+    # Phase 7b: ReadLAPSPassword on non-DC machines
+    laps_holders = set()
+    for comp in computers_data:
+        cid = comp.get("ObjectIdentifier")
+        if not cid or cid in dc_ids:
+            continue
+        for ace in comp.get("Aces", []) or []:
+            if ace.get("RightName") == "ReadLAPSPassword":
+                pid = ace.get("PrincipalSID")
+                if pid:
+                    laps_holders.add(pid)
+
+    for pid in laps_holders:
+        current_tier = classification.get(pid, 3)
+        if current_tier > 1:
+            classification[pid] = 1
+            promoted_tier1 += 1
+
+    # Phase 7c: Tier 1 group members
+    tier1_group_members = set()
+    groups = by_type.get("groups", {}).get("data", [])
+    for group in groups:
+        props = group.get("Properties", {}) or {}
+        name = (props.get("name", "") or "").upper()
+        if any(t1g in name for t1g in TIER1_GROUP_NAMES):
+            for member in group.get("Members", []) or []:
+                mid = member.get("ObjectIdentifier")
+                if mid:
+                    tier1_group_members.add(mid)
+
+    for mid in tier1_group_members:
+        current_tier = classification.get(mid, 3)
+        if current_tier > 1:
+            classification[mid] = 1
+            promoted_tier1 += 1
+
+    # Phase 7d: Session holders (HasSession/LoggedOn)
+    session_holders = set()
+    for comp in computers_data:
+        for session_key in ("Sessions", "PrivilegedSessions", "RegistrySessions"):
+            collector = comp.get(session_key, {}) or {}
+            for r in collector.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid:
+                    session_holders.add(pid)
+
+    for pid in session_holders:
+        current_tier = classification.get(pid, 3)
+        if current_tier > 1:
+            classification[pid] = 1
+            promoted_tier1 += 1
+
+    if promoted_tier1 > 0:
+        print(f"  \u2713 Phase 7: {promoted_tier1} principals → Tier 1 (machine access, LAPS, groups, sessions)")
+
+    # ====================================================================
+    # SUMMARY
+    # ====================================================================
     tier_counts = defaultdict(int)
     for tier in classification.values():
         tier_counts[tier] += 1
 
-    print(f"  ✓ Tier 0: {tier_counts[0]} objects (domain control)")
-    print(f"  ✓ Tier 1: {tier_counts[1]} objects (1-2 hops from Tier 0)")
-    print(f"  ✓ Tier 2: {tier_counts[2]} objects (3-5 hops from Tier 0)")
-    print(f"  ✓ Tier 3: {tier_counts[3]} objects (6+ hops or unreachable)")
+    print(f"\n  Tier 0: {tier_counts[0]} objects (deterministic domain control)")
+    print(f"  Tier 1: {tier_counts[1]} objects (important, non-deterministic)")
+    print(f"  Tier 2: {tier_counts[2]} objects (3-5 hops)")
+    print(f"  Tier 3: {tier_counts[3]} objects (6+ hops or unreachable)")
 
     return tier0, classification
 
@@ -586,6 +747,75 @@ def load_json_files(data_dir: str) -> Dict[str, dict]:
                     by_type[key] = content
                     break
     return by_type
+
+
+def validate_bloodhound_data(by_type: Dict[str, dict]) -> None:
+    """
+    Non-blocking validation of BloodHound data completeness.
+    Prints red/yellow warnings for empty or broken collectors.
+    Does NOT raise exceptions -- execution always continues.
+    """
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    RESET = "\033[0m"
+    warnings_found = False
+
+    # 1. Check critical object types exist and are non-empty
+    critical_types = {
+        "users": "Users",
+        "groups": "Groups",
+        "computers": "Computers",
+        "domains": "Domains",
+    }
+    for meta_key, display_name in critical_types.items():
+        content = by_type.get(meta_key, {})
+        data = content.get("data", [])
+        if not data:
+            print(f"{RED}[WARNING] BloodHound: 0 {display_name} found - collection may have failed{RESET}")
+            warnings_found = True
+
+    # 2. Check Computer collector flags (Collected / FailureReason)
+    collectors_to_check = [
+        ("LocalAdmins", "Local Admins"),
+        ("Sessions", "Sessions"),
+        ("RemoteDesktopUsers", "Remote Desktop Users"),
+        ("PSRemoteUsers", "PS Remote Users"),
+    ]
+    computers = by_type.get("computers", {}).get("data", [])
+    for collector_key, display_name in collectors_to_check:
+        not_collected = 0
+        failed = 0
+        total = 0
+        for comp in computers:
+            collector = comp.get(collector_key, {}) or {}
+            if "Collected" in collector:
+                total += 1
+                if not collector.get("Collected"):
+                    not_collected += 1
+                if collector.get("FailureReason"):
+                    failed += 1
+        if total > 0 and not_collected == total:
+            print(f"{RED}[WARNING] BloodHound collector '{display_name}' was NOT collected on any computer ({total} computers){RESET}")
+            warnings_found = True
+        elif failed > 0:
+            print(f"{YELLOW}[WARNING] BloodHound collector '{display_name}' failed on {failed}/{total} computers{RESET}")
+            warnings_found = True
+
+    # 3. Check if any ACE data exists
+    has_aces = False
+    for content in by_type.values():
+        for obj in content.get("data", []):
+            if obj.get("Aces"):
+                has_aces = True
+                break
+        if has_aces:
+            break
+    if not has_aces:
+        print(f"{RED}[WARNING] No ACE data found in any BloodHound object - attack paths will be incomplete{RESET}")
+        warnings_found = True
+
+    if not warnings_found:
+        print("  \u2713 BloodHound data validation: all checks passed")
 
 
 def build_node_index(by_type: Dict[str, dict]) -> Tuple[Dict[str, dict], Dict[str, List[str]]]:
@@ -775,6 +1005,8 @@ def is_high_value(node: dict) -> bool:
         "ADMINISTRATORS",
         "DOMAIN CONTROLLERS",
         "KRBTGT",
+        "CERT PUBLISHERS",
+        "DNSADMINS",
     )
     if any(k in name for k in keywords):
         return True
@@ -946,7 +1178,7 @@ def main():
     parser.add_argument("--out", default="graph.json", help="Output JSON path")
     parser.add_argument(
         "--mode",
-        choices=["0", "1", "2", "3"],
+        choices=["0", "1", "2", "3", "4"],
         default="0",
         help=(
             "Tier-based analysis mode:\n"
@@ -954,7 +1186,8 @@ def main():
             "  1 = 30 shortest paths to Tier 1 (high-privilege accounts, 1-2 hops from Tier 0)\n"
             "  2 = 30 shortest paths to Tier 2 (standard servers/workstations, 3-5 hops from Tier 0)\n"
             "  3 = 40 shortest paths to Tier 3 (isolated users/systems, 6+ hops from Tier 0)\n"
-            "\nClassification uses 5-phase algorithm: SEED → CLOSURE → INDIRECT → MEMBERS → DISTANCE."
+            "  4 = 50 shortest paths to ALL reachable nodes (regardless of tier)\n"
+            "\nClassification v4: Tier 0 (SEED→CLOSURE→INDIRECT→MEMBERS→BFS→DC_REMOTE) + Tier 1 (machine access, LAPS, Tier 1 groups, sessions)."
         ),
     )
     args = parser.parse_args()
@@ -969,6 +1202,7 @@ def main():
     max_time = 3.0
 
     by_type = load_json_files(args.data_dir)
+    validate_bloodhound_data(by_type)
     nodes_by_id, key_to_ids = build_node_index(by_type)
 
     # All modes use ALL BloodHound rights (no filtering)
@@ -1108,96 +1342,151 @@ def main():
             e["severity"] = severity
 
     # ========================================================================
-    # TIER-BASED CLASSIFICATION AND PATH FINDING (v2)
+    # TIER-BASED CLASSIFICATION AND PATH FINDING (v3)
+    # ========================================================================
+    #
+    # Deux jeux d'edges séparés :
+    # - classification_edges : BFS strict (sans CanRDP/CanPSRemote/DCOM)
+    #   Inclut toutes les identity edges (MemberOf/ACE) pour le calcul de distance
+    # - path_edges : chemins d'attaque visuels
+    #   Computers sont des noeuds TERMINAUX (pas de traversal d'identité)
+    #   CanRDP/CanPSRemote/DCOM → Computer = edge terminal valide
+    #   Computer → MemberOf/ACE = EXCLU (ni AdminTo ni accès distant ne justifient
+    #   de traverser l'identité d'une machine dans les chemins visuels)
+    #
+    # Principe : accès distant au DC = Tier 0, mais l'héritage d'identité machine
+    # (groupes, ACE du compte machine) nécessite AdminTo + accès distant combinés
     # ========================================================================
 
-    # Build COMPLETE edge set for path finding (not limited to effective_principals)
-    # This allows finding paths through intermediate nodes (DC → Domain, etc.)
-    all_ad_edges = []
+    # Pre-compute Computer and DC node sets
+    all_computer_ids = set()
+    computers_data = by_type.get("computers", {}).get("data", [])
+    for comp in computers_data:
+        cid = comp.get("ObjectIdentifier")
+        if cid:
+            all_computer_ids.add(cid)
+    dc_ids = get_dc_computers(by_type)
+
+    # Build TWO separate edge sets
+    classification_edges = []  # For BFS tier calculation (strict, includes all identity edges)
+    path_edges = []            # For k_shortest_loopless_paths (Computers are terminal nodes)
+
+    # ACE and MemberOf edges from all object types
     for meta_type, content in by_type.items():
         for obj in content.get("data", []):
             target_id = obj.get("ObjectIdentifier")
             if not target_id:
                 continue
-            # ACE edges
+
+            # ACE edges: principal has right on target
             for ace in obj.get("Aces", []) or []:
                 principal = ace.get("PrincipalSID")
                 right = ace.get("RightName")
                 if principal and right and right in ALL_PRIVILEGE_RIGHTS:
                     inherited = bool(ace.get("IsInherited"))
-                    all_ad_edges.append({
-                        "src": principal,
-                        "dst": target_id,
-                        "kind": "ace",
-                        "right": right,
-                        "inherited": inherited,
-                        "source": "bloodhound",
-                        "confidence": "observed",
-                    })
-            # MemberOf edges
+                    edge = {
+                        "src": principal, "dst": target_id, "kind": "ace",
+                        "right": right, "inherited": inherited,
+                        "source": "bloodhound", "confidence": "observed",
+                    }
+                    classification_edges.append(edge)
+                    # Paths: Computers are terminal nodes (no outgoing identity edges)
+                    # CanPSRemote/CanRDP → Computer is valid, but Computer → Group/Domain is not
+                    if principal not in all_computer_ids:
+                        path_edges.append(edge)
+
+            # MemberOf edges: member -> group
             for member in obj.get("Members", []) or []:
                 mid = member.get("ObjectIdentifier")
                 if mid:
-                    all_ad_edges.append({
-                        "src": mid,
-                        "dst": target_id,
-                        "kind": "memberOf",
-                        "right": "MemberOf",
-                        "inherited": False,
-                        "source": "bloodhound",
-                        "confidence": "observed",
-                    })
+                    edge = {
+                        "src": mid, "dst": target_id, "kind": "memberOf",
+                        "right": "MemberOf", "inherited": False,
+                        "source": "bloodhound", "confidence": "observed",
+                    }
+                    classification_edges.append(edge)
+                    # Paths: Computers are terminal nodes (no outgoing identity edges)
+                    if mid not in all_computer_ids:
+                        path_edges.append(edge)
 
-    # Add computer-specific edges (LocalAdmin, RDP, PSRemote, DCOM)
-    computers = by_type.get("computers", {}).get("data", [])
-    for comp in computers:
+    # Computer-specific access edges
+    for comp in computers_data:
         cid = comp.get("ObjectIdentifier")
         if not cid:
             continue
-        # LocalAdmins → AdminTo
+
+        # LocalAdmins → AdminTo (inclus dans les DEUX jeux d'edges)
         la = comp.get("LocalAdmins", {}) or {}
         for r in la.get("Results", []) or []:
             pid = r.get("ObjectIdentifier")
             if pid:
-                all_ad_edges.append({
+                edge = {
                     "src": pid, "dst": cid, "kind": "local_admin", "right": "AdminTo",
                     "inherited": False, "source": "bloodhound", "confidence": "observed",
-                })
-        # RDP users → CanRDP
+                }
+                classification_edges.append(edge)
+                path_edges.append(edge)
+
+        # CanRDP → EXCLU de classification, INCLUS dans paths (edge terminal)
         rdp = comp.get("RemoteDesktopUsers", {}) or {}
         for r in rdp.get("Results", []) or []:
             pid = r.get("ObjectIdentifier")
             if pid:
-                all_ad_edges.append({
+                path_edges.append({
                     "src": pid, "dst": cid, "kind": "rdp", "right": "CanRDP",
                     "inherited": False, "source": "bloodhound", "confidence": "observed",
                 })
-        # PSRemote users → CanPSRemote
+
+        # CanPSRemote → EXCLU de classification, INCLUS dans paths (edge terminal)
         psr = comp.get("PSRemoteUsers", {}) or {}
         for r in psr.get("Results", []) or []:
             pid = r.get("ObjectIdentifier")
             if pid:
-                all_ad_edges.append({
+                path_edges.append({
                     "src": pid, "dst": cid, "kind": "psremote", "right": "CanPSRemote",
                     "inherited": False, "source": "bloodhound", "confidence": "observed",
                 })
-        # DCOM users → DCOM
+
+        # DCOM → EXCLU de classification, INCLUS dans paths (edge terminal)
         dcom = comp.get("DcomUsers", {}) or {}
         for r in dcom.get("Results", []) or []:
             pid = r.get("ObjectIdentifier")
             if pid:
-                all_ad_edges.append({
+                path_edges.append({
                     "src": pid, "dst": cid, "kind": "dcom", "right": "DCOM",
                     "inherited": False, "source": "bloodhound", "confidence": "observed",
                 })
 
-    # Full Tier classification pipeline:
-    # 1. SEED: Domain, DCs, KRBTGT, critical groups, DCSync
-    # 2. CLOSURE: Control rights over Tier 0 (whitelist stricte)
-    # 3. INDIRECT: AdminTo DC, ReadLAPSPassword DC, GPO on DC OU
-    # 4. MEMBERS: Direct members of Tier 0 groups
-    # 5. DISTANCE: BFS for Tier 1/2/3
-    tier0_nodes, tier_classification = compute_full_tier_classification(nodes_by_id, all_ad_edges, by_type)
+        # Sessions → EXCLU de classification, INCLUS dans paths (non-déterministe mais Tier 1)
+        for session_key, right_name in (("Sessions", "HasSession"), ("PrivilegedSessions", "HasSession"), ("RegistrySessions", "LoggedOn")):
+            collector = comp.get(session_key, {}) or {}
+            for r in collector.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid:
+                    path_edges.append({
+                        "src": pid, "dst": cid, "kind": "session", "right": right_name,
+                        "inherited": False, "source": "bloodhound", "confidence": "observed",
+                    })
+
+    # Compute DC remote access map for post-BFS Tier 0 rule
+    dc_remote_access = defaultdict(set)
+    for comp in computers_data:
+        cid = comp.get("ObjectIdentifier")
+        if not cid or cid not in dc_ids:
+            continue
+        for collector_key in ("RemoteDesktopUsers", "PSRemoteUsers", "DcomUsers"):
+            collector = comp.get(collector_key, {}) or {}
+            for r in collector.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid:
+                    dc_remote_access[pid].add(cid)
+
+    # Full Tier classification pipeline (v4):
+    # Tier 0: SEED → CLOSURE → INDIRECT → MEMBERS → BFS → DC_REMOTE
+    # Tier 1: machine access + LAPS + AllExtendedRights + groups + sessions
+    tier0_nodes, tier_classification = compute_full_tier_classification(
+        nodes_by_id, classification_edges, by_type, dc_remote_access=dc_remote_access
+    )
 
     # Count objects per tier
     tier_counts = defaultdict(int)
@@ -1206,21 +1495,56 @@ def main():
 
     # Step 4: Get targets for the requested mode
     target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2
-    tier_name = ["Tier 0", "Tier 1", "Tier 2", "Tier 3"][target_tier]
+    tier_name = ["Tier 0", "Tier 1", "Tier 2", "Tier 3", "All"][target_tier]
 
     # Progressive path limits:
     # - Tier 0: ALL paths (no limit) - critical targets must all be visible
     # - Tier 1: 30 paths - high-privilege scope
     # - Tier 2/3: moderate limits
+    # - Mode 4 (All): 50 paths - all reachable nodes
     max_paths_by_tier = {
         0: 9999,  # Tier 0: ALL paths (no artificial limit)
         1: 30,    # Tier 1: high-privilege scope
         2: 30,    # Tier 2: broader view
         3: 40,    # Tier 3: widest view (isolated/distant objects)
+        4: 50,    # Mode 4: all reachable nodes
     }
     max_paths = max_paths_by_tier[target_tier]
 
-    tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
+    if target_tier == 4:
+        # Mode 4: BFS from start to find ALL reachable nodes via path_edges
+        print(f"\n[MODE 4] Finding ALL reachable nodes from start...")
+        adjacency_bfs = defaultdict(list)
+        for e in path_edges:
+            adjacency_bfs[e["src"]].append(e["dst"])
+
+        reachable = set()
+        bfs_queue = deque([start_id])
+        bfs_visited = {start_id}
+        while bfs_queue:
+            cur = bfs_queue.popleft()
+            for nxt in adjacency_bfs.get(cur, []):
+                if nxt not in bfs_visited:
+                    bfs_visited.add(nxt)
+                    reachable.add(nxt)
+                    bfs_queue.append(nxt)
+
+        # Build targets from reachable nodes (with their actual tier)
+        tier_targets = []
+        for nid in reachable:
+            node = nodes_by_id.get(nid)
+            if not node:
+                continue
+            ntype = node.get("type", "Unknown").lower()
+            nname = node.get("name", nid)
+            tier_targets.append((ntype, nid, nname))
+
+        # Sort by tier (Tier 0 first) then by name
+        tier_targets.sort(key=lambda t: (tier_classification.get(t[1], 3), t[2]))
+        print(f"  ✓ Found {len(reachable)} reachable nodes from {start_id}")
+    else:
+        tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
+
     print(f"\n[MODE {args.mode}] Finding paths to {tier_name} targets...")
     print(f"  ✓ Found {len(tier_targets)} {tier_name} targets")
 
@@ -1239,15 +1563,17 @@ def main():
         if target_id == start_id:
             continue
 
-        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_ad_edges, k=3, max_depth=12)
+        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, path_edges, k=3, max_depth=12)
         for path in node_paths:
+            # Mode 4: use each node's actual tier; other modes: use the target tier
+            path_tier = tier_classification.get(target_id, 3) if target_tier == 4 else target_tier
             all_paths.append({
                 "goal": goal_type,
                 "target_id": target_id,
                 "target_name": target_name,
                 "nodes": path,
                 "length": max(0, len(path) - 1),
-                "tier": target_tier,
+                "tier": path_tier,
             })
 
     # Step 6: Select paths - simple approach:
@@ -1281,9 +1607,9 @@ def main():
 
     print(f"  ✓ Selected {len(selected_paths)} paths to {tier_name} ({len(primary_paths)} unique targets)")
 
-    # Step 7: Build edge map for path visualization (using complete AD edge set)
+    # Step 7: Build edge map for path visualization (using path edges)
     edge_map = defaultdict(list)
-    for e in all_ad_edges:
+    for e in path_edges:
         edge_map[(e["src"], e["dst"])].append(e)
 
     def edges_for_node_path(node_path):
@@ -1423,6 +1749,7 @@ def main():
         "1": "tier1",
         "2": "tier2",
         "3": "tier3",
+        "4": "all",
     }
     view = tier_names.get(args.mode, "tier0")
 
@@ -1447,7 +1774,7 @@ def main():
         "edges_derived": edges_derived,
         "summary": summary,
         "paths": paths_info,
-        "disclaimer": "Classification Tier v2: SEED → CLOSURE → INDIRECT (DC) → MEMBERS → DISTANCE. Sessions = opportunité.",
+        "disclaimer": "Classification Tier v4. Tier 0 = déterministe (SEED → CLOSURE → INDIRECT → MEMBERS → BFS → DC_REMOTE). Tier 1 = important non-déterministe (accès machine, LAPS, groupes Tier 1, sessions). Computers = noeuds terminaux dans les chemins.",
     }
 
     with open(args.out, "w", encoding="utf-8") as f:

@@ -392,389 +392,287 @@ ips = [r[4][0] for r in result]
 
 ### Objectif
 
-Construire un graphe JSON avec :
-- Classification Tier scientifique (0/1/2/3)
-- Chemins d'attaque vers les cibles
-- Noeuds et edges exploitables par l'UI
+Construire un graphe JSON avec classification Tier (0/1/2/3), chemins d'attaque
+vers les cibles, et noeuds/edges exploitables par l'UI.
 
-### Principes fondamentaux
+---
 
-```
-Tier 0 = Controle IMMEDIAT et DETERMINISTE du domaine
-       - Pas de conditions (ex: session active requise)
-       - Pas d'exploitation complexe
-       - Resultat garanti si le droit est exerce
-
-Sessions/CanRDP = OPPORTUNITE, pas Tier strict
-       - Necessite qu'un utilisateur soit connecte
-       - Non deterministe
-```
-
-### Flux algorithmique global
+### Pipeline de classification (v4)
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│              PHASE 1 : CHARGEMENT DONNEES                        │
-│            (parsing BloodHound JSON)                             │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-              Index par objectID :
-              - nodes_by_id[objectID] = node
-              - edges par type (memberOf, ACE, AdminTo)
-                              │
-┌──────────────────────────────────────────────────────────────────┐
-│              PHASE 2 : CLASSIFICATION TIER 0                     │
-│    (5 sous-etapes : Seed → Closure → Indirect → Members)        │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              │               │               │
-              ▼               ▼               ▼
-         2.1 Seed       2.2 Closure     2.3 Indirect
-         (statique)     (ACL direct)    (via DC)
-              │               │               │
-              └───────┬───────┴───────┬───────┘
-                      │               │
-                      ▼               ▼
-                 2.4 Members    2.5 Final Tier 0
-              │
-┌──────────────────────────────────────────────────────────────────┐
-│              PHASE 3 : CLASSIFICATION TIER 1/2/3                 │
-│            (calcul distance BFS)                                 │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-              BFS depuis Tier 0 :
-              - Tier 1 : 1-2 hops
-              - Tier 2 : 3-5 hops
-              - Tier 3 : 6+ hops ou unreachable
-                              │
-┌──────────────────────────────────────────────────────────────────┐
-│              PHASE 4 : SELECTION CHEMINS                         │
-│            (selon mode 0/1/2/3)                                  │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-              { nodes, edges, paths, tier_classification }
+  Chargement BloodHound JSON + validation
+                    │
+                    ▼
+  ┌─────────────────────────────────────┐
+  │     TIER 0 : DETERMINISTE           │
+  │  1. Seed    (RID, DC, KRBTGT, DC-   │
+  │              Sync)                   │
+  │  2. Closure (GenericAll, WriteDacl,  │
+  │              AddMember...)           │
+  │  3. Indirect(AdminTo DC, LAPS DC,   │
+  │              GPO DC)                 │
+  │  4. Members (membres des groupes    │
+  │              Tier 0)                 │
+  └─────────────────┬───────────────────┘
+                    │
+                    ▼
+  ┌─────────────────────────────────────┐
+  │  5. BFS DISTANCE (strict)           │
+  │     MemberOf + ACE + AdminTo        │
+  │     SANS remote / sessions          │
+  │     1-2 hops → Tier 1               │
+  │     3-5 hops → Tier 2               │
+  │     6+ hops  → Tier 3               │
+  └─────────────────┬───────────────────┘
+                    │
+  6. DC REMOTE → Tier 0
+     (CanRDP/CanPSRemote/DCOM sur DC)
+                    │
+                    ▼
+  ┌─────────────────────────────────────┐
+  │     TIER 1 : NON-DETERMINISTE       │
+  │  7a. Acces machine non-DC           │
+  │  7b. ReadLAPSPassword non-DC        │
+  │  7c. Groupes (Cert Publishers,      │
+  │      DnsAdmins)                     │
+  │  7d. Sessions (HasSession/LoggedOn) │
+  └─────────────────┬───────────────────┘
+                    │
+                    ▼
+  Selection chemins (mode 0/1/2/3/4)
+  Computers = noeuds terminaux
+                    │
+                    ▼
+  { nodes, edges, paths, tier_classification }
 ```
 
 ---
 
-### PHASE 2 : Classification Tier 0 (detail)
+### Deux jeux d'edges
 
-#### Etape 2.1 : SEED statique
+Le graphe utilise deux jeux d'edges distincts :
 
-Identification par criteres techniques (SIDs well-known, flags, patterns) :
+| Jeu | Usage | Contenu |
+|-----|-------|---------|
+| `classification_edges` | BFS distance (Phase 5) | MemberOf + ACE + AdminTo. Inclut les edges sortant des Computers (identite machine). |
+| `path_edges` | Chemins visuels (k-shortest) | Meme que classification, MAIS Computers = terminaux (pas d'edges sortants). Inclut en plus CanRDP/CanPSRemote/DCOM/Sessions comme edges terminaux. |
+
+**Principe** : AdminTo sur un Computer figure dans les deux jeux (le BFS en a besoin pour calculer la distance). Mais dans les chemins visuels, un Computer ne "traverse" jamais vers ses groupes ou ACE.
+
+---
+
+### Phase 1 : SEED (Tier 0 statique)
+
+Identification par criteres techniques. **Fonction** : `identify_tier0_seed()`
 
 **SIDs Well-Known (RID suffixes)** :
 
-| RID | Objet | Justification |
-|-----|-------|---------------|
-| `-500` | Administrator | Compte admin builtin, toujours Tier 0 |
-| `-502` | KRBTGT | Cle de chiffrement Kerberos, compromis = Golden Ticket |
-| `-512` | Domain Admins | Groupe admin du domaine |
-| `-516` | Domain Controllers | Groupe des DCs |
-| `-518` | Schema Admins | Peut modifier le schema AD |
-| `-519` | Enterprise Admins | Admin de la foret entiere |
-| `-544` | Administrators (BUILTIN) | Admins locaux sur les DCs |
-| `-548` | Account Operators | Peut creer/modifier des comptes |
-| `-549` | Server Operators | Acces aux serveurs membres |
-| `-550` | Print Operators | Historiquement exploitable |
-| `-551` | Backup Operators | Peut lire tous les fichiers |
+| RID | Objet |
+|-----|-------|
+| `-500` | Administrator (builtin) |
+| `-502` | KRBTGT (Golden Ticket) |
+| `-512` | Domain Admins |
+| `-516` | Domain Controllers (groupe) |
+| `-518` | Schema Admins |
+| `-519` | Enterprise Admins |
+| `-544` | Administrators (BUILTIN) |
+| `-548` | Account Operators |
+| `-549` | Server Operators |
+| `-550` | Print Operators |
+| `-551` | Backup Operators |
+
+Note : Les groupes BUILTIN (`S-1-5-32-*`) n'ont pas de `objectsid` dans BloodHound.
+Le SID est extrait depuis l'`ObjectIdentifier` (format `DOMAIN.HTB-S-1-5-32-551`).
 
 **Autres criteres** :
 
-| Critere | Detection | Justification |
-|---------|-----------|---------------|
-| Domain objects | `type == "Domain"` | Objet racine du domaine |
-| Domain Controllers | `userAccountControl & 0x2000` | Flag SERVER_TRUST_ACCOUNT |
-| AdminSDHolder | DN contient `CN=AdminSDHolder` | Protege les objets critiques |
-| DCSync rights | Droit DCSync sur Domain | Peut repliquer tous les secrets |
-
-##### DROITS DCSYNC (Tier 0 si sur Domain)
-
-| Droit | Effet | Tier 0 ? | Justification |
-|-------|-------|----------|---------------|
-| `DCSync` | Repliquer les secrets AD | **OUI** | Permet d'extraire tous les hashes NTLM |
-| `GetChanges` | DS-Replication-Get-Changes | **OUI** | Necessaire pour DCSync |
-| `GetChangesAll` | DS-Replication-Get-Changes-All | **OUI** | Permet replication complete |
-| `GetChangesInFilteredSet` | Replication filtree | **OUI** | Variante de DCSync |
-
-**Fonction** : `identify_tier0_seed()`
+| Critere | Detection |
+|---------|-----------|
+| Domain objects | `type == "Domain"` |
+| Domain Controllers | `userAccountControl & 0x2000` OU `PrimaryGroupSID` finissant par `-516` |
+| AdminSDHolder | DN contient `CN=AdminSDHolder` |
+| DCSync | Droit DCSync/GetChanges/GetChangesAll/GetChangesInFilteredSet sur Domain |
 
 ---
 
-#### Etape 2.2 : CLOSURE ACL (extension iterative)
+### Phase 2 : CLOSURE (Tier 0 herite)
 
-**Principe** : Si un principal a un droit de CONTROLE DIRECT sur un objet Tier 0, ce principal devient Tier 0.
+Si un principal a un droit de controle direct sur un objet Tier 0, il devient Tier 0.
+Algorithme fixpoint (max 10 iterations). **Fonction** : `expand_tier0_closure()`
 
-**Algorithme** : Fixpoint (repete jusqu'a stabilisation, max 10 iterations)
+**Droits pris en compte** (`TIER0_CLOSURE_RIGHTS`) :
 
-##### DROITS PRIS EN COMPTE (TIER0_CLOSURE_RIGHTS)
-
-| Droit | Effet | Tier 0 ? | Justification |
-|-------|-------|----------|---------------|
-| `GenericAll` | Controle total sur l'objet | **OUI** | Peut tout faire : reset password, modifier membres, etc. |
-| `WriteDacl` | Modifier les ACL de l'objet | **OUI** | Peut se donner GenericAll |
-| `WriteOwner` | Changer le proprietaire | **OUI** | Owner peut modifier DACL → WriteDacl → GenericAll |
-| `Owns` | Est proprietaire de l'objet | **OUI** | Ownership = controle total |
-| `AddMember` | Ajouter membre a un groupe | **OUI** | Sur groupe Tier 0 = devenir membre = Tier 0 |
-| `WriteMember` | Alias de AddMember | **OUI** | Identique a AddMember |
-| `ForceChangePassword` | Reset password sans connaitre l'ancien | **OUI** | Takeover immediat du compte |
-| `ResetPassword` | Alias de ForceChangePassword | **OUI** | Identique |
-| `AddKeyCredentialLink` | Ajouter Shadow Credentials | **OUI** | Permet authentification sans password |
-| `WriteKeyCredentialLink` | Alias | **OUI** | Identique |
-
-**Fonction** : `expand_tier0_closure()`
+| Droit | Justification |
+|-------|---------------|
+| `GenericAll` | Controle total |
+| `WriteDacl` | Peut se donner GenericAll |
+| `WriteOwner` | Owner → WriteDacl → GenericAll |
+| `Owns` | Ownership = controle total |
+| `AddMember` / `WriteMember` | Sur groupe Tier 0 = devenir membre |
+| `ForceChangePassword` / `ResetPassword` | Takeover immediat du compte |
+| `AddKeyCredentialLink` / `WriteKeyCredentialLink` | Shadow Credentials |
 
 ---
 
-#### Etape 2.3 : INDIRECT via DC
+### Phase 3 : INDIRECT via DC
 
-**Principe** : Certains droits sur les Domain Controllers permettent un controle indirect du domaine.
-
-##### DROITS PRIS EN COMPTE (sur DC uniquement)
-
-| Droit | Cible | Tier 0 ? | Justification |
-|-------|-------|----------|---------------|
-| `AdminTo` | DC | **OUI** | Admin local sur DC = peut dumper NTDS.dit |
-| `ReadLAPSPassword` | DC | **OUI** | Obtient le password admin local du DC |
-| `ReadLAPSPassword` | OU contenant DC | **OUI** | LAPS herite sur les objets enfants |
-
-##### DROITS SUR GPO LIEE AUX DC
-
-| Droit | Cible | Tier 0 ? | Justification |
-|-------|-------|----------|---------------|
-| `WriteGPO` | GPO liee a OU des DCs | **OUI** | Peut deployer scripts/settings sur les DCs |
-| `EditGPO` | GPO liee a OU des DCs | **OUI** | Identique |
-| `GenericAll` | GPO liee a OU des DCs | **OUI** | Controle total de la GPO |
-| `WriteDacl` | GPO liee a OU des DCs | **OUI** | Peut se donner WriteGPO |
-| `WriteOwner` | GPO liee a OU des DCs | **OUI** | Peut devenir owner |
-
+Droits sur les Domain Controllers donnant un controle indirect du domaine.
 **Fonction** : `expand_tier0_indirect()`
 
+| Droit | Cible | Justification |
+|-------|-------|---------------|
+| `AdminTo` | DC | Peut dumper NTDS.dit |
+| `ReadLAPSPassword` | DC ou OU contenant DC | Obtient le password admin local |
+| `WriteGPO` / `EditGPO` / `GenericAll` / `WriteDacl` / `WriteOwner` | GPO liee a OU des DCs | Deploie scripts sur les DCs |
+
 ---
 
-#### Etape 2.4 : MEMBRES des groupes Tier 0
+### Phase 4 : MEMBERS
 
-**Principe** : Si un groupe est Tier 0, tous ses membres directs sont Tier 0.
-
-**Justification** : Etre membre de Domain Admins = ETRE Domain Admin
-
+Membres directs des groupes Tier 0 → Tier 0.
 **Fonction** : `expand_tier0_members()`
 
 ---
 
-### DROITS EXCLUS (non pris en compte pour Tier 0)
+### Phase 5 : BFS DISTANCE
 
-#### Exclus de la CLOSURE (necessitent analyse d'attribut)
+Distance BFS depuis chaque noeud vers le Tier 0 le plus proche.
+**Fonction** : `classify_objects_by_tier()`
 
-| Droit | Raison d'exclusion | Impact |
-|-------|-------------------|--------|
-| `GenericWrite` | Depend de l'attribut modifie | Faux positifs si l'attribut n'est pas exploitable |
-| `AllExtendedRights` | Inclut trop de droits heterogenes | ReadLAPSPassword mais aussi des droits non critiques |
-| `WriteProperty` | Attribute-aware requis | Doit savoir QUEL attribut est modifiable |
-| `WriteSPN` | Kerberoasting possible mais pas controle direct | Opportunite, pas Tier 0 |
-| `WriteAllowedToAct` | RBCD possible mais necessite config | Exploitation complexe |
+**Edges utilises** (`classification_edges`, strict) :
 
-#### Exclus car NON DETERMINISTES
+| Kind | Description |
+|------|-------------|
+| `ace` | Droits ACL (`ALL_PRIVILEGE_RIGHTS`) |
+| `memberOf` | Appartenance aux groupes |
+| `local_admin` | AdminTo |
 
-| Droit | Raison d'exclusion | Impact |
-|-------|-------------------|--------|
-| `ChangePassword` | Necessite l'ancien mot de passe | Non exploitable sans credentials |
+**Exclus du BFS** : CanRDP, CanPSRemote, DCOM, HasSession, LoggedOn.
 
----
-
-### DROITS D'OPPORTUNITE (affectent distance, pas Tier strict)
-
-Ces droits sont utilises pour calculer la DISTANCE dans le graphe mais ne propagent PAS automatiquement au Tier 0.
-
-#### Acces machine
-
-| Droit | Effet | Tier 0 direct ? | Utilisation |
-|-------|-------|-----------------|-------------|
-| `AdminTo` | Admin local sur machine | **NON** (sauf DC) | Affecte distance, Tier 0 seulement si cible = DC |
-| `CanRDP` | Acces RDP | **NON** | Opportunite de lateral movement |
-| `CanPSRemote` | PowerShell Remoting | **NON** | Opportunite de lateral movement |
-| `ExecuteDCOM` | Execution DCOM | **NON** | Opportunite de lateral movement |
-| `DCOM` | Alias ExecuteDCOM | **NON** | Identique |
-
-#### Sessions (purement opportunistes)
-
-| Droit | Effet | Tier 0 direct ? | Utilisation |
-|-------|-------|-----------------|-------------|
-| `HasSession` | Utilisateur a une session sur machine | **NON** | Opportunite de credential theft |
-| `LoggedOn` | Utilisateur actuellement connecte | **NON** | Opportunite de credential theft |
-
-**Justification** : Ces droits necessitent qu'un utilisateur privilegie soit connecte. Ce n'est pas deterministe.
+| Distance | Tier |
+|----------|------|
+| 1-2 hops | Tier 1 |
+| 3-5 hops | Tier 2 |
+| 6+ hops ou unreachable | Tier 3 |
 
 ---
 
-### DROITS POUR LA CONSTRUCTION DU GRAPHE
+### Phase 6 : DC REMOTE ACCESS → Tier 0
 
-Ces droits sont utilises pour creer les edges du graphe (chemins d'attaque) :
+CanRDP/CanPSRemote/DCOM sur un DC → promotion Tier 0 directe (post-BFS).
+
+---
+
+### Phase 7 : PROMOTIONS Tier 1
+
+Promotions directes pour les acces importants mais non-deterministes.
+
+| Phase | Critere | Source |
+|-------|---------|--------|
+| 7a | Acces machine non-DC (AdminTo/CanRDP/CanPSRemote/DCOM) | Collectors BloodHound (LocalAdmins, RemoteDesktopUsers, PSRemoteUsers, DcomUsers) |
+| 7b | ReadLAPSPassword sur machine non-DC | ACE sur Computer |
+| 7c | Membre de Cert Publishers ou DnsAdmins | Groupes BloodHound |
+| 7d | Sessions (HasSession/LoggedOn) | Collectors BloodHound (Sessions, PrivilegedSessions, RegistrySessions) |
+
+Note : Remote Management Users et Remote Desktop Users ne sont PAS promus par groupe.
+Leurs membres sont couverts par Phase 7a via les collectors BloodHound.
+
+---
+
+### Droits pour la construction du graphe
 
 ```python
 ALL_PRIVILEGE_RIGHTS = {
-    # DCSync
     "DCSync", "GetChanges", "GetChangesAll", "GetChangesInFilteredSet",
-    # Controle direct
     "GenericAll", "GenericWrite", "WriteDacl", "WriteOwner", "Owns",
     "AllExtendedRights", "ForceChangePassword", "ResetPassword",
     "AddMember", "WriteMember",
-    # Credentials
     "ReadLAPSPassword", "ReadGMSAPassword",
-    # Shadow Credentials
     "AddKeyCredentialLink", "WriteKeyCredentialLink",
-    # GPO
     "WriteGPO", "EditGPO",
 }
 ```
 
 ---
 
-### PHASE 3 : Classification Tier 1/2/3
+### Modes de sortie
 
-**Algorithme** : BFS (Breadth-First Search) depuis chaque noeud VERS les noeuds Tier 0
+| Mode | Cible | Limite | Description |
+|------|-------|--------|-------------|
+| 0 | Tier 0 | Aucune | Tous les chemins vers Domain/DCs/DA |
+| 1 | Tier 1 | 30 | Hauts privileges |
+| 2 | Tier 2 | 30 | Infrastructure (3-5 hops) |
+| 3 | Tier 3 | 40 | Objets isoles (6+ hops) |
+| 4 | All | 50 | Tous les noeuds atteignables (BFS depuis start) |
 
-Pour chaque noeud non-Tier 0, on calcule la distance minimale vers le Tier 0 le plus proche en suivant les edges du graphe.
-
-**Types d'edges utilises pour le BFS** :
-
-| Kind | Right | Description |
-|------|-------|-------------|
-| `ace` | Droits ACL (ALL_PRIVILEGE_RIGHTS) | GenericAll, WriteDacl, DCSync, etc. |
-| `memberOf` | MemberOf | Appartenance aux groupes |
-| `local_admin` | AdminTo | Admin local sur machine |
-| `rdp` | CanRDP | Acces RDP |
-| `psremote` | CanPSRemote | Acces PowerShell Remote |
-| `dcom` | DCOM | Acces DCOM |
-
-```python
-# Pseudo-code
-def shortest_distance_to_tier0(node_id):
-    if node_id in tier0_nodes:
-        return 0
-
-    visited = {node_id}
-    queue = deque([(node_id, 0)])
-
-    while queue:
-        current, dist = queue.popleft()
-
-        if dist >= max_distance:  # max_distance = 10
-            continue
-
-        for neighbor in get_neighbors(current):
-            if neighbor in tier0_nodes:
-                return dist + 1  # Trouve le Tier 0 le plus proche
-
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append((neighbor, dist + 1))
-
-    return 999  # Unreachable
-
-# Classification basee sur la distance
-for node in all_nodes:
-    distance = shortest_distance_to_tier0(node)
-    if distance <= 2:
-        tier = 1      # Tier 1 : 1-2 hops
-    elif distance <= 5:
-        tier = 2      # Tier 2 : 3-5 hops
-    else:
-        tier = 3      # Tier 3 : 6+ hops ou unreachable
-```
-
-**Noeuds unreachable** : Tier 3 par defaut (distance = 999)
-
-**Fonction** : `classify_objects_by_tier()`
+Le mode 4 utilise le tier reel de chaque cible (pas un tier fixe).
 
 ---
 
-### PHASE 4 : Selection des chemins
+### Tableau recapitulatif des droits
 
-| Mode | Cible | Limite | Justification |
-|------|-------|--------|---------------|
-| 0 | Tier 0 | **Aucune** | Chaque chemin = compromission potentielle |
-| 1 | Tier 1 | 30 | Hauts privileges, vue significative |
-| 2 | Tier 2 | 30 | Infrastructure, vue large |
-| 3 | Tier 3 | 40 | Objets isoles, vue exhaustive |
+| Droit | Tier 0 (closure) | Tier 0 (indirect DC) | BFS distance | Chemins visuels |
+|-------|-------------------|---------------------|-------------|-----------------|
+| GenericAll | oui | oui (GPO DC) | oui | oui |
+| WriteDacl | oui | oui (GPO DC) | oui | oui |
+| WriteOwner | oui | oui (GPO DC) | oui | oui |
+| Owns | oui | - | oui | oui |
+| AddMember / WriteMember | oui | - | oui | oui |
+| ForceChangePassword / ResetPassword | oui | - | oui | oui |
+| AddKeyCredentialLink | oui | - | oui | oui |
+| DCSync / GetChanges* | oui (Domain) | - | oui | oui |
+| AdminTo | - | oui (DC) | oui | oui (terminal) |
+| ReadLAPSPassword | - | oui (DC/OU) | oui | oui |
+| ReadGMSAPassword | - | - | oui | oui |
+| WriteGPO / EditGPO | - | oui (GPO DC) | oui | oui |
+| GenericWrite | - | - | oui | oui |
+| AllExtendedRights | - | - | oui | oui |
+| CanRDP / CanPSRemote / DCOM | - | Tier 0 (Phase 6) | **non** | oui (terminal) |
+| HasSession / LoggedOn | - | - | **non** | oui (terminal, Tier 1) |
+| ChangePassword | - | - | non | non |
 
 ---
-
-### RESUME : Tableau complet des droits
-
-| Droit | Tier 0 direct | Tier 0 indirect (DC) | Affecte distance | Dans graphe |
-|-------|---------------|---------------------|------------------|-------------|
-| GenericAll | ✅ | ✅ (GPO DC) | ✅ | ✅ |
-| WriteDacl | ✅ | ✅ (GPO DC) | ✅ | ✅ |
-| WriteOwner | ✅ | ✅ (GPO DC) | ✅ | ✅ |
-| Owns | ✅ | - | ✅ | ✅ |
-| AddMember | ✅ | - | ✅ | ✅ |
-| WriteMember | ✅ | - | ✅ | ✅ |
-| ForceChangePassword | ✅ | - | ✅ | ✅ |
-| ResetPassword | ✅ | - | ✅ | ✅ |
-| AddKeyCredentialLink | ✅ | - | ✅ | ✅ |
-| WriteKeyCredentialLink | ✅ | - | ✅ | ✅ |
-| DCSync | ✅ (Domain) | - | ✅ | ✅ |
-| GetChanges | ✅ (Domain) | - | ✅ | ✅ |
-| GetChangesAll | ✅ (Domain) | - | ✅ | ✅ |
-| GetChangesInFilteredSet | ✅ (Domain) | - | ✅ | ✅ |
-| AdminTo | ❌ | ✅ (DC) | ✅ | ✅ |
-| ReadLAPSPassword | ❌ | ✅ (DC/OU DC) | ✅ | ✅ |
-| ReadGMSAPassword | ❌ | ❌ | ✅ | ✅ |
-| WriteGPO | ❌ | ✅ (GPO DC) | ✅ | ✅ |
-| EditGPO | ❌ | ✅ (GPO DC) | ✅ | ✅ |
-| GenericWrite | ❌ | ❌ | ✅ | ✅ |
-| AllExtendedRights | ❌ | ❌ | ✅ | ✅ |
-| CanRDP | ❌ | ❌ | ✅ | ✅ |
-| CanPSRemote | ❌ | ❌ | ✅ | ✅ |
-| DCOM | ❌ | ❌ | ✅ | ✅ |
-| HasSession | ❌ | ❌ | ✅ | ❌ (optionnel) |
-| LoggedOn | ❌ | ❌ | ✅ | ❌ (optionnel) |
-| ChangePassword | ❌ | ❌ | ❌ | ❌ |
 
 ### Format de sortie JSON
 
 ```json
 {
   "mode": "0",
+  "view": "tier0",
   "tier": 0,
   "tier_name": "Tier 0",
   "tier_classification": {
     "tier0_count": 15,
-    "tier1_count": 143,
-    "tier2_count": 892,
-    "tier3_count": 3421
+    "tier1_count": 3,
+    "tier2_count": 0,
+    "tier3_count": 71
   },
-  "paths": [
-    {
-      "goal": "domain",
-      "target_name": "DOMAIN.LOCAL",
-      "target_id": "S-1-5-21-...",
-      "length": 2,
-      "tier": 0,
-      "is_shortest": true,
-      "nodes": ["S-1-5-21-...-user", "S-1-5-21-...-512", "S-1-5-21-..."]
-    }
-  ],
   "nodes": [
     {
       "id": "S-1-5-21-...",
       "type": "User",
       "name": "user@domain.local",
-      "tier": 2,
+      "tier": 0,
       "is_target": false
     }
   ],
   "edges": [
     {
-      "source": "S-1-5-21-...",
-      "target": "S-1-5-21-...",
-      "label": "MemberOf",
-      "kind": "ad"
+      "src": "S-1-5-21-...",
+      "dst": "S-1-5-21-...",
+      "kind": "psremote",
+      "right": "CanPSRemote",
+      "confidence": "observed"
+    }
+  ],
+  "paths": [
+    {
+      "goal": "computer",
+      "target_name": "DC01.DOMAIN.LOCAL",
+      "target_id": "S-1-5-21-...",
+      "length": 1,
+      "tier": 0,
+      "nodes": ["S-1-5-21-...-user", "S-1-5-21-...-1000"]
     }
   ]
 }
@@ -961,8 +859,7 @@ for (computer of identity_data.nodes) {
 | Scan limite au /24 | Decouverte partielle grands reseaux | Relancer avec CIDR specifique |
 | Pas de detection VLAN | VLANs isoles non decouverts | Scan depuis chaque VLAN |
 | DC-only pour machines T0 | Exchange/ADFS/PKI non detectes | Whitelist configurable (futur) |
-| AllExtendedRights ignore | Faux negatifs possibles | Analyse manuelle |
-| GenericWrite ignore | Faux negatifs possibles | Analyse attribut-aware (futur) |
+| GenericWrite/AllExtendedRights hors Tier 0 | Faux negatifs possibles | Analyse attribut-aware (futur) |
 
 
 

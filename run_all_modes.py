@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Run all BloodHound Tier-based analysis modes automatically.
-Generates 3 JSON files for Tier 0, Tier 1, and Tier 2 attack paths.
+Generates 5 JSON files for Tier 0, Tier 1, Tier 2, Tier 3, and All attack paths.
 """
 import argparse
 import subprocess
@@ -70,6 +70,7 @@ def main():
         1: output_dir / "graph_tier1.json",
         2: output_dir / "graph_tier2.json",
         3: output_dir / "graph_tier3.json",
+        4: output_dir / "graph_all.json",
     }
 
     print("="*70)
@@ -92,10 +93,11 @@ def main():
     print("="*70)
 
     mode_names = {
-        0: "Mode 0 - Tier 0 (10 paths to Domain/DCs/DA - Critical)",
-        1: "Mode 1 - Tier 1 (20 paths to high-privilege accounts - 1-2 hops)",
+        0: "Mode 0 - Tier 0 (ALL paths to Domain/DCs/DA - Critical)",
+        1: "Mode 1 - Tier 1 (30 paths to high-privilege accounts)",
         2: "Mode 2 - Tier 2 (30 paths to servers/workstations - 3-5 hops)",
         3: "Mode 3 - Tier 3 (40 paths to isolated/distant objects - 6+ hops)",
+        4: "Mode 4 - All  (50 paths to ALL reachable nodes)",
     }
 
     for mode, success in results.items():
@@ -110,10 +112,11 @@ def main():
     if all_success:
         print("\n✓ All tier analyses completed successfully!")
         print(f"\nGenerated files in: {output_dir}/")
-        print("  - graph_tier0.json  (Tier 0: Domain control - 10 paths)")
-        print("  - graph_tier1.json  (Tier 1: High privileges - 20 paths)")
+        print("  - graph_tier0.json  (Tier 0: Domain control - ALL paths)")
+        print("  - graph_tier1.json  (Tier 1: High privileges - 30 paths)")
         print("  - graph_tier2.json  (Tier 2: Infrastructure - 30 paths)")
         print("  - graph_tier3.json  (Tier 3: Isolated/distant - 40 paths)")
+        print("  - graph_all.json    (All: ALL reachable nodes - 50 paths)")
         print("\nYou can now load these files in the UI (cartographie.html)")
         print("\nℹ Classification uses technical criteria:")
         print("  • SID-based detection (RID -500, -502, -512, -516, -518, -519, etc.)")
