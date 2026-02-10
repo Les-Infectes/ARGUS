@@ -397,7 +397,7 @@ vers les cibles, et noeuds/edges exploitables par l'UI.
 
 ---
 
-### Pipeline de classification (v4)
+### Pipeline de classification (v5)
 
 ```
   Chargement BloodHound JSON + validation
@@ -405,59 +405,57 @@ vers les cibles, et noeuds/edges exploitables par l'UI.
                     ▼
   ┌─────────────────────────────────────┐
   │     TIER 0 : DETERMINISTE           │
-  │  1. Seed    (RID, DC, KRBTGT, DC-   │
-  │              Sync)                   │
+  │  1. Seed    (RID, DC, KRBTGT,       │
+  │              Cert Publishers,       │
+  │              DCSync)                 │
   │  2. Closure (GenericAll, WriteDacl,  │
   │              AddMember...)           │
-  │  3. Indirect(AdminTo DC, LAPS DC,   │
-  │              GPO DC)                 │
+  │  3. Indirect(TOUS les accès DC :    │
+  │              AdminTo, LAPS, GPO,    │
+  │              CanRDP, CanPSRemote,   │
+  │              DCOM)                   │
   │  4. Members (membres des groupes    │
   │              Tier 0)                 │
   └─────────────────┬───────────────────┘
                     │
+            Tier 0 FINAL complet
+                    │
                     ▼
   ┌─────────────────────────────────────┐
-  │  5. BFS DISTANCE (strict)           │
-  │     MemberOf + ACE + AdminTo        │
-  │     SANS remote / sessions          │
+  │  5. DISTANCE BFS (depuis Tier 0)    │
+  │     Tous les edges (MemberOf, ACE,  │
+  │     AdminTo, CanRDP, CanPSRemote,   │
+  │     DCOM, Sessions)                  │
   │     1-2 hops → Tier 1               │
   │     3-5 hops → Tier 2               │
-  │     6+ hops  → Tier 3               │
-  └─────────────────┬───────────────────┘
-                    │
-  6. DC REMOTE → Tier 0
-     (CanRDP/CanPSRemote/DCOM sur DC)
-                    │
-                    ▼
-  ┌─────────────────────────────────────┐
-  │     TIER 1 : NON-DETERMINISTE       │
-  │  7a. Acces machine non-DC           │
-  │  7b. ReadLAPSPassword non-DC        │
-  │  7c. Groupes (Cert Publishers,      │
-  │      DnsAdmins)                     │
-  │  7d. Sessions (HasSession/LoggedOn) │
+  │     6+ hops/unreachable → Tier 3    │
   └─────────────────┬───────────────────┘
                     │
                     ▼
-  Selection chemins (mode 0/1/2/3/4)
-  Computers = noeuds terminaux
+  Selection chemins (mode 0/1/2/3)
+  Computers = noeuds normaux traversables
                     │
                     ▼
   { nodes, edges, paths, tier_classification }
 ```
 
+**Note importante** : Phase 3 (INDIRECT) inclut maintenant TOUS les accès DC (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM) pour compléter le Tier 0 AVANT le calcul BFS (Phase 5), garantissant que les distances sont calculées depuis le Tier 0 complet et définitif.
+
 ---
 
-### Deux jeux d'edges
+### Jeu d'edges unifié
 
-Le graphe utilise deux jeux d'edges distincts :
+Le graphe utilise un seul jeu d'edges pour le BFS de classification et les chemins visuels :
 
-| Jeu | Usage | Contenu |
-|-----|-------|---------|
-| `classification_edges` | BFS distance (Phase 5) | MemberOf + ACE + AdminTo. Inclut les edges sortant des Computers (identite machine). |
-| `path_edges` | Chemins visuels (k-shortest) | Meme que classification, MAIS Computers = terminaux (pas d'edges sortants). Inclut en plus CanRDP/CanPSRemote/DCOM/Sessions comme edges terminaux. |
+| Edges inclus | Description |
+|--------------|-------------|
+| `MemberOf` | Appartenance aux groupes |
+| `ACE` | Droits ACL (`ALL_PRIVILEGE_RIGHTS`) |
+| `AdminTo` | Admin local sur machine |
+| `CanRDP`, `CanPSRemote`, `DCOM` | Accès distant aux machines |
+| `HasSession`, `LoggedOn` | Sessions actives |
 
-**Principe** : AdminTo sur un Computer figure dans les deux jeux (le BFS en a besoin pour calculer la distance). Mais dans les chemins visuels, un Computer ne "traverse" jamais vers ses groupes ou ACE.
+**Principe** : Les Computers sont des noeuds normaux, traversables. L'héritage des droits du compte machine (groupes, ACE) est pris en compte dans les chemins d'attaque.
 
 ---
 
@@ -473,6 +471,7 @@ Identification par criteres techniques. **Fonction** : `identify_tier0_seed()`
 | `-502` | KRBTGT (Golden Ticket) |
 | `-512` | Domain Admins |
 | `-516` | Domain Controllers (groupe) |
+| `-517` | Cert Publishers (PKI - attaques ESC) |
 | `-518` | Schema Admins |
 | `-519` | Enterprise Admins |
 | `-544` | Administrators (BUILTIN) |
@@ -514,16 +513,21 @@ Algorithme fixpoint (max 10 iterations). **Fonction** : `expand_tier0_closure()`
 
 ---
 
-### Phase 3 : INDIRECT via DC
+### Phase 3 : INDIRECT - TOUS les accès DC
 
-Droits sur les Domain Controllers donnant un controle indirect du domaine.
+TOUS les droits et accès sur les Domain Controllers donnant un contrôle indirect du domaine.
 **Fonction** : `expand_tier0_indirect()`
 
 | Droit | Cible | Justification |
 |-------|-------|---------------|
 | `AdminTo` | DC | Peut dumper NTDS.dit |
 | `ReadLAPSPassword` | DC ou OU contenant DC | Obtient le password admin local |
-| `WriteGPO` / `EditGPO` / `GenericAll` / `WriteDacl` / `WriteOwner` | GPO liee a OU des DCs | Deploie scripts sur les DCs |
+| `WriteGPO` / `EditGPO` / `GenericAll` / `WriteDacl` / `WriteOwner` | GPO liée à OU des DCs | Déploie scripts sur les DCs |
+| `CanRDP` | DC | Accès bureau à distance au DC |
+| `CanPSRemote` | DC | Accès PowerShell Remoting au DC |
+| `DCOM` | DC | Accès DCOM au DC |
+
+**Important** : Cette phase unifie TOUS les accès DC (directs et distants) pour compléter le Tier 0 AVANT le calcul BFS (Phase 5), garantissant que les distances sont calculées depuis le Tier 0 complet et définitif.
 
 ---
 
@@ -534,48 +538,33 @@ Membres directs des groupes Tier 0 → Tier 0.
 
 ---
 
+---
+
 ### Phase 5 : BFS DISTANCE
 
-Distance BFS depuis chaque noeud vers le Tier 0 le plus proche.
+Distance BFS depuis chaque noeud vers le Tier 0 le plus proche **FINAL** (après Phase 3 INDIRECT).
 **Fonction** : `classify_objects_by_tier()`
 
-**Edges utilises** (`classification_edges`, strict) :
+**Tous les edges sont utilisés** :
 
 | Kind | Description |
 |------|-------------|
 | `ace` | Droits ACL (`ALL_PRIVILEGE_RIGHTS`) |
-| `memberOf` | Appartenance aux groupes |
+| `memberOf` | Appartenance aux groupes (+ PrimaryGroupSID) |
 | `local_admin` | AdminTo |
-
-**Exclus du BFS** : CanRDP, CanPSRemote, DCOM, HasSession, LoggedOn.
+| `rdp` | CanRDP |
+| `psremote` | CanPSRemote |
+| `dcom` | DCOM |
+| `session` | HasSession, LoggedOn |
 
 | Distance | Tier |
 |----------|------|
-| 1-2 hops | Tier 1 |
-| 3-5 hops | Tier 2 |
-| 6+ hops ou unreachable | Tier 3 |
+| 1-2 hops | Tier 1 | Standard: chemins vers Tier 1 |
+| 3-7 hops | Tier 2 | Standard: chemins vers Tier 2 |
+| 8+ hops ou unreachable | Tier 3 | **Ego-graph**: toutes relations depuis start_node |
 
----
 
-### Phase 6 : DC REMOTE ACCESS → Tier 0
-
-CanRDP/CanPSRemote/DCOM sur un DC → promotion Tier 0 directe (post-BFS).
-
----
-
-### Phase 7 : PROMOTIONS Tier 1
-
-Promotions directes pour les acces importants mais non-deterministes.
-
-| Phase | Critere | Source |
-|-------|---------|--------|
-| 7a | Acces machine non-DC (AdminTo/CanRDP/CanPSRemote/DCOM) | Collectors BloodHound (LocalAdmins, RemoteDesktopUsers, PSRemoteUsers, DcomUsers) |
-| 7b | ReadLAPSPassword sur machine non-DC | ACE sur Computer |
-| 7c | Membre de Cert Publishers ou DnsAdmins | Groupes BloodHound |
-| 7d | Sessions (HasSession/LoggedOn) | Collectors BloodHound (Sessions, PrivilegedSessions, RegistrySessions) |
-
-Note : Remote Management Users et Remote Desktop Users ne sont PAS promus par groupe.
-Leurs membres sont couverts par Phase 7a via les collectors BloodHound.
+**Note Mode 3 (Tier 3)** : Au lieu de chercher des chemins vers les objets classifiés Tier 3, Mode 3 effectue une **exploration ego-graph** depuis `start_node` pour découvrir TOUTES ses relations (groupes, objets contrôlés, sessions, etc.) qui ne sont pas déjà dans Tier 0/1/2. Cela permet de visualiser l'environnement complet du user même s'il n'a pas de chemin vers le Tier 0.
 
 ---
 
@@ -599,17 +588,14 @@ ALL_PRIVILEGE_RIGHTS = {
 
 | Mode | Cible | Limite | Description |
 |------|-------|--------|-------------|
-| 0 | Tier 0 | Aucune | Tous les chemins vers Domain/DCs/DA |
-| 1 | Tier 1 | 30 | Hauts privileges |
-| 2 | Tier 2 | 30 | Infrastructure (3-5 hops) |
-| 3 | Tier 3 | 40 | Objets isoles (6+ hops) |
-| 4 | All | 50 | Tous les noeuds atteignables (BFS depuis start) |
-
-Le mode 4 utilise le tier reel de chaque cible (pas un tier fixe).
+| 0 | Tier 0 | Aucune | Tous les chemins vers Domain/DCs/DA/Cert Publishers |
+| 1 | Tier 1 | 30 | 1-2 hops depuis Tier 0 |
+| 2 | Tier 2 | 30 | 3-5 hops depuis Tier 0 |
+| 3 | Tier 3 | 40 | 6+ hops depuis Tier 0 (inclut unreachable) |
 
 ---
 
-### Tableau recapitulatif des droits
+### Tableau recapitulatif des droits (v5)
 
 | Droit | Tier 0 (closure) | Tier 0 (indirect DC) | BFS distance | Chemins visuels |
 |-------|-------------------|---------------------|-------------|-----------------|
@@ -621,15 +607,17 @@ Le mode 4 utilise le tier reel de chaque cible (pas un tier fixe).
 | ForceChangePassword / ResetPassword | oui | - | oui | oui |
 | AddKeyCredentialLink | oui | - | oui | oui |
 | DCSync / GetChanges* | oui (Domain) | - | oui | oui |
-| AdminTo | - | oui (DC) | oui | oui (terminal) |
+| AdminTo | - | oui (DC) | oui | oui |
 | ReadLAPSPassword | - | oui (DC/OU) | oui | oui |
 | ReadGMSAPassword | - | - | oui | oui |
 | WriteGPO / EditGPO | - | oui (GPO DC) | oui | oui |
 | GenericWrite | - | - | oui | oui |
 | AllExtendedRights | - | - | oui | oui |
-| CanRDP / CanPSRemote / DCOM | - | Tier 0 (Phase 6) | **non** | oui (terminal) |
-| HasSession / LoggedOn | - | - | **non** | oui (terminal, Tier 1) |
+| CanRDP / CanPSRemote / DCOM | - | Tier 0 (Phase 6) | **oui** | oui |
+| HasSession / LoggedOn | - | - | **oui** | oui |
 | ChangePassword | - | - | non | non |
+
+**Note v5** : Tous les edges (y compris CanRDP, CanPSRemote, DCOM, HasSession, LoggedOn) sont maintenant utilisés dans le BFS de distance. Les Computers sont des noeuds normaux, traversables.
 
 ---
 

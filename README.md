@@ -42,7 +42,7 @@ cartographie/
 - nmap, traceroute (avec sudo)
 - bloodhound-python
 
-### Quick Stzrt
+### Quick Start
 
 ```bash
 # 1. Creer environnement virtuel
@@ -171,10 +171,12 @@ python3 graph_builder.py \
 
 | Mode | Tier | Chemins | Cibles | Cas d'usage |
 |------|------|---------|--------|-------------|
-| 0 | Tier 0 | Tous | Domain, DCs, DA, KRBTGT | Pentest rapide |
-| 1 | Tier 1 | 30 | Comptes hauts privileges (1-2 hops) | Escalade |
-| 2 | Tier 2 | 30 | Serveurs/postes (3-5 hops) | Mouvement lateral |
-| 3 | Tier 3 | 40 | Objets isoles (6+ hops) | Vue exhaustive |
+| 0 | Tier 0 | Tous | Domain, DCs, DA, KRBTGT, Cert Publishers | Pentest rapide |
+| 1 | Tier 1 | 30 | 1-2 hops depuis Tier 0 | Escalade directe |
+| 2 | Tier 2 | 30 | 3-5 hops depuis Tier 0 | Mouvement lateral |
+| 3 | Tier 3 | 40 | 6+ hops / unreachable | Vue exhaustive |
+
+**Classification v5** : Tier 0 déterministe (SEED + Cert Publishers + CLOSURE + INDIRECT + MEMBERS + DC REMOTE), Tier 1/2/3 par distance BFS uniquement. Computers = noeuds normaux traversables.
 
 ---
 
