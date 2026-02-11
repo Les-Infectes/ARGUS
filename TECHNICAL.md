@@ -621,6 +621,60 @@ ALL_PRIVILEGE_RIGHTS = {
 
 ---
 
+### Consolidation des permissions multiples (v5.2)
+
+**Problème identifié** : Dans les données BloodHound, un principal peut avoir plusieurs permissions sur le même objet (ex: `GenericAll + Owns + WriteDacl`). Sans consolidation, seule la première permission de la liste est affichée, créant une perte d'information potentielle (afficher `Owns` alors que `GenericAll` existe).
+
+**Solution implémentée** : Consolidation intelligente avec hiérarchie de permissions.
+
+#### Hiérarchie des permissions ACE
+
+| Niveau | Permissions | Justification |
+|--------|-------------|---------------|
+| 1 | `GenericAll` | Contrôle total |
+| 2 | `WriteDacl`, `WriteOwner`, `Owns` | Peuvent escalader vers GenericAll |
+| 3 | `ForceChangePassword`, `ResetPassword` | Takeover immédiat |
+| 4 | `AddMember`, `WriteMember` | Modification de groupes |
+| 5 | `ReadLAPSPassword`, `ReadGMSAPassword` | Accès credentials |
+| 6 | `AddKeyCredentialLink`, `WriteKeyCredentialLink` | Shadow credentials |
+| 7 | `WriteGPO`, `EditGPO` | Contrôle GPO |
+| 8 | `GenericWrite`, `AllExtendedRights` | Modification limitée |
+
+**Note** : Les droits DCSync (`GetChanges`, `GetChangesAll`, `GetChangesInFilteredSet`) ont leur propre hiérarchie et sont toujours considérés plus forts que les autres droits non-DCSync pour l'affichage.
+
+#### Format de l'edge consolidé
+
+```json
+{
+  "src": "S-1-5-21-...-512",
+  "dst": "S-1-5-21-...-1113",
+  "kind": "ace",
+  "right": "GenericAll",
+  "all_rights": ["GenericAll", "Owns"],
+  "inherited": false,
+  "source": "bloodhound",
+  "confidence": "observed"
+}
+```
+
+**Champs** :
+- `right` : Permission la plus forte selon la hiérarchie (affichée dans l'UI)
+- `all_rights` : Liste complète de toutes les permissions (référence complète)
+- Exemple : Si un principal a `[GenericWrite, Owns, WriteDacl, WriteOwner]`, `right` sera `WriteDacl` (niveau 2) et `all_rights` contiendra les 4 permissions
+
+#### Exemples de consolidation
+
+| Permissions brutes | `right` affiché | `all_rights` |
+|-------------------|----------------|--------------|
+| `GenericAll, Owns` | `GenericAll` | `["GenericAll", "Owns"]` |
+| `WriteDacl, WriteOwner, GenericWrite` | `WriteDacl` | `["GenericWrite", "WriteDacl", "WriteOwner"]` |
+| `GetChanges, GetChangesAll, GetChangesInFilteredSet` | `DCSync` | `["GetChanges", "GetChangesAll", "GetChangesInFilteredSet"]` |
+| `AllExtendedRights, GenericWrite, WriteDacl, WriteOwner` | `WriteDacl` | `["AllExtendedRights", "GenericWrite", "WriteDacl", "WriteOwner"]` |
+
+**Impact** : Dans les tests sur la box Administrator, 43 sur 50 edges ACE ont des permissions multiples consolidées, éliminant toute perte d'information.
+
+---
+
 ### Format de sortie JSON
 
 ```json
@@ -645,6 +699,16 @@ ALL_PRIVILEGE_RIGHTS = {
     }
   ],
   "edges": [
+    {
+      "src": "S-1-5-21-...",
+      "dst": "S-1-5-21-...",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": ["GenericAll", "Owns"],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
     {
       "src": "S-1-5-21-...",
       "dst": "S-1-5-21-...",

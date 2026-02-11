@@ -55,6 +55,42 @@ TIER0_DCSYNC_RIGHTS = {
     "GetChangesInFilteredSet",
 }
 
+# ACE Rights Hierarchy (from strongest to weakest)
+# Used to consolidate multiple permissions on same object and display the strongest one
+ACE_RIGHTS_HIERARCHY = [
+    # Tier 1: Full control
+    "GenericAll",
+
+    # Tier 2: Can escalate to full control
+    "WriteDacl",
+    "WriteOwner",
+    "Owns",
+
+    # Tier 3: Immediate takeover
+    "ForceChangePassword",
+    "ResetPassword",
+
+    # Tier 4: Group modification
+    "AddMember",
+    "WriteMember",
+
+    # Tier 5: Credential access
+    "ReadLAPSPassword",
+    "ReadGMSAPassword",
+
+    # Tier 6: Shadow credentials
+    "AddKeyCredentialLink",
+    "WriteKeyCredentialLink",
+
+    # Tier 7: GPO control
+    "WriteGPO",
+    "EditGPO",
+
+    # Tier 8: Limited modification
+    "GenericWrite",
+    "AllExtendedRights",
+]
+
 # TIER 0 CLOSURE - Whitelist STRICTE
 # Ces droits sur un objet Tier 0 = devenir Tier 0
 TIER0_CLOSURE_RIGHTS = {
@@ -882,7 +918,10 @@ def build_observed_edges(
             if grp in principals:
                 add_edge(edges, principal, grp, "memberOf", "MemberOf", inherited=False)
 
-    # ACL edges from ACEs
+    # ACL edges from ACEs (with DCSync hierarchy)
+    dcsync_rights_map = defaultdict(lambda: defaultdict(set))
+    non_dcsync_aces = []
+
     for meta_type, content in by_type.items():
         for obj in content.get("data", []):
             target_id = obj.get("ObjectIdentifier")
@@ -895,7 +934,34 @@ def build_observed_edges(
                 right = ace.get("RightName")
                 if principal in principals and right and (right_whitelist is None or right in right_whitelist):
                     inherited = bool(ace.get("IsInherited"))
-                    add_edge(edges, principal, target_id, "ace", right, inherited=inherited)
+
+                    # Group DCSync rights for hierarchy processing
+                    if right in TIER0_DCSYNC_RIGHTS:
+                        dcsync_rights_map[principal][target_id].add(right)
+                    else:
+                        non_dcsync_aces.append((principal, target_id, right, inherited))
+
+    # Add non-DCSync edges
+    for principal, target_id, right, inherited in non_dcsync_aces:
+        add_edge(edges, principal, target_id, "ace", right, inherited=inherited)
+
+    # Add consolidated DCSync edges with hierarchy
+    for principal, targets in dcsync_rights_map.items():
+        for target_id, rights_set in targets.items():
+            has_getchanges = "GetChanges" in rights_set
+            has_getchangesall = "GetChangesAll" in rights_set
+            has_dcsync = "DCSync" in rights_set
+
+            if has_dcsync or (has_getchanges and has_getchangesall):
+                display_right = "DCSync"
+            elif has_getchanges:
+                display_right = "GetChanges"
+            elif has_getchangesall:
+                display_right = "GetChangesAll"
+            else:
+                display_right = "GetChangesInFilteredSet"
+
+            add_edge(edges, principal, target_id, "ace", display_right, inherited=False)
 
     # Machine access + sessions
     computers = by_type.get("computers", {}).get("data", [])
@@ -1314,25 +1380,94 @@ def main():
     # Build unified edge set (all edges for both BFS classification and visual paths)
     all_edges = []
 
-    # ACE and MemberOf edges from all object types
+    # First pass: collect all ACEs and group ALL rights by (principal, target)
+    # This allows us to consolidate multiple permissions and display the strongest one
+    ace_rights_map = defaultdict(lambda: defaultdict(lambda: {"rights": set(), "inherited": False}))
+
     for meta_type, content in by_type.items():
         for obj in content.get("data", []):
             target_id = obj.get("ObjectIdentifier")
             if not target_id:
                 continue
 
-            # ACE edges: principal has right on target
+            # Collect ACEs
             for ace in obj.get("Aces", []) or []:
                 principal = ace.get("PrincipalSID")
                 right = ace.get("RightName")
                 if principal and right and right in ALL_PRIVILEGE_RIGHTS:
                     inherited = bool(ace.get("IsInherited"))
-                    edge = {
-                        "src": principal, "dst": target_id, "kind": "ace",
-                        "right": right, "inherited": inherited,
-                        "source": "bloodhound", "confidence": "observed",
-                    }
-                    all_edges.append(edge)
+
+                    # Group all rights by (principal, target)
+                    ace_rights_map[principal][target_id]["rights"].add(right)
+                    # Mark as inherited if ANY ACE is inherited
+                    if inherited:
+                        ace_rights_map[principal][target_id]["inherited"] = True
+
+    # Helper function to select strongest right according to hierarchy
+    def select_strongest_right(rights_set):
+        """Select the strongest right from a set according to ACE_RIGHTS_HIERARCHY."""
+        # Separate DCSync and non-DCSync rights
+        dcsync_rights = rights_set & TIER0_DCSYNC_RIGHTS
+        other_rights = rights_set - TIER0_DCSYNC_RIGHTS
+
+        # Handle DCSync rights first (existing logic)
+        if dcsync_rights:
+            has_getchanges = "GetChanges" in dcsync_rights
+            has_getchangesall = "GetChangesAll" in dcsync_rights
+            has_dcsync = "DCSync" in dcsync_rights
+
+            if has_dcsync or (has_getchanges and has_getchangesall):
+                strongest_dcsync = "DCSync"
+            elif has_getchanges:
+                strongest_dcsync = "GetChanges"
+            elif has_getchangesall:
+                strongest_dcsync = "GetChangesAll"
+            else:
+                strongest_dcsync = "GetChangesInFilteredSet"
+
+            # If we have non-DCSync rights, compare with DCSync
+            if other_rights:
+                # DCSync is always considered stronger than other rights for display
+                return strongest_dcsync
+            else:
+                return strongest_dcsync
+
+        # Handle non-DCSync rights according to hierarchy
+        for right in ACE_RIGHTS_HIERARCHY:
+            if right in other_rights:
+                return right
+
+        # Fallback: return first right if not in hierarchy
+        return list(other_rights)[0] if other_rights else list(rights_set)[0]
+
+    # Process all ACE edges with consolidation
+    for principal, targets in ace_rights_map.items():
+        for target_id, ace_data in targets.items():
+            rights_set = ace_data["rights"]
+            inherited = ace_data["inherited"]
+
+            # Select strongest right for display
+            strongest_right = select_strongest_right(rights_set)
+
+            # Create single consolidated edge
+            edge = {
+                "src": principal,
+                "dst": target_id,
+                "kind": "ace",
+                "right": strongest_right,  # Strongest right for display
+                "all_rights": sorted(list(rights_set)),  # All rights for reference
+                "inherited": inherited,
+                "source": "bloodhound",
+                "confidence": "observed",
+            }
+            all_edges.append(edge)
+
+    # MemberOf edges from groups
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            if not target_id:
+                continue
 
             # MemberOf edges: member -> group
             for member in obj.get("Members", []) or []:
@@ -1680,7 +1815,7 @@ def main():
         "edges_derived": edges_derived,
         "summary": summary,
         "paths": paths_info,
-        "disclaimer": "Classification Tier v5. Tier 0 = déterministe (SEED + Cert Publishers → CLOSURE → INDIRECT [ALL DC access] → MEMBERS → BFS). Tier 1/2 = BFS distance depuis Tier 0 (1-2 hops, 3-7 hops). Tier 3 = ego-graph exploration depuis start_node (toutes relations non-Tier 0/1/2). Computers = noeuds normaux traversables.",
+        "disclaimer": "Classification Tier v5.2. Tier 0 = déterministe (SEED + Cert Publishers → CLOSURE → INDIRECT [ALL DC access] → MEMBERS → BFS). Tier 1/2 = BFS distance depuis Tier 0 (1-2 hops, 3-7 hops). Tier 3 = ego-graph exploration depuis start_node (toutes relations non-Tier 0/1/2). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples → single edge (right = strongest, all_rights = complete list).",
     }
 
     with open(args.out, "w", encoding="utf-8") as f:
