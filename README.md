@@ -11,13 +11,13 @@ ARGUS fusionne automatiquement l'infrastructure reseau (IPs, services, topologie
 
 Dans un audit Active Directory, deux mondes coexistent sans se parler :
 
-- **Le reseau** : des machines identifiees par leurs adresses IP, leurs ports ouverts, leurs services.
-- **L'identite** : des utilisateurs, des groupes, des permissions — relies par des chemins d'attaque potentiels.
+- **Le réseau** : des machines identifiees par leurs adresses IP, leurs ports ouverts, leurs services.
+- **L'identité** : des utilisateurs, des groupes, des permissions — relies par des chemins d'attaque potentiels.
 
 ARGUS est le pont entre ces deux mondes. A partir d'un compte utilisateur AD compromis, l'outil :
 
-1. **Scanne le reseau** pour decouvrir les machines actives, les sous-reseaux et les services exposes.
-2. **Collecte les donnees AD** via BloodHound (identites, ACLs, sessions) et Certipy (vulnerabilites ADCS).
+1. **Scanne le réseau** pour decouvrir les machines actives, les sous-reseaux et les services exposes.
+2. **Collecte les données AD** via BloodHound (identites, ACLs, sessions) et Certipy (vulnerabilites ADCS).
 3. **Classifie les objets AD en tiers** (Tier 0, 1, 2) selon leur proximite aux actifs critiques du domaine.
 4. **Fusionne les deux couches** en reliant chaque machine reseau a son objet Computer AD correspondant.
 5. **Visualise le tout** dans une cartographie interactive HTML — reseau en haut, identite en bas, ponts entre les deux.
@@ -42,17 +42,6 @@ ARGUS produit une visualisation interactive a deux couches. La partie superieure
 
 ---
 
-## Fonctionnalites
-
-- **Mode direct et pivot** : acces direct au reseau cible ou a travers un tunnel SOCKS/proxychains.
-- **Scan reseau** : decouverte ARP, traceroute, detection de services via nmap — adapte automatiquement les techniques selon le mode.
-- **Collecte AD et ADCS** : integration BloodHound (identites, ACLs, sessions) et Certipy (vulnerabilites ESC1-ESC16).
-- **Classification en 3 tiers** : Tier 0 deterministe (DC, Domain Admins, KRBTGT, Cert Publishers...), Tier 1 a proximite (1-7 hops), Tier 2 eloigne (8+ hops).
-- **Fusion reseau/identite** : resolution DNS des hostnames AD vers les IPs pour creer les ponts dans la cartographie.
-- **Wizard interactif** : interface CLI guidee pour construire les commandes sans memoriser les options.
-
----
-
 ## Quick Start
 
 ### Prerequis
@@ -64,7 +53,7 @@ ARGUS produit une visualisation interactive a deux couches. La partie superieure
 ### Installation
 
 ```bash
-git clone <repository-url> && cd argus
+git clone https://github.com/Les-Infectes/ARGUS && cd argus
 python3 -m venv .env
 source .env/bin/activate
 pip install -r requirements.txt
@@ -164,7 +153,7 @@ La documentation technique detaillee est disponible dans le dossier [docs/](docs
 
 ---
 
-## Dependances
+## Dépendances
 
 | Paquet | Usage |
 |--------|-------|
