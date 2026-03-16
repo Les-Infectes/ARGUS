@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "type": "certtemplates"
+  },
+  "data": [
+    {
+      "ObjectIdentifier": "certtemplate-UserAuthentication",
+      "Properties": {
+        "name": "UserAuthentication [ESC1]",
+        "display_name": "UserAuthentication",
+        "template_name": "UserAuthentication",
+        "esc_vulnerabilities": [
+          "ESC1"
+        ],
+        "esc_details": {
+          "ESC1": "Enrollee supplies subject and template allows client authentication."
+        },
+        "enabled": true,
+        "client_authentication": true,
+        "enrollee_supplies_subject": true,
+        "ca_names": [
+          "sequel-DC-CA"
+        ],
+        "schema_version": 2,
+        "extended_key_usage": [
+          "Client Authentication",
+          "Secure Email",
+          "Encrypting File System"
+        ]
+      },
+      "Aces": [
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-512",
+          "RightName": "Enroll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-513",
+          "RightName": "Enroll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-519",
+          "RightName": "Enroll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-500",
+          "RightName": "Owns",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-512",
+          "RightName": "GenericAll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-519",
+          "RightName": "GenericAll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-512",
+          "RightName": "WriteOwner",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-519",
+          "RightName": "WriteOwner",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-512",
+          "RightName": "WriteDacl",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-519",
+          "RightName": "WriteDacl",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-512",
+          "RightName": "Enroll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-513",
+          "RightName": "Enroll",
+          "IsInherited": false
+        },
+        {
+          "PrincipalSID": "S-1-5-21-4078382237-1492182817-2568127209-519",
+          "RightName": "Enroll",
+          "IsInherited": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2281 @@
+{
+  "start_node": "S-1-5-21-3072663084-364016917-1341370565-1147",
+  "mode": "2",
+  "view": "tier2",
+  "tier": 2,
+  "tier_name": "Tier 2",
+  "tier_classification": {
+    "tier0_count": 25,
+    "tier1_count": 0,
+    "tier2_count": 123
+  },
+  "coverage": {
+    "acl": true,
+    "local_admin": "partial",
+    "sessions": "partial"
+  },
+  "nodes": [
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-522",
+      "type": "Group",
+      "name": "CLONEABLE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "display_name": "CLONEABLE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-573",
+      "type": "Group",
+      "name": "EVENT LOG READERS@HTB.LOCAL",
+      "display_name": "EVENT LOG READERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-515",
+      "type": "Group",
+      "name": "DOMAIN COMPUTERS@HTB.LOCAL",
+      "display_name": "DOMAIN COMPUTERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1150",
+      "type": "User",
+      "name": "ANDY@HTB.LOCAL",
+      "display_name": "ANDY@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1132",
+      "type": "User",
+      "name": "SM_1FFAB36A2F5F479CB@HTB.LOCAL",
+      "display_name": "SM_1FFAB36A2F5F479CB@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1113",
+      "type": "Group",
+      "name": "DELEGATED SETUP@HTB.LOCAL",
+      "display_name": "DELEGATED SETUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-553",
+      "type": "Group",
+      "name": "RAS AND IAS SERVERS@HTB.LOCAL",
+      "display_name": "RAS AND IAS SERVERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1111",
+      "type": "Group",
+      "name": "DISCOVERY MANAGEMENT@HTB.LOCAL",
+      "display_name": "DISCOVERY MANAGEMENT@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-5101",
+      "type": "Group",
+      "name": "TEST@HTB.LOCAL",
+      "display_name": "TEST@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-559",
+      "type": "Group",
+      "name": "PERFORMANCE LOG USERS@HTB.LOCAL",
+      "display_name": "PERFORMANCE LOG USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-503",
+      "type": "User",
+      "name": "DEFAULTACCOUNT@HTB.LOCAL",
+      "display_name": "DEFAULTACCOUNT@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1144",
+      "type": "User",
+      "name": "HEALTHMAILBOX0659CC1@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOX0659CC1@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1125",
+      "type": "User",
+      "name": "SM_CA8C2ED5BDAB4DC9B@HTB.LOCAL",
+      "display_name": "SM_CA8C2ED5BDAB4DC9B@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-545",
+      "type": "Group",
+      "name": "USERS@HTB.LOCAL",
+      "display_name": "USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1140",
+      "type": "User",
+      "name": "HEALTHMAILBOX83D6781@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOX83D6781@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1131",
+      "type": "User",
+      "name": "SM_C75EE099D0A64C91B@HTB.LOCAL",
+      "display_name": "SM_C75EE099D0A64C91B@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1143",
+      "type": "User",
+      "name": "HEALTHMAILBOX7108A4E@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOX7108A4E@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-580",
+      "type": "Group",
+      "name": "REMOTE MANAGEMENT USERS@HTB.LOCAL",
+      "display_name": "REMOTE MANAGEMENT USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-513",
+      "type": "Group",
+      "name": "DOMAIN USERS@HTB.LOCAL",
+      "display_name": "DOMAIN USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "type": "User",
+      "name": "SVC-ALFRESCO@HTB.LOCAL",
+      "display_name": "SVC-ALFRESCO@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-554",
+      "type": "Group",
+      "name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@HTB.LOCAL",
+      "display_name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-571",
+      "type": "Group",
+      "name": "ALLOWED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "display_name": "ALLOWED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-574",
+      "type": "Group",
+      "name": "CERTIFICATE SERVICE DCOM ACCESS@HTB.LOCAL",
+      "display_name": "CERTIFICATE SERVICE DCOM ACCESS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-548",
+      "type": "Group",
+      "name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "display_name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1133",
+      "type": "Group",
+      "name": "$D31000-NSEL5BRJ63V7@HTB.LOCAL",
+      "display_name": "$D31000-NSEL5BRJ63V7@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1108",
+      "type": "Group",
+      "name": "UM MANAGEMENT@HTB.LOCAL",
+      "display_name": "UM MANAGEMENT@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1136",
+      "type": "User",
+      "name": "HEALTHMAILBOXC0A90C9@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOXC0A90C9@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1142",
+      "type": "User",
+      "name": "HEALTHMAILBOXB01AC64@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOXB01AC64@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-501",
+      "type": "User",
+      "name": "GUEST@HTB.LOCAL",
+      "display_name": "GUEST@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-576",
+      "type": "Group",
+      "name": "RDS ENDPOINT SERVERS@HTB.LOCAL",
+      "display_name": "RDS ENDPOINT SERVERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-546",
+      "type": "Group",
+      "name": "GUESTS@HTB.LOCAL",
+      "display_name": "GUESTS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-572",
+      "type": "Group",
+      "name": "DENIED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "type": "Group",
+      "name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "display_name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1130",
+      "type": "User",
+      "name": "SM_7C96B981967141EBB@HTB.LOCAL",
+      "display_name": "SM_7C96B981967141EBB@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1124",
+      "type": "User",
+      "name": "SM_2C8EEF0A09B545ACB@HTB.LOCAL",
+      "display_name": "SM_2C8EEF0A09B545ACB@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-556",
+      "type": "Group",
+      "name": "NETWORK CONFIGURATION OPERATORS@HTB.LOCAL",
+      "display_name": "NETWORK CONFIGURATION OPERATORS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-560",
+      "type": "Group",
+      "name": "WINDOWS AUTHORIZATION ACCESS GROUP@HTB.LOCAL",
+      "display_name": "WINDOWS AUTHORIZATION ACCESS GROUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1109",
+      "type": "Group",
+      "name": "HELP DESK@HTB.LOCAL",
+      "display_name": "HELP DESK@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-517",
+      "type": "Group",
+      "name": "CERT PUBLISHERS@HTB.LOCAL",
+      "display_name": "CERT PUBLISHERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1146",
+      "type": "User",
+      "name": "LUCINDA@HTB.LOCAL",
+      "display_name": "LUCINDA@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-575",
+      "type": "Group",
+      "name": "RDS REMOTE ACCESS SERVERS@HTB.LOCAL",
+      "display_name": "RDS REMOTE ACCESS SERVERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1152",
+      "type": "User",
+      "name": "SANTI@HTB.LOCAL",
+      "display_name": "SANTI@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-520",
+      "type": "Group",
+      "name": "GROUP POLICY CREATOR OWNERS@HTB.LOCAL",
+      "display_name": "GROUP POLICY CREATOR OWNERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "type": "Group",
+      "name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
+      "display_name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    }
+  ],
+  "nodes_observed": [
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-522",
+      "type": "Group",
+      "name": "CLONEABLE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "display_name": "CLONEABLE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-573",
+      "type": "Group",
+      "name": "EVENT LOG READERS@HTB.LOCAL",
+      "display_name": "EVENT LOG READERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-515",
+      "type": "Group",
+      "name": "DOMAIN COMPUTERS@HTB.LOCAL",
+      "display_name": "DOMAIN COMPUTERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1150",
+      "type": "User",
+      "name": "ANDY@HTB.LOCAL",
+      "display_name": "ANDY@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1132",
+      "type": "User",
+      "name": "SM_1FFAB36A2F5F479CB@HTB.LOCAL",
+      "display_name": "SM_1FFAB36A2F5F479CB@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1113",
+      "type": "Group",
+      "name": "DELEGATED SETUP@HTB.LOCAL",
+      "display_name": "DELEGATED SETUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-553",
+      "type": "Group",
+      "name": "RAS AND IAS SERVERS@HTB.LOCAL",
+      "display_name": "RAS AND IAS SERVERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1111",
+      "type": "Group",
+      "name": "DISCOVERY MANAGEMENT@HTB.LOCAL",
+      "display_name": "DISCOVERY MANAGEMENT@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-5101",
+      "type": "Group",
+      "name": "TEST@HTB.LOCAL",
+      "display_name": "TEST@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-559",
+      "type": "Group",
+      "name": "PERFORMANCE LOG USERS@HTB.LOCAL",
+      "display_name": "PERFORMANCE LOG USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-503",
+      "type": "User",
+      "name": "DEFAULTACCOUNT@HTB.LOCAL",
+      "display_name": "DEFAULTACCOUNT@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1144",
+      "type": "User",
+      "name": "HEALTHMAILBOX0659CC1@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOX0659CC1@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1125",
+      "type": "User",
+      "name": "SM_CA8C2ED5BDAB4DC9B@HTB.LOCAL",
+      "display_name": "SM_CA8C2ED5BDAB4DC9B@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-545",
+      "type": "Group",
+      "name": "USERS@HTB.LOCAL",
+      "display_name": "USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1140",
+      "type": "User",
+      "name": "HEALTHMAILBOX83D6781@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOX83D6781@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1131",
+      "type": "User",
+      "name": "SM_C75EE099D0A64C91B@HTB.LOCAL",
+      "display_name": "SM_C75EE099D0A64C91B@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1143",
+      "type": "User",
+      "name": "HEALTHMAILBOX7108A4E@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOX7108A4E@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-580",
+      "type": "Group",
+      "name": "REMOTE MANAGEMENT USERS@HTB.LOCAL",
+      "display_name": "REMOTE MANAGEMENT USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-513",
+      "type": "Group",
+      "name": "DOMAIN USERS@HTB.LOCAL",
+      "display_name": "DOMAIN USERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "type": "User",
+      "name": "SVC-ALFRESCO@HTB.LOCAL",
+      "display_name": "SVC-ALFRESCO@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-554",
+      "type": "Group",
+      "name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@HTB.LOCAL",
+      "display_name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-571",
+      "type": "Group",
+      "name": "ALLOWED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "display_name": "ALLOWED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-574",
+      "type": "Group",
+      "name": "CERTIFICATE SERVICE DCOM ACCESS@HTB.LOCAL",
+      "display_name": "CERTIFICATE SERVICE DCOM ACCESS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-548",
+      "type": "Group",
+      "name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "display_name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1133",
+      "type": "Group",
+      "name": "$D31000-NSEL5BRJ63V7@HTB.LOCAL",
+      "display_name": "$D31000-NSEL5BRJ63V7@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1108",
+      "type": "Group",
+      "name": "UM MANAGEMENT@HTB.LOCAL",
+      "display_name": "UM MANAGEMENT@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1136",
+      "type": "User",
+      "name": "HEALTHMAILBOXC0A90C9@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOXC0A90C9@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1142",
+      "type": "User",
+      "name": "HEALTHMAILBOXB01AC64@HTB.LOCAL",
+      "display_name": "HEALTHMAILBOXB01AC64@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-501",
+      "type": "User",
+      "name": "GUEST@HTB.LOCAL",
+      "display_name": "GUEST@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-576",
+      "type": "Group",
+      "name": "RDS ENDPOINT SERVERS@HTB.LOCAL",
+      "display_name": "RDS ENDPOINT SERVERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-546",
+      "type": "Group",
+      "name": "GUESTS@HTB.LOCAL",
+      "display_name": "GUESTS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-572",
+      "type": "Group",
+      "name": "DENIED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "type": "Group",
+      "name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "display_name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1130",
+      "type": "User",
+      "name": "SM_7C96B981967141EBB@HTB.LOCAL",
+      "display_name": "SM_7C96B981967141EBB@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1124",
+      "type": "User",
+      "name": "SM_2C8EEF0A09B545ACB@HTB.LOCAL",
+      "display_name": "SM_2C8EEF0A09B545ACB@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-556",
+      "type": "Group",
+      "name": "NETWORK CONFIGURATION OPERATORS@HTB.LOCAL",
+      "display_name": "NETWORK CONFIGURATION OPERATORS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-560",
+      "type": "Group",
+      "name": "WINDOWS AUTHORIZATION ACCESS GROUP@HTB.LOCAL",
+      "display_name": "WINDOWS AUTHORIZATION ACCESS GROUP@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1109",
+      "type": "Group",
+      "name": "HELP DESK@HTB.LOCAL",
+      "display_name": "HELP DESK@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-517",
+      "type": "Group",
+      "name": "CERT PUBLISHERS@HTB.LOCAL",
+      "display_name": "CERT PUBLISHERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1146",
+      "type": "User",
+      "name": "LUCINDA@HTB.LOCAL",
+      "display_name": "LUCINDA@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "HTB.LOCAL-S-1-5-32-575",
+      "type": "Group",
+      "name": "RDS REMOTE ACCESS SERVERS@HTB.LOCAL",
+      "display_name": "RDS REMOTE ACCESS SERVERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1152",
+      "type": "User",
+      "name": "SANTI@HTB.LOCAL",
+      "display_name": "SANTI@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-520",
+      "type": "Group",
+      "name": "GROUP POLICY CREATOR OWNERS@HTB.LOCAL",
+      "display_name": "GROUP POLICY CREATOR OWNERS@HTB.LOCAL",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "type": "Group",
+      "name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
+      "display_name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    }
+  ],
+  "nodes_derived": [],
+  "edges": [
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-513",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "inferred_primary",
+      "is_shortest": true
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-513",
+      "dst": "HTB.LOCAL-S-1-5-32-545",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "dst": "HTB.LOCAL-S-1-5-32-580",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "dst": "HTB.LOCAL-S-1-5-32-548",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-515",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1150",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1132",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1113",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-5101",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1111",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-559",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1144",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-503",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-574",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1108",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1136",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1109",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-517",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1146",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-575",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1152",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-522",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-573",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-553",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1125",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1140",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1131",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1143",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-554",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-571",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1133",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1142",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-501",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-576",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-546",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-572",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1130",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1124",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-556",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-560",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-520",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    }
+  ],
+  "edges_observed": [
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-513",
+      "dst": "HTB.LOCAL-S-1-5-32-545",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "dst": "HTB.LOCAL-S-1-5-32-580",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "dst": "HTB.LOCAL-S-1-5-32-548",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-515",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1150",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1132",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1113",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-5101",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1111",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-559",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1144",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-503",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-574",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1108",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1136",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1109",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-517",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1146",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-575",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1152",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-522",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-573",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-553",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1125",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1140",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1131",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1143",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-554",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-571",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1133",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1142",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-501",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-576",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-546",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-572",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1130",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-1124",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-556",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "HTB.LOCAL-S-1-5-32-560",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "HTB.LOCAL-S-1-5-32-548",
+      "dst": "S-1-5-21-3072663084-364016917-1341370565-520",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "GenericAll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    }
+  ],
+  "edges_derived": [],
+  "summary": {
+    "groups": 28,
+    "machines_admin": 0,
+    "objects_controlled": 37
+  },
+  "paths": [
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-513",
+      "target_name": "DOMAIN USERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-513"
+      ],
+      "length": 1,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-545",
+      "target_name": "USERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-513",
+        "HTB.LOCAL-S-1-5-32-545"
+      ],
+      "length": 2,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-580",
+      "target_name": "REMOTE MANAGEMENT USERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-580"
+      ],
+      "length": 3,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-515",
+      "target_name": "DOMAIN COMPUTERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-515"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1150",
+      "target_name": "ANDY@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1150"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1132",
+      "target_name": "SM_1FFAB36A2F5F479CB@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1132"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1113",
+      "target_name": "DELEGATED SETUP@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1113"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-5101",
+      "target_name": "TEST@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-5101"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1111",
+      "target_name": "DISCOVERY MANAGEMENT@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1111"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-559",
+      "target_name": "PERFORMANCE LOG USERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-559"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1144",
+      "target_name": "HEALTHMAILBOX0659CC1@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1144"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-503",
+      "target_name": "DEFAULTACCOUNT@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-503"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-574",
+      "target_name": "CERTIFICATE SERVICE DCOM ACCESS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-574"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1108",
+      "target_name": "UM MANAGEMENT@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1108"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1136",
+      "target_name": "HEALTHMAILBOXC0A90C9@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1136"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1109",
+      "target_name": "HELP DESK@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1109"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-517",
+      "target_name": "CERT PUBLISHERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-517"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1146",
+      "target_name": "LUCINDA@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1146"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-575",
+      "target_name": "RDS REMOTE ACCESS SERVERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-575"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1152",
+      "target_name": "SANTI@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1152"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-522",
+      "target_name": "CLONEABLE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-522"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-573",
+      "target_name": "EVENT LOG READERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-573"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-553",
+      "target_name": "RAS AND IAS SERVERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-553"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1125",
+      "target_name": "SM_CA8C2ED5BDAB4DC9B@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1125"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1140",
+      "target_name": "HEALTHMAILBOX83D6781@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1140"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1131",
+      "target_name": "SM_C75EE099D0A64C91B@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1131"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1143",
+      "target_name": "HEALTHMAILBOX7108A4E@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1143"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-554",
+      "target_name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-554"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-571",
+      "target_name": "ALLOWED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-571"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1133",
+      "target_name": "$D31000-NSEL5BRJ63V7@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1133"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1142",
+      "target_name": "HEALTHMAILBOXB01AC64@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1142"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-501",
+      "target_name": "GUEST@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-501"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-576",
+      "target_name": "RDS ENDPOINT SERVERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-576"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-546",
+      "target_name": "GUESTS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-546"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-572",
+      "target_name": "DENIED RODC PASSWORD REPLICATION GROUP@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-572"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1130",
+      "target_name": "SM_7C96B981967141EBB@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1130"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "user",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-1124",
+      "target_name": "SM_2C8EEF0A09B545ACB@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-1124"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-556",
+      "target_name": "NETWORK CONFIGURATION OPERATORS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-556"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "HTB.LOCAL-S-1-5-32-560",
+      "target_name": "WINDOWS AUTHORIZATION ACCESS GROUP@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "HTB.LOCAL-S-1-5-32-560"
+      ],
+      "length": 4,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-3072663084-364016917-1341370565-520",
+      "target_name": "GROUP POLICY CREATOR OWNERS@HTB.LOCAL",
+      "nodes": [
+        "S-1-5-21-3072663084-364016917-1341370565-1147",
+        "S-1-5-21-3072663084-364016917-1341370565-1148",
+        "S-1-5-21-3072663084-364016917-1341370565-1149",
+        "HTB.LOCAL-S-1-5-32-548",
+        "S-1-5-21-3072663084-364016917-1341370565-520"
+      ],
+      "length": 4,
+      "tier": 2
+    }
+  ],
+  "disclaimer": "Classification Tier v6. Tier 0 = deterministe (SEED + Cert Publishers -> CLOSURE -> INDIRECT [ALL Tier 0 machine access] -> MEMBERS -> BFS). Tier 1 = BFS distance depuis Tier 0 (1-7 hops). Tier 2 = ego-graph exploration depuis start_node (8+ hops ou unreachable). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples -> single edge (right = strongest, all_rights = complete list)."
+}

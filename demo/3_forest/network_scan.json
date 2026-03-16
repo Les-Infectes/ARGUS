@@ -1,0 +1,282 @@
+{
+    "configuration": {
+        "ip_cidr": "10.10.15.169/31",
+        "gateway": "10.10.14.1",
+        "dns": "10.129.95.210",
+        "mode": "standard"
+    },
+    "vlan_scan": {
+        "target_cidr": "10.10.15.169/31",
+        "hosts_found": 1,
+        "active_hosts": [
+            {
+                "ip": "10.10.15.169",
+                "status": "up",
+                "mac": "N/A"
+            }
+        ]
+    },
+    "phase_traceroutes": [
+        {
+            "target": "8.8.8.8",
+            "status": "success",
+            "hop_lines": [
+                "1  10.2.0.254  6.694 ms  6.583 ms  6.545 ms",
+                "2  83.136.160.12  15.826 ms  16.953 ms  16.922 ms",
+                "4  37.49.236.99  19.374 ms  19.346 ms  19.318 ms",
+                "5  37.49.236.2  19.284 ms  19.254 ms  19.226 ms",
+                "6  108.170.238.45  19.202 ms 108.170.255.223  13.423 ms 172.253.70.165  12.978 ms",
+                "7  66.249.94.133  14.905 ms 108.170.235.15  16.166 ms 72.14.237.93  16.314 ms",
+                "8  8.8.8.8  14.843 ms  37.052 ms  36.967 ms"
+            ]
+        },
+        {
+            "target": "10.129.95.210",
+            "status": "success",
+            "hop_lines": [
+                "1  10.10.14.1  41.059 ms  41.082 ms  41.093 ms",
+                "2  10.129.95.210  41.104 ms * *"
+            ]
+        }
+    ],
+    "router_discovery": {
+        "trace_discovered": [
+            "10.10.14.1",
+            "10.129.95.210",
+            "10.2.0.254"
+        ],
+        "router_details": [
+            {
+                "ip": "10.10.14.1"
+            },
+            {
+                "ip": "10.129.95.210"
+            },
+            {
+                "ip": "10.2.0.254"
+            }
+        ]
+    },
+    "subnet_scans": [
+        {
+            "target_cidr": "10.10.14.0/24",
+            "hosts_found": 1,
+            "active_hosts": [
+                {
+                    "ip": "10.10.14.1",
+                    "status": "up"
+                }
+            ],
+            "related_router_network": "10.10.14.0/24"
+        },
+        {
+            "target_cidr": "10.129.95.0/24",
+            "hosts_found": 1,
+            "active_hosts": [
+                {
+                    "ip": "10.129.95.210",
+                    "status": "up"
+                }
+            ],
+            "related_router_network": "10.129.95.0/24"
+        },
+        {
+            "target_cidr": "10.2.0.0/24",
+            "hosts_found": 4,
+            "active_hosts": [
+                {
+                    "ip": "10.2.0.254",
+                    "status": "up"
+                },
+                {
+                    "ip": "10.2.0.31",
+                    "status": "up"
+                },
+                {
+                    "ip": "10.2.0.45",
+                    "status": "up"
+                },
+                {
+                    "ip": "10.2.0.46",
+                    "status": "up"
+                }
+            ],
+            "related_router_network": "10.2.0.0/24"
+        }
+    ],
+    "summary": "Scan r\u00e9seau : VLAN ARP + traceroute multi-m\u00e9thode + sous-r\u00e9seaux ICMP.",
+    "service_scan": {
+        "enabled": true,
+        "ports": "top-100",
+        "results": [
+            {
+                "ip": "10.10.14.1",
+                "status": "up",
+                "services": []
+            },
+            {
+                "ip": "10.10.15.169",
+                "status": "up",
+                "services": [
+                    {
+                        "port": 111,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "rpcbind",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 2049,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "nfs",
+                        "product": "",
+                        "version": ""
+                    }
+                ]
+            },
+            {
+                "ip": "10.129.95.210",
+                "status": "up",
+                "services": [
+                    {
+                        "port": 53,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "domain",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 88,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "kerberos-sec",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 135,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "msrpc",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 139,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "netbios-ssn",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 389,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "ldap",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 445,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "microsoft-ds",
+                        "product": "",
+                        "version": ""
+                    }
+                ]
+            },
+            {
+                "ip": "10.2.0.254",
+                "status": "up",
+                "services": []
+            },
+            {
+                "ip": "10.2.0.31",
+                "status": "up",
+                "services": [
+                    {
+                        "port": 22,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "ssh",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 53,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "domain",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 443,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "https",
+                        "product": "",
+                        "version": ""
+                    }
+                ]
+            },
+            {
+                "ip": "10.2.0.45",
+                "status": "up",
+                "services": [
+                    {
+                        "port": 22,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "ssh",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 80,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "http",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 111,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "rpcbind",
+                        "product": "",
+                        "version": ""
+                    },
+                    {
+                        "port": 443,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "https",
+                        "product": "",
+                        "version": ""
+                    }
+                ]
+            },
+            {
+                "ip": "10.2.0.46",
+                "status": "up",
+                "services": [
+                    {
+                        "port": 22,
+                        "protocol": "tcp",
+                        "state": "open",
+                        "service": "ssh",
+                        "product": "",
+                        "version": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

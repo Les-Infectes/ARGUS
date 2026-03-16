@@ -1,0 +1,651 @@
+{
+  "start_node": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+  "mode": "2",
+  "view": "tier2",
+  "tier": 2,
+  "tier_name": "Tier 2",
+  "tier_classification": {
+    "tier0_count": 21,
+    "tier1_count": 6,
+    "tier2_count": 61
+  },
+  "coverage": {
+    "acl": true,
+    "local_admin": true,
+    "sessions": true
+  },
+  "nodes": [
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "type": "Group",
+      "name": "DOMAIN USERS@SEQUEL.HTB",
+      "display_name": "DOMAIN USERS@SEQUEL.HTB",
+      "tier": 1,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-500",
+      "type": "User",
+      "name": "ADMINISTRATOR@SEQUEL.HTB",
+      "display_name": "ADMINISTRATOR@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-580",
+      "type": "Group",
+      "name": "REMOTE MANAGEMENT USERS@SEQUEL.HTB",
+      "display_name": "REMOTE MANAGEMENT USERS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "type": "Group",
+      "name": "CERT PUBLISHERS@SEQUEL.HTB",
+      "display_name": "CERT PUBLISHERS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "certtemplate-UserAuthentication",
+      "type": "CertTemplate",
+      "name": "UserAuthentication [ESC1]",
+      "display_name": "UserAuthentication [ESC1]",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "type": "User",
+      "name": "RYAN.COOPER@SEQUEL.HTB",
+      "display_name": "RYAN.COOPER@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-545",
+      "type": "Group",
+      "name": "USERS@SEQUEL.HTB",
+      "display_name": "USERS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "type": "Group",
+      "name": "DENIED RODC PASSWORD REPLICATION GROUP@SEQUEL.HTB",
+      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-560",
+      "type": "Group",
+      "name": "WINDOWS AUTHORIZATION ACCESS GROUP@SEQUEL.HTB",
+      "display_name": "WINDOWS AUTHORIZATION ACCESS GROUP@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-512",
+      "type": "Group",
+      "name": "DOMAIN ADMINS@SEQUEL.HTB",
+      "display_name": "DOMAIN ADMINS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-519",
+      "type": "Group",
+      "name": "ENTERPRISE ADMINS@SEQUEL.HTB",
+      "display_name": "ENTERPRISE ADMINS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "type": "Computer",
+      "name": "DC.SEQUEL.HTB",
+      "display_name": "DC.SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-554",
+      "type": "Group",
+      "name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@SEQUEL.HTB",
+      "display_name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-516",
+      "type": "Group",
+      "name": "DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "display_name": "DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    }
+  ],
+  "nodes_observed": [
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "type": "Group",
+      "name": "DOMAIN USERS@SEQUEL.HTB",
+      "display_name": "DOMAIN USERS@SEQUEL.HTB",
+      "tier": 1,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-500",
+      "type": "User",
+      "name": "ADMINISTRATOR@SEQUEL.HTB",
+      "display_name": "ADMINISTRATOR@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-580",
+      "type": "Group",
+      "name": "REMOTE MANAGEMENT USERS@SEQUEL.HTB",
+      "display_name": "REMOTE MANAGEMENT USERS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "type": "Group",
+      "name": "CERT PUBLISHERS@SEQUEL.HTB",
+      "display_name": "CERT PUBLISHERS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "certtemplate-UserAuthentication",
+      "type": "CertTemplate",
+      "name": "UserAuthentication [ESC1]",
+      "display_name": "UserAuthentication [ESC1]",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "type": "User",
+      "name": "RYAN.COOPER@SEQUEL.HTB",
+      "display_name": "RYAN.COOPER@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-545",
+      "type": "Group",
+      "name": "USERS@SEQUEL.HTB",
+      "display_name": "USERS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "type": "Group",
+      "name": "DENIED RODC PASSWORD REPLICATION GROUP@SEQUEL.HTB",
+      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-560",
+      "type": "Group",
+      "name": "WINDOWS AUTHORIZATION ACCESS GROUP@SEQUEL.HTB",
+      "display_name": "WINDOWS AUTHORIZATION ACCESS GROUP@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-512",
+      "type": "Group",
+      "name": "DOMAIN ADMINS@SEQUEL.HTB",
+      "display_name": "DOMAIN ADMINS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-519",
+      "type": "Group",
+      "name": "ENTERPRISE ADMINS@SEQUEL.HTB",
+      "display_name": "ENTERPRISE ADMINS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "type": "Computer",
+      "name": "DC.SEQUEL.HTB",
+      "display_name": "DC.SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "SEQUEL.HTB-S-1-5-32-554",
+      "type": "Group",
+      "name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@SEQUEL.HTB",
+      "display_name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@SEQUEL.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-4078382237-1492182817-2568127209-516",
+      "type": "Group",
+      "name": "DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "display_name": "DOMAIN CONTROLLERS@SEQUEL.HTB",
+      "tier": 0,
+      "is_target": false
+    }
+  ],
+  "nodes_derived": [],
+  "edges": [
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "dst": "SEQUEL.HTB-S-1-5-32-580",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed",
+      "is_shortest": true
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "kind": "psremote",
+      "right": "CanPSRemote",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "inferred_primary"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "dst": "SEQUEL.HTB-S-1-5-32-545",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "SEQUEL.HTB-S-1-5-32-554",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "SEQUEL.HTB-S-1-5-9",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "SEQUEL.HTB-S-1-5-9",
+      "dst": "SEQUEL.HTB-S-1-5-32-560",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-516",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "inferred_primary"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-516",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-512",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "Enroll",
+        "GenericAll",
+        "WriteDacl",
+        "WriteOwner"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-519",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "Enroll",
+        "GenericAll",
+        "WriteDacl",
+        "WriteOwner"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "Enroll",
+      "all_rights": [
+        "Enroll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-500",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "Owns",
+      "all_rights": [
+        "Owns"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    }
+  ],
+  "edges_observed": [
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "dst": "SEQUEL.HTB-S-1-5-32-580",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed",
+      "is_shortest": true
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "kind": "psremote",
+      "right": "CanPSRemote",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "dst": "SEQUEL.HTB-S-1-5-32-545",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "SEQUEL.HTB-S-1-5-32-554",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-1000",
+      "dst": "SEQUEL.HTB-S-1-5-9",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "SEQUEL.HTB-S-1-5-9",
+      "dst": "SEQUEL.HTB-S-1-5-32-560",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-516",
+      "dst": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-512",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "Enroll",
+        "GenericAll",
+        "WriteDacl",
+        "WriteOwner"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-519",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "GenericAll",
+      "all_rights": [
+        "Enroll",
+        "GenericAll",
+        "WriteDacl",
+        "WriteOwner"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-513",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "Enroll",
+      "all_rights": [
+        "Enroll"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    },
+    {
+      "src": "S-1-5-21-4078382237-1492182817-2568127209-500",
+      "dst": "certtemplate-UserAuthentication",
+      "kind": "ace",
+      "right": "Owns",
+      "all_rights": [
+        "Owns"
+      ],
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
+    }
+  ],
+  "edges_derived": [],
+  "summary": {
+    "groups": 11,
+    "machines_admin": 0,
+    "objects_controlled": 4
+  },
+  "paths": [
+    {
+      "goal": "group",
+      "target_id": "SEQUEL.HTB-S-1-5-32-580",
+      "target_name": "REMOTE MANAGEMENT USERS@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "SEQUEL.HTB-S-1-5-32-580"
+      ],
+      "length": 1,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-4078382237-1492182817-2568127209-517",
+      "target_name": "CERT PUBLISHERS@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "S-1-5-21-4078382237-1492182817-2568127209-1000",
+        "S-1-5-21-4078382237-1492182817-2568127209-517"
+      ],
+      "length": 2,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "SEQUEL.HTB-S-1-5-32-545",
+      "target_name": "USERS@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "S-1-5-21-4078382237-1492182817-2568127209-513",
+        "SEQUEL.HTB-S-1-5-32-545"
+      ],
+      "length": 2,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "SEQUEL.HTB-S-1-5-32-554",
+      "target_name": "PRE-WINDOWS 2000 COMPATIBLE ACCESS@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "S-1-5-21-4078382237-1492182817-2568127209-1000",
+        "SEQUEL.HTB-S-1-5-32-554"
+      ],
+      "length": 2,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "target_name": "DENIED RODC PASSWORD REPLICATION GROUP@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "S-1-5-21-4078382237-1492182817-2568127209-1000",
+        "S-1-5-21-4078382237-1492182817-2568127209-517",
+        "S-1-5-21-4078382237-1492182817-2568127209-572"
+      ],
+      "length": 3,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "SEQUEL.HTB-S-1-5-32-560",
+      "target_name": "WINDOWS AUTHORIZATION ACCESS GROUP@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "S-1-5-21-4078382237-1492182817-2568127209-1000",
+        "SEQUEL.HTB-S-1-5-9",
+        "SEQUEL.HTB-S-1-5-32-560"
+      ],
+      "length": 3,
+      "tier": 2
+    },
+    {
+      "goal": "group",
+      "target_id": "S-1-5-21-4078382237-1492182817-2568127209-572",
+      "target_name": "DENIED RODC PASSWORD REPLICATION GROUP@SEQUEL.HTB",
+      "nodes": [
+        "S-1-5-21-4078382237-1492182817-2568127209-1105",
+        "S-1-5-21-4078382237-1492182817-2568127209-1000",
+        "S-1-5-21-4078382237-1492182817-2568127209-516",
+        "S-1-5-21-4078382237-1492182817-2568127209-572"
+      ],
+      "length": 3,
+      "tier": 2
+    }
+  ],
+  "disclaimer": "Classification Tier v6. Tier 0 = deterministe (SEED + Cert Publishers -> CLOSURE -> INDIRECT [ALL Tier 0 machine access] -> MEMBERS -> BFS). Tier 1 = BFS distance depuis Tier 0 (1-7 hops). Tier 2 = ego-graph exploration depuis start_node (8+ hops ou unreachable). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples -> single edge (right = strongest, all_rights = complete list)."
+}

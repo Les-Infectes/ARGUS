@@ -1,0 +1,48 @@
+{
+  "start_node": "S-1-5-21-917908876-1423158569-3159038727-1601",
+  "mode": "1",
+  "view": "tier1",
+  "tier": 1,
+  "tier_name": "Tier 1",
+  "tier_classification": {
+    "tier0_count": 20,
+    "tier1_count": 0,
+    "tier2_count": 69
+  },
+  "coverage": {
+    "acl": true,
+    "local_admin": true,
+    "sessions": true
+  },
+  "nodes": [
+    {
+      "id": "S-1-5-21-917908876-1423158569-3159038727-1601",
+      "type": "User",
+      "name": "EMILY.OSCARS@CICADA.HTB",
+      "display_name": "EMILY.OSCARS@CICADA.HTB",
+      "tier": 0,
+      "is_target": false
+    }
+  ],
+  "nodes_observed": [
+    {
+      "id": "S-1-5-21-917908876-1423158569-3159038727-1601",
+      "type": "User",
+      "name": "EMILY.OSCARS@CICADA.HTB",
+      "display_name": "EMILY.OSCARS@CICADA.HTB",
+      "tier": 0,
+      "is_target": false
+    }
+  ],
+  "nodes_derived": [],
+  "edges": [],
+  "edges_observed": [],
+  "edges_derived": [],
+  "summary": {
+    "groups": 0,
+    "machines_admin": 0,
+    "objects_controlled": 0
+  },
+  "paths": [],
+  "disclaimer": "Classification Tier v6. Tier 0 = deterministe (SEED + Cert Publishers -> CLOSURE -> INDIRECT [ALL Tier 0 machine access] -> MEMBERS -> BFS). Tier 1 = BFS distance depuis Tier 0 (1-7 hops). Tier 2 = ego-graph exploration depuis start_node (8+ hops ou unreachable). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples -> single edge (right = strongest, all_rights = complete list)."
+}

@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "domain": "htb.local",
+    "dc_ip": "10.129.95.210",
+    "total_computers": 2,
+    "resolved_count": 2,
+    "failed_count": 0,
+    "resolution_rate": "100%"
+  },
+  "mapping": {
+    "exch01.htb.local": {
+      "hostname": "EXCH01.HTB.LOCAL",
+      "ips": [
+        "10.10.10.7"
+      ],
+      "objectid": "S-1-5-21-3072663084-364016917-1341370565-1103",
+      "properties": {
+        "dnshostname": "",
+        "name": "EXCH01.HTB.LOCAL",
+        "enabled": true,
+        "operatingsystem": "Windows Server 2016 Standard"
+      }
+    },
+    "forest.htb.local": {
+      "hostname": "FOREST.HTB.LOCAL",
+      "ips": [
+        "10.129.95.210"
+      ],
+      "objectid": "S-1-5-21-3072663084-364016917-1341370565-1000",
+      "properties": {
+        "dnshostname": "",
+        "name": "FOREST.HTB.LOCAL",
+        "enabled": true,
+        "operatingsystem": "Windows Server 2016 Standard"
+      }
+    }
+  }
+}
