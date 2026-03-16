@@ -3,361 +3,227 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cartographie réseau — statique</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <title>ARGUS — Cartographie</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      font-family: "Consolas", "JetBrains Mono", "Space Grotesk", monospace;
-      background: #f5f3ff;
-      color: #1f2937;
-      --bg-1: #f8fafc;
-      --bg-2: #eef2ff;
-      --panel: rgba(255, 255, 255, 0.9);
-      --panel-border: rgba(15, 23, 42, 0.12);
-      --ink: #0f172a;
+      font-family: "JetBrains Mono", monospace;
+      --navy: #0f172a;
+      --navy-light: #1e293b;
+      --ink: #0a0a0a;
       --muted: #475569;
-      --accent: #2563eb;
-      --accent-soft: rgba(37, 99, 235, 0.12);
+      --border: #cbd5e1;
+      --surface: #f1f5f9;
+      --accent: #3b82f6;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; }
     body {
-      margin: 0;
       min-height: 100vh;
-      background: radial-gradient(900px 540px at 8% 10%, #ffffff 0%, var(--bg-2) 45%),
-                  radial-gradient(700px 480px at 92% 12%, #e0f2fe 0%, var(--bg-1) 60%);
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
-    header {
-      padding: 16px 24px;
-      background: linear-gradient(120deg, #ffffff, #eef2ff);
-      border-bottom: 1px solid var(--panel-border);
-    }
-    header h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      letter-spacing: 0.02em;
-    }
-    main {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 320px;
-      gap: 1rem;
-      padding: 1rem;
-    }
-    #cy {
-      position: relative;
-      background: radial-gradient(700px 500px at 20% 20%, #ffffff 0%, #f8fafc 55%);
-      border-radius: 16px;
-      border: 1px solid var(--panel-border);
-      min-height: 70vh;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
-    }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 14px;
-      padding: 1rem;
+      background: #f8fafc;
+      color: var(--ink);
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
     }
-    .panel h2 {
-      margin: 0;
-      font-size: 0.75rem;
-      letter-spacing: 0.18em;
+
+    /* ── TOOLBAR (single bar) ── */
+    .toolbar {
+      padding: 6px 16px;
+      background: var(--navy);
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toolbar-group label {
+      font-size: 0.68rem;
+      font-weight: 700;
       text-transform: uppercase;
-      color: var(--muted);
+      letter-spacing: 0.1em;
+      color: #93c5fd;
+      white-space: nowrap;
     }
-    .panel p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: var(--ink);
+    .toolbar-group input[type="file"] {
+      font-size: 0.7rem;
+      max-width: 150px;
+      color: #cbd5e1;
     }
-    .file-input {
-      width: 100%;
-      padding: 0.8rem 1rem;
-      border-radius: 10px;
-      border: 1px dashed rgba(15, 23, 42, 0.2);
-      background: rgba(15, 23, 42, 0.02);
-      color: inherit;
-      font-size: 0.95rem;
+    .toolbar-sep {
+      width: 1px;
+      height: 22px;
+      background: #334155;
     }
+    .tier-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tier-btn:hover { background: #1e293b; }
+    .tier-btn.active { font-weight: 800; color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .toggle-ad-btn {
+      padding: 4px 14px;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle-ad-btn:hover { background: #1e293b; }
+    .toggle-ad-btn:disabled { opacity: 0.3; cursor: default; }
     #status {
-      font-size: 0.85rem;
-      color: #1d4ed8;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-left: auto;
     }
-    #node-details {
-      font-family: "JetBrains Mono", "Space Grotesk", monospace;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      max-height: 18rem;
-      overflow: auto;
-      background: rgba(37, 99, 235, 0.04);
-      border-radius: 10px;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid rgba(37, 99, 235, 0.2);
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      background: var(--accent-soft);
-      color: #1d4ed8;
-    }
-    .legend {
-      display: grid;
-      gap: 0.4rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--ink);
-    }
-    .legend-swatch {
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-      border: 1px solid rgba(15, 23, 42, 0.2);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    }
-    .edge-legend {
-      display: grid;
-      gap: 0.4rem;
-      font-size: 0.8rem;
-      color: var(--ink);
-    }
-    .edge-legend-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .edge-line {
-      width: 30px;
-      height: 2px;
-      background: #9ca3af;
+
+    /* ── GRAPH AREA ── */
+    #cy {
+      flex: 1;
       position: relative;
+      background: #ffffff;
+      min-height: 0;
+      overflow: hidden;
     }
-    .edge-line::after {
-      content: "";
-      position: absolute;
-      right: -2px;
-      top: -3px;
-      border-left: 6px solid currentColor;
-      border-top: 4px solid transparent;
-      border-bottom: 4px solid transparent;
-    }
-    .edge-line.gateway { color: #6b7280; background: #6b7280; }
-    .edge-line.subnet { color: #2563eb; background: #2563eb; }
-    .edge-line.host { color: #14532d; background: #14532d; }
-    .edge-line.bridge {
-      color: #0f172a;
-      background: transparent;
-      border-bottom: 2px dotted #0f172a;
-    }
-    .edge-line.domain {
-      color: #64748b;
-      background: transparent;
-      border-bottom: 2px dotted #64748b;
-    }
-    .edge-note {
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .hover-card {
+
+    /* ── EDGE TOOLTIP ── */
+    #edge-tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.92);
+      color: #f1f5f9;
+      border-radius: 8px;
+      padding: 0.55rem 0.8rem;
+      font-size: 0.78rem;
+      font-family: "JetBrains Mono", monospace;
+      line-height: 1.55;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      z-index: 9999;
+      max-width: 260px;
       display: none;
     }
+    #edge-tooltip .et-main { font-weight: 700; color: #93c5fd; margin-bottom: 0.3rem; }
+    #edge-tooltip .et-list { display: flex; flex-direction: column; gap: 0.15rem; }
+    #edge-tooltip .et-item { color: #cbd5e1; }
+    #edge-tooltip .et-item.et-primary { color: #fbbf24; }
+    #edge-tooltip .et-synthetic { color: #86efac; font-size: 0.72rem; margin-bottom: 0.3rem; font-style: italic; }
+    #edge-tooltip.pinned { border: 1px solid rgba(147, 197, 253, 0.4); }
+
+    /* ── NODE CARD (hover detail) ── */
     .node-card {
       position: absolute;
       left: 50%;
       transform: translate(-50%, 0);
-      min-width: 260px;
-      max-width: 360px;
-      padding: 1.1rem 1.2rem;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 248, 255, 0.9));
-      border: 1px solid rgba(59, 130, 246, 0.25);
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
-      font-size: 0.85rem;
-      line-height: 1.45;
+      min-width: 240px;
+      max-width: 340px;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(15,23,42,0.15);
+      font-size: 0.82rem;
+      line-height: 1.4;
       color: var(--ink);
       pointer-events: none;
       opacity: 0;
-      transition: opacity 150ms ease, transform 150ms ease;
+      transition: opacity 120ms ease;
       z-index: 3;
       text-align: left;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.6rem;
     }
-    .node-card.show {
-      opacity: 1;
-    }
+    .node-card.show { opacity: 1; }
     .node-card-header {
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      color: var(--navy);
     }
     .node-card-body {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
       font-family: "JetBrains Mono", monospace;
     }
     .node-card-body span {
       display: block;
-      padding: 0.35rem 0.5rem;
-      border-radius: 6px;
-      background: rgba(37, 99, 235, 0.08);
-    }
-    .node-card-sub {
-      font-size: 0.88rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      background: rgba(30, 64, 175, 0.08);
-    }
-    .node-card-role {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      background: rgba(30, 64, 175, 0.12);
-    }
-    .node-card-kv strong {
-      font-weight: 700;
+      padding: 0.3rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(15,23,42,0.04);
     }
     .node-card-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-family: "JetBrains Mono", monospace;
     }
-    .node-card-table th,
-    .node-card-table td {
+    .node-card-table th, .node-card-table td {
       text-align: left;
-      padding: 0.25rem 0.35rem;
-      border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+      padding: 0.2rem 0.3rem;
+      border-bottom: 1px solid rgba(15,23,42,0.08);
       vertical-align: top;
       word-break: break-word;
     }
     .node-card-table th {
-      background: rgba(59, 130, 246, 0.12);
+      background: rgba(15,23,42,0.05);
       font-weight: 700;
-      font-size: 0.86rem;
-    }
-    @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-      .panel {
-        order: -1;
-      }
+      color: var(--navy);
     }
   </style>
   <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Cartographie réseau — statique</h1>
-  </header>
-
-  <main>
-    <div id="cy">
-      <div id="hover-card" class="hover-card"></div>
-      <div id="node-card" class="node-card"></div>
+  <div class="toolbar">
+    <span style="font-size:0.9rem;font-weight:800;letter-spacing:0.2em;color:#fff;white-space:nowrap;">ARGUS</span>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <label>Reseau</label>
+      <input id="file" type="file" accept="application/json" />
     </div>
-
-    <div class="panel">
-      <div>
-        <p class="chip">Étape 1</p>
-        <h2>Charge ton JSON réseau</h2>
-        <input id="file" class="file-input" type="file" accept="application/json" />
-        <p id="status">Aucun fichier chargé.</p>
-      </div>
-
-      <div>
-        <p class="chip">Étape 1b</p>
-        <h2>Mapping Hostname (optionnel)</h2>
-        <input id="mapping-file" class="file-input" type="file" accept="application/json" />
-        <p id="mapping-status">Charge <code>hostname_mapping.json</code> pour lier AD ↔ réseau.</p>
-      </div>
-
-      <div>
-        <p class="chip">Étape 2</p>
-        <h2>Graphes AD (Tiers)</h2>
-        <input id="ad-file" class="file-input" type="file" accept="application/json" multiple />
-        <p class="footer">Sélectionne un ou plusieurs fichiers <code>graph_tierX.json</code></p>
-        <div id="tier-buttons" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;">
-          <!-- Boutons générés dynamiquement -->
-        </div>
-        <button id="toggle-ad" class="file-input" type="button" disabled style="margin-top: 8px;">Afficher AD</button>
-      </div>
-
-      <div>
-        <h2>Résumé</h2>
-        <p id="summary">Les données s’affichent ici après chargement.</p>
-      </div>
-
-      <div>
-        <h2>Légende Réseau</h2>
-        <div class="legend" id="legend-network"></div>
-      </div>
-      <div>
-        <h2>Légende Identité</h2>
-        <div class="legend" id="legend-ad"></div>
-      </div>
-
-      <div>
-        <h2>Sens des flèches</h2>
-        <div class="edge-legend">
-          <div class="edge-legend-row">
-            <span class="edge-line gateway"></span>
-            <span>→ destination (ex: host → gateway)</span>
-          </div>
-          <div class="edge-legend-row">
-            <span class="edge-line subnet"></span>
-            <span>→ sous-réseau (appartenance)</span>
-          </div>
-          <div class="edge-legend-row">
-            <span class="edge-line domain"></span>
-            <span>→ domaine (même domaine)</span>
-          </div>
-          <div class="edge-legend-row">
-            <span class="edge-line bridge"></span>
-            <span>→ lien identité ↔ machine (session / accès)</span>
-          </div>
-          <div class="edge-legend-row">
-            <span class="edge-line host"></span>
-            <span>→ route/connexion vers hôte</span>
-          </div>
-          <div class="edge-note">La flèche pointe toujours vers la cible.</div>
-        </div>
-      </div>
-
-      <div>
-        <h2>Détails sélection</h2>
-        <div id="node-details">Clique sur un nœud pour afficher ses métadonnées.</div>
-      </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <label>Mapping</label>
+      <input id="mapping-file" type="file" accept="application/json" />
     </div>
-  </main>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <label>Graphe AD</label>
+      <input id="ad-file" type="file" accept="application/json" multiple />
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group" id="tier-buttons"></div>
+    <button id="toggle-ad" class="toggle-ad-btn" type="button" disabled>Afficher AD</button>
+    <span id="status">Aucun fichier.</span>
+  </div>
+
+  <div id="cy">
+    <div id="node-card" class="node-card"></div>
+    <div id="edge-tooltip"></div>
+  </div>
 
   <script>
     let cy = null;
-    const summaryEl = document.getElementById("summary");
     const statusEl = document.getElementById("status");
-    const detailsEl = document.getElementById("node-details");
     const fileInput = document.getElementById("file");
-    const hoverCard = document.getElementById("hover-card");
-    const legendNetworkEl = document.getElementById("legend-network");
-    const legendAdEl = document.getElementById("legend-ad");
     const nodeCard = document.getElementById("node-card");
     let selectedNode = null;
     let subnetLayoutRunning = false;
@@ -365,102 +231,63 @@
     let adLoaded = false;
     let hostIndex = new Map();
     let nodeDataIndex = new Map();
+    let traceOrder = [];
     let adGraphState = null;
     let adGraphRaw = null;
-    let hostnameMapping = null;  // Mapping hostname → IP depuis enrich_network_mapping.py
+    let hostnameMapping = null;
 
     // Multi-tier support
-    let loadedTiers = {};  // { 0: {raw, elements}, 1: {...}, ... }
+    let loadedTiers = {};
     let currentTier = null;
     let adVisible = false;
 
-    // === PALETTE RÉSEAU (tons moyens - lisible avec texte noir) ===
+    // === PALETTE RESEAU ===
     const typeColors = {
-      network: "#e0f2fe",    // Bleu très clair (fond réseau)
-      subnet: "#bae6fd",     // Bleu clair (sous-réseau)
-      domain: "#7dd3fc",     // Bleu ciel (domaine)
-      router: "#c4b5fd",     // Lavande (routeur)
-      firewall: "#fca5a5",   // Rouge clair (firewall)
-      switch: "#67e8f9",     // Cyan clair (switch)
-      dc: "#93c5fd",         // Bleu moyen (Domain Controller)
-      server: "#7dd3fc",     // Bleu ciel (serveur)
-      workstation: "#c4b5fd", // Lavande (poste)
-      unknown: "#d1d5db",    // Gris clair (inconnu)
+      network: "#1e3a5f",
+      subnet: "#1e3a5f",
+      domain: "#0ea5e9",
+      router: "#f97316",
+      firewall: "#f87171",
+      switch: "#22d3ee",
+      dc: "#60a5fa",
+      server: "#38bdf8",
+      workstation: "#a78bfa",
+      unknown: "#64748b",
     };
-
     const typeLabels = {
-      network: "Réseau local",
-      subnet: "Sous-réseau",
-      domain: "Domaine",
-      router: "Routeur",
-      firewall: "Firewall",
-      switch: "Switch",
-      dc: "Domain Controller",
-      server: "Serveur",
-      workstation: "Poste",
-      unknown: "Inconnu",
+      network: "Reseau local", subnet: "Sous-reseau", domain: "Domaine",
+      router: "Routeur", firewall: "Firewall", switch: "Switch",
+      dc: "Domain Controller", server: "Serveur", workstation: "Poste", unknown: "Inconnu",
     };
 
-    // === PALETTE IDENTITÉ AD (tons moyens - lisible avec texte noir) ===
+    // === PALETTE IDENTITE AD ===
     const adTypeColors = {
-      User: "#fde68a",       // Jaune clair (utilisateur)
-      Group: "#f9a8d4",      // Rose clair (groupe)
-      Computer: "#c4b5fd",   // Lavande (ordinateur AD)
-      Domain: "#fca5a5",     // Rouge clair (domaine AD)
-      OU: "#fdba74",         // Orange clair (OU)
-      GPO: "#bef264",        // Vert lime clair (GPO)
-      Container: "#5eead4",  // Turquoise clair (container)
-      Unknown: "#d1d5db",    // Gris clair (inconnu AD)
+      User: "#facc15", Group: "#f472b6", Computer: "#a78bfa",
+      Domain: "#f87171", OU: "#fb923c", GPO: "#a3e635",
+      Container: "#2dd4bf", CertTemplate: "#e879f9", Unknown: "#64748b",
     };
+    const tierColors = { 0: "#f87171", 1: "#fb923c", 2: "#facc15" };
+    const tierBorderColors = { 0: "#ef4444", 1: "#f97316", 2: "#eab308" };
+    const tierNames = { 0: "Tier 0", 1: "Tier 1", 2: "Tier 2" };
+    const START_USER_COLOR = "#4ade80";
+    const START_USER_BORDER = "#22c55e";
 
-    // === PALETTE TIERS (couleurs claires avec bordures marquées) ===
-    const tierColors = {
-      0: "#fca5a5",  // Tier 0: Rouge clair (critique)
-      1: "#fdba74",  // Tier 1: Orange clair (élevé)
-      2: "#fde047",  // Tier 2: Jaune clair (moyen)
-      3: "#d1d5db",  // Tier 3: Gris clair (isolé)
-    };
-
-    // Couleurs de bordure (vives pour contraste)
-    const tierBorderColors = {
-      0: "#dc2626",  // Bordure rouge vif
-      1: "#ea580c",  // Bordure orange vif
-      2: "#ca8a04",  // Bordure jaune foncé
-      3: "#6b7280",  // Bordure grise
-    };
-
-    const tierNames = {
-      0: "Tier 0 (Critique)",
-      1: "Tier 1 (Élevé)",
-      2: "Tier 2 (Moyen)",
-      3: "Tier 3 (Isolé)",
-    };
-
-    // Couleur spéciale utilisateur de départ (vert clair avec bordure marquée)
-    const START_USER_COLOR = "#86efac";  // Vert clair
-    const START_USER_BORDER = "#16a34a"; // Bordure verte vive
-
+    // ── File handlers ──
     fileInput.addEventListener("change", async (event) => {
       const file = event.target.files[0];
-      if (!file) {
-        statusEl.textContent = "Aucun fichier sélectionné.";
-        return;
-      }
-      statusEl.textContent = `Lecture de ${file.name}…`;
+      if (!file) return;
+      statusEl.textContent = `Lecture de ${file.name}...`;
       try {
         const raw = await file.text();
         const scan = JSON.parse(raw);
         renderGraph(scan);
-        // Réappliquer le mapping hostname si déjà chargé
         applyHostnameMapping();
-        statusEl.textContent = `${file.name} chargé (${scan.configuration?.ip_cidr || "CIDR inconnu"}).`;
+        statusEl.textContent = `${file.name} charge.`;
       } catch (err) {
         statusEl.textContent = `Erreur : ${err.message}`;
-        console.error(err);
       }
     });
 
-    // Fonction pour appliquer le mapping hostname au hostIndex
     function applyHostnameMapping() {
       if (!hostnameMapping) return;
       Object.entries(hostnameMapping).forEach(([hostname, info]) => {
@@ -468,16 +295,28 @@
         const normalizedHost = hostname.toLowerCase();
         const shortHost = normalizedHost.split(".")[0];
         ips.forEach(ip => {
-          hostIndex.set(shortHost, `ip_${ip}`);
-          hostIndex.set(normalizedHost, `ip_${ip}`);
-          hostIndex.set(ip, `ip_${ip}`);
+          const nodeId = `ip_${ip}`;
+          hostIndex.set(shortHost, nodeId);
+          hostIndex.set(normalizedHost, nodeId);
+          hostIndex.set(ip, nodeId);
+          // Update hostname on the node data + refresh label in cytoscape
+          const nodeData = nodeDataIndex.get(nodeId);
+          if (nodeData && !nodeData.hostname) {
+            nodeData.hostname = info.hostname || hostname;
+            nodeData.label = buildNetworkLabel(nodeData);
+          }
+          if (cy) {
+            const cyNode = cy.getElementById(nodeId);
+            if (cyNode.length && !cyNode.data("hostname")) {
+              cyNode.data("hostname", info.hostname || hostname);
+              cyNode.data("label", buildNetworkLabel({ ip, hostname: info.hostname || hostname }));
+            }
+          }
         });
       });
     }
 
-    // === Chargement du fichier de mapping hostname ===
     const mappingFileInput = document.getElementById("mapping-file");
-    const mappingStatusEl = document.getElementById("mapping-status");
     if (mappingFileInput) {
       mappingFileInput.addEventListener("change", async (event) => {
         const file = event.target.files[0];
@@ -487,13 +326,9 @@
           const data = JSON.parse(raw);
           hostnameMapping = data.mapping || {};
           applyHostnameMapping();
-          const count = Object.keys(hostnameMapping).length;
-          mappingStatusEl.textContent = `✓ ${count} mapping(s) chargé(s)`;
-          mappingStatusEl.style.color = "#16a34a";
+          statusEl.textContent = `Mapping: ${Object.keys(hostnameMapping).length} entree(s).`;
         } catch (err) {
-          console.error(err);
-          mappingStatusEl.textContent = `Erreur : ${err.message}`;
-          mappingStatusEl.style.color = "#dc2626";
+          statusEl.textContent = `Erreur mapping: ${err.message}`;
         }
       });
     }
@@ -502,110 +337,59 @@
     const adToggleButton = document.getElementById("toggle-ad");
     const tierButtonsContainer = document.getElementById("tier-buttons");
 
-    // Fonction pour créer les boutons de tier
     function updateTierButtons() {
       tierButtonsContainer.innerHTML = "";
       const tiers = Object.keys(loadedTiers).sort((a, b) => a - b);
-
       tiers.forEach(tier => {
         const btn = document.createElement("button");
-        btn.className = "tier-btn";
+        btn.className = "tier-btn" + (currentTier == tier ? " active" : "");
         btn.dataset.tier = tier;
-        btn.textContent = `Tier ${tier}`;
-        btn.style.cssText = `
-          padding: 6px 12px;
-          border-radius: 6px;
-          border: 2px solid ${tierBorderColors[tier] || "#6b7280"};
-          background: ${currentTier == tier ? tierColors[tier] : "#f8fafc"};
-          color: #1f2937;
-          font-size: 0.85rem;
-          font-weight: ${currentTier == tier ? "600" : "400"};
-          cursor: pointer;
-          transition: all 0.15s;
-        `;
+        btn.textContent = `T${tier}`;
+        btn.style.borderColor = tierBorderColors[tier] || "#6b7280";
+        if (currentTier == tier) { btn.style.background = tierColors[tier]; btn.style.color = "#0f172a"; }
         btn.addEventListener("click", () => switchToTier(parseInt(tier)));
         tierButtonsContainer.appendChild(btn);
       });
-
-      // Activer le bouton toggle si au moins un tier est chargé
-      if (adToggleButton) {
-        adToggleButton.disabled = tiers.length === 0;
-      }
+      if (adToggleButton) adToggleButton.disabled = tiers.length === 0;
     }
 
-    // Fonction pour switcher de tier
     function switchToTier(tier) {
       if (!loadedTiers[tier] || !cy) return;
-
-      // Retirer les éléments AD actuels si visibles (utiliser sélecteur)
-      if (adVisible) {
-        cy.elements('[isAD]').remove();
-      }
-
-      // Charger le nouveau tier
+      if (adVisible) cy.elements('[isAD]').remove();
       currentTier = tier;
       adGraphRaw = loadedTiers[tier].raw;
       adElements = loadedTiers[tier].elements;
-      adGraphState = loadedTiers[tier].graphState;  // Restaurer le graphState pour le layout
+      adGraphState = loadedTiers[tier].graphState;
       adLoaded = true;
-
-      // Afficher si AD était visible
-      if (adVisible) {
-        cy.add(adElements);
-        runLayouts();
-      }
-
-      // Mettre à jour l'UI
+      if (adVisible) { cy.add(adElements); runLayouts(); }
       updateTierButtons();
-      if (adToggleButton) {
-        adToggleButton.textContent = adVisible ? `Masquer Tier ${tier}` : `Afficher Tier ${tier}`;
-      }
+      if (adToggleButton) adToggleButton.textContent = adVisible ? `Masquer T${tier}` : `Afficher T${tier}`;
     }
 
     if (adFileInput) {
       adFileInput.addEventListener("change", async (event) => {
         const files = event.target.files;
         if (!files || files.length === 0) return;
-
         for (const file of files) {
           try {
             const raw = await file.text();
             const adGraph = JSON.parse(raw);
             const tier = adGraph.tier !== undefined ? adGraph.tier : (adGraph.mode || 0);
-
-            // buildAdElements sets adGraphState as side effect
             const elements = buildAdElements(adGraph);
-
-            loadedTiers[tier] = {
-              raw: adGraph,
-              elements: elements,
-              graphState: adGraphState  // Store the graph state for this tier
-            };
-
-            statusEl.textContent = `Tier ${tier} chargé (${file.name})`;
+            loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
+            statusEl.textContent = `Tier ${tier} charge (${file.name})`;
           } catch (err) {
-            console.error(err);
             statusEl.textContent = `Erreur : ${err.message}`;
           }
         }
-
-        // Mettre à jour les boutons
         updateTierButtons();
-
-        // Si aucun tier courant, sélectionner le premier
         const tiers = Object.keys(loadedTiers).sort((a, b) => a - b);
-        if (tiers.length > 0 && currentTier === null) {
-          switchToTier(parseInt(tiers[0]));
-        }
-
-        // Si pas de graphe réseau chargé, initialiser cytoscape en mode AD-only
-        if (!cy && tiers.length > 0) {
-          initCytoscapeAdOnly();
-        }
+        if (tiers.length > 0 && currentTier === null) switchToTier(parseInt(tiers[0]));
+        if (!cy && tiers.length > 0) initCytoscapeAdOnly();
       });
     }
 
-    // Fonction pour obtenir les styles Cytoscape (réutilisable)
+    // ── Cytoscape Styles ──
     function getCytoscapeStyles() {
       return [
         {
@@ -613,15 +397,15 @@
           style: {
             label: "data(label)",
             "text-wrap": "wrap",
-            "text-max-width": 240,
+            "text-max-width": 160,
             "background-color": "data(bg)",
             "border-color": "data(borderColor)",
             "border-width": 2,
             color: "data(textColor)",
-            "font-size": 10,
-            "font-family": "JetBrains Mono, Space Grotesk, monospace",
-            "line-height": 1.3,
-            "font-weight": "500",
+            "font-size": 13,
+            "font-family": "JetBrains Mono, monospace",
+            "line-height": 1.4,
+            "font-weight": "600",
             "text-valign": "center",
             "text-halign": "center",
             "shape": "round-rectangle",
@@ -634,13 +418,15 @@
           selector: "node[isGroup = 1]",
           style: {
             "shape": "round-rectangle",
-            "background-opacity": 0.08,
+            "background-opacity": 0.06,
             "border-style": "dashed",
             "border-width": 1,
+            "border-color": "#94a3b8",
             "text-valign": "top",
             "text-halign": "center",
-            "font-size": 9,
-            "padding": "60px",
+            "font-size": 10,
+            "color": "#475569",
+            "padding": "40px",
             "compound-sizing-wrt-labels": "include",
           }
         },
@@ -650,431 +436,240 @@
             "shape": "round-rectangle",
             "background-opacity": 0.02,
             "border-style": "dotted",
-            "border-width": 2,
-            "border-color": "#64748b",
+            "border-width": 1.5,
+            "border-color": "#94a3b8",
             "text-valign": "top",
             "text-halign": "right",
-            "font-size": 14,
+            "font-size": 13,
             "font-weight": "700",
-            "text-margin-y": -10,
-            "padding": "30px",
-            "text-wrap": "wrap",
-            "text-max-width": 200,
+            "color": "#0f172a",
+            "text-margin-y": -8,
+            "padding": "24px",
           }
         },
         {
           selector: "node[?isTarget]",
-          style: {
-            "border-width": 4,
-            "border-color": "#0f172a",
-            "border-style": "solid",
-            "font-weight": "700",
-            "font-size": 12,
-          }
+          style: { "border-width": 2.5, "font-weight": "700" }
         },
         {
           selector: "node[?isStart]",
           style: {
-            "background-color": "#86efac",
-            "border-width": 4,
-            "border-color": "#16a34a",
-            "border-style": "solid",
-            "font-weight": "700",
-            "font-size": 11,
-            "color": "#14532d",
+            "background-color": "#4ade80", "border-width": 3, "border-color": "#22c55e",
+            "border-style": "solid", "font-weight": "700", "font-size": 13, "color": "#052e16",
           }
+        },
+        // Router nodes: circle shape, orange
+        {
+          selector: "node[nodeType = 'router']",
+          style: { "shape": "ellipse", "width": 44, "height": 44, "font-size": 11 }
         },
         {
           selector: "edge",
           style: {
-            width: 1.5,
-            "line-color": "#9ca3af",
-            "target-arrow-color": "#9ca3af",
+            width: 1.2,
+            "line-color": "#94a3b8",
+            "target-arrow-color": "#94a3b8",
             "target-arrow-shape": "triangle",
-            "source-arrow-shape": "circle",
-            "source-arrow-color": "#9ca3af",
             "curve-style": "bezier",
-            label: "data(label)",
-            "font-size": 7,
-            color: "#334155",
+            "font-size": 9,
+            color: "#475569",
             "text-background-color": "#ffffff",
             "text-background-opacity": 0.9,
             "text-background-padding": 2,
           }
         },
-        { selector: "edge[kind = 'host']", style: { "line-color": "#14532d", "target-arrow-color": "#14532d" } },
-        { selector: "edge[kind = 'subnet']", style: { "line-color": "#2563eb", "target-arrow-color": "#2563eb" } },
-        { selector: "edge[kind = 'gateway']", style: { "line-color": "#6b7280", "target-arrow-color": "#6b7280" } },
-        { selector: "edge[kind = 'dns']", style: { "line-color": "#6b7280", "target-arrow-color": "#6b7280" } },
-        { selector: "edge[kind = 'domain']", style: { "line-color": "#64748b", "target-arrow-color": "#64748b", "line-style": "dotted" } },
-        { selector: "edge[kind = 'ad']", style: { "line-color": "#7c3aed", "target-arrow-color": "#7c3aed", "line-style": "dashed" } },
-        { selector: "edge[kind = 'bridge']", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dotted" } },
-        { selector: "edge[kind = 'memberOf']", style: { "line-color": "#6366f1", "target-arrow-color": "#6366f1" } },
-        { selector: "edge[kind = 'ace']", style: { "line-color": "#f59e0b", "target-arrow-color": "#f59e0b" } },
-        { selector: "edge[kind = 'local_admin']", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444" } },
-        { selector: "edge[kind = 'rdp']", style: { "line-color": "#3b82f6", "target-arrow-color": "#3b82f6" } },
-        { selector: "edge[kind = 'psremote']", style: { "line-color": "#8b5cf6", "target-arrow-color": "#8b5cf6" } },
-        { selector: "edge[kind = 'dcom']", style: { "line-color": "#ec4899", "target-arrow-color": "#ec4899" } },
-        { selector: "edge[severity = 'critical']", style: { "line-color": "#dc2626", "target-arrow-color": "#dc2626" } },
-        { selector: "edge[severity = 'high']", style: { "line-color": "#f97316", "target-arrow-color": "#f97316" } },
-        { selector: "edge[severity = 'medium']", style: { "line-color": "#facc15", "target-arrow-color": "#facc15" } },
-        { selector: "edge[severity = 'low']", style: { "line-color": "#22c55e", "target-arrow-color": "#22c55e" } },
-        { selector: "edge[isShortest = 1]", style: { "line-color": "#dc2626", "target-arrow-color": "#dc2626", "width": 3 } }
+        // Network edges
+        { selector: "edge[kind = 'network']", style: { "line-color": "#94a3b8", "target-arrow-color": "#94a3b8", "target-arrow-shape": "none", width: 1 } },
+        { selector: "edge[kind = 'subnet']", style: { "line-color": "#94a3b8", "target-arrow-color": "#94a3b8", width: 1 } },
+        // AD edges: secondary paths (black solid)
+        { selector: "edge[kind = 'ad']", style: { label: "data(label)", "line-color": "#0f172a", "target-arrow-color": "#0f172a", width: 1.2 } },
+        // AD shortest path: red solid
+        { selector: "edge[kind = 'ad'][isShortest = 1]", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444", width: 1.5 } },
+        // Bridge edges (AD ↔ network node)
+        { selector: "edge[kind = 'bridge']", style: { label: "data(label)", "line-color": "#0f172a", "target-arrow-color": "#0f172a", width: 1.2 } },
+        { selector: "edge[kind = 'bridge'][isShortest = 1]", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444", width: 1.5 } },
+        // Edges via Computer: black dashed (uncertain — requires local admin)
+        { selector: "edge[viaComputer = 1]", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dashed", width: 1.2 } },
+        { selector: "edge[viaComputer = 1][isShortest = 1]", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dashed", width: 1.2 } }
       ];
     }
 
-    // Fonction pour initialiser cytoscape en mode AD-only (sans scan réseau)
-    function initCytoscapeAdOnly() {
-      if (cy) {
-        cy.destroy();
+    // ── Edge tooltip ──
+    const edgeTip = document.getElementById("edge-tooltip");
+    let edgeTipPinned = false;
+
+    function buildEdgeTipHTML(d) {
+      const primary = d.label || "";
+      const rights = (d.allRights && d.allRights.length > 0) ? d.allRights : [primary];
+      const primaryInList = rights.includes(primary);
+      const rows = rights.map(r =>
+        `<span class="et-item${r === primary ? " et-primary" : ""}">${r === primary ? "-> " : "   "}${r}</span>`
+      ).join("");
+      const syntheticNote = !primaryInList && primary
+        ? `<div class="et-synthetic">affiche : ${primary}</div>` : "";
+      const count = rights.length > 1 ? ` (${rights.length})` : "";
+      return `<div class="et-main">Permissions${count}</div>${syntheticNote}<div class="et-list">${rows}</div>`;
+    }
+
+    function positionEdgeTip(pageX, pageY) {
+      edgeTip.style.left = "0px"; edgeTip.style.top = "0px"; edgeTip.style.display = "block";
+      const tipW = edgeTip.offsetWidth, tipH = edgeTip.offsetHeight;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const x = (pageX + 16 + tipW > vw) ? pageX - tipW - 10 : pageX + 16;
+      const y = (pageY + 16 + tipH > vh) ? pageY - tipH - 10 : pageY + 16;
+      edgeTip.style.left = x + "px"; edgeTip.style.top = y + "px";
+    }
+
+    function edgeScreenPos(evt, edge) {
+      const oe = evt.originalEvent;
+      if (oe && typeof oe.clientX === "number") return { x: oe.clientX, y: oe.clientY };
+      try {
+        const mid = edge.renderedMidpoint();
+        const rect = cy.container().getBoundingClientRect();
+        return { x: rect.left + mid.x, y: rect.top + mid.y };
+      } catch(e) {
+        return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       }
+    }
 
-      // Utiliser les éléments AD du tier courant
-      const elements = currentTier !== null && loadedTiers[currentTier]
-        ? loadedTiers[currentTier].elements
-        : [];
+    function setupEdgeTooltip() {
+      edgeTipPinned = false; edgeTip.style.display = "none";
+      cy.on("mouseover", "edge", (evt) => {
+        if (edgeTipPinned) return;
+        const d = evt.target.data();
+        if (!d.label) return;
+        edgeTip.innerHTML = buildEdgeTipHTML(d);
+        const pos = edgeScreenPos(evt, evt.target);
+        positionEdgeTip(pos.x, pos.y);
+      });
+      cy.on("mousemove", "edge", (evt) => {
+        if (edgeTipPinned || edgeTip.style.display === "none") return;
+        const oe = evt.originalEvent;
+        if (oe && typeof oe.clientX === "number") positionEdgeTip(oe.clientX, oe.clientY);
+      });
+      cy.on("mouseout", "edge", () => { if (!edgeTipPinned) edgeTip.style.display = "none"; });
+      cy.on("tap", "edge", (evt) => {
+        const d = evt.target.data();
+        if (!d.label) return;
+        edgeTip.innerHTML = buildEdgeTipHTML(d);
+        const pos = edgeScreenPos(evt, evt.target);
+        positionEdgeTip(pos.x, pos.y);
+        edgeTipPinned = true;
+      });
+      cy.on("tap", (evt) => { if (evt.target === cy) { edgeTip.style.display = "none"; edgeTipPinned = false; } });
+      cy.on("tap", "node", () => { edgeTip.style.display = "none"; edgeTipPinned = false; });
+    }
 
+    // ── Init AD-only mode ──
+    function initCytoscapeAdOnly() {
+      if (cy) cy.destroy();
+      const elements = currentTier !== null && loadedTiers[currentTier] ? loadedTiers[currentTier].elements : [];
       cy = cytoscape({
         container: document.getElementById("cy"),
         elements: elements,
         style: getCytoscapeStyles(),
         layout: { name: "preset" },
         wheelSensitivity: 0.2,
+        pixelRatio: "auto",
+        textureOnViewport: false,
       });
-
-      cy.on("select", "node", (event) => {
-        selectedNode = event.target;
-        detailsEl.textContent = formatMeta(event.target.data());
-        showNodeCard(selectedNode);
-      });
-      cy.on("unselect", "node", () => {
-        selectedNode = null;
-        nodeCard.classList.remove("show");
-        nodeCard.innerHTML = "";
-        detailsEl.textContent = "Clique sur un nœud pour afficher ses métadonnées.";
-      });
+      cy.on("select", "node", (event) => { selectedNode = event.target; showNodeCard(selectedNode); });
+      cy.on("unselect", "node", () => { selectedNode = null; nodeCard.classList.remove("show"); nodeCard.innerHTML = ""; });
       cy.on("pan zoom layoutstop", updateNodeCardPosition);
       cy.on("render", updateNodeCardPosition);
-
+      setupEdgeTooltip();
       adVisible = true;
-      if (adToggleButton) {
-        adToggleButton.textContent = `Masquer Tier ${currentTier}`;
-        adToggleButton.disabled = false;
-      }
-      summaryEl.textContent = `Graphe AD Tier ${currentTier} chargé (mode AD uniquement).`;
-      renderLegend();
+      if (adToggleButton) { adToggleButton.textContent = `Masquer T${currentTier}`; adToggleButton.disabled = false; }
+      statusEl.textContent = `Graphe AD Tier ${currentTier} charge.`;
       runLayouts();
     }
 
     if (adToggleButton) {
       adToggleButton.addEventListener("click", () => {
         if (!cy || !adLoaded || currentTier === null) return;
-
         if (adVisible) {
-          cy.elements('[isAD]').remove();  // Utiliser sélecteur
+          cy.elements('[isAD]').remove();
           adVisible = false;
-          adToggleButton.textContent = `Afficher Tier ${currentTier}`;
+          adToggleButton.textContent = `Afficher T${currentTier}`;
         } else {
           cy.add(adElements);
           adVisible = true;
-          adToggleButton.textContent = `Masquer Tier ${currentTier}`;
+          adToggleButton.textContent = `Masquer T${currentTier}`;
           runLayouts();
         }
       });
     }
 
+    // ── Render network graph ──
     function renderGraph(scan) {
       const { nodes, edges } = buildElements(scan);
       const wasAdVisible = adVisible;
       const previousTier = currentTier;
-
-      if (cy) {
-        cy.destroy();
-      }
-
-      // Reset AD display state but KEEP loaded tiers
-      adElements = [];
-      adVisible = false;
-
-      // Rebuild elements for current tier if we had one
+      if (cy) cy.destroy();
+      adElements = []; adVisible = false;
       if (previousTier !== null && loadedTiers[previousTier]) {
         adElements = loadedTiers[previousTier].elements;
         adGraphRaw = loadedTiers[previousTier].raw;
         adLoaded = true;
       }
-
       if (adToggleButton) {
         adToggleButton.disabled = Object.keys(loadedTiers).length === 0;
-        adToggleButton.textContent = currentTier !== null ? `Afficher Tier ${currentTier}` : "Afficher AD";
+        adToggleButton.textContent = currentTier !== null ? `Afficher T${currentTier}` : "Afficher AD";
       }
-
       cy = cytoscape({
         container: document.getElementById("cy"),
         elements: [...nodes, ...edges],
-        style: [
-          {
-            selector: "node",
-            style: {
-              label: "data(label)",
-              "text-wrap": "wrap",
-              "text-max-width": 240,
-              "background-color": "data(bg)",
-              "border-color": "data(borderColor)",
-              "border-width": 2,
-              color: "data(textColor)",
-              "font-size": 10,
-              "font-family": "JetBrains Mono, Space Grotesk, monospace",
-              "line-height": 1.3,
-              "font-weight": "500",
-              "text-valign": "center",
-              "text-halign": "center",
-              "shape": "round-rectangle",
-              "padding": "10px",
-              "width": "label",
-              "height": "label",
-            }
-          },
-          {
-            selector: "node[isGroup = 1]",
-            style: {
-              "shape": "round-rectangle",
-              "background-opacity": 0.08,
-              "border-style": "dashed",
-              "border-width": 1,
-              "text-valign": "top",
-              "text-halign": "center",
-              "font-size": 9,
-              "padding": "60px",
-              "compound-sizing-wrt-labels": "include",
-            }
-          },
-          {
-            selector: "node[isZone = 1]",
-            style: {
-              "shape": "round-rectangle",
-              "background-opacity": 0.02,
-              "border-style": "dotted",
-              "border-width": 2,
-              "border-color": "#64748b",
-              "text-valign": "top",
-              "text-halign": "right",
-              "font-size": 14,
-              "font-weight": "700",
-              "text-margin-y": -10,
-              "padding": "30px",
-              "text-wrap": "wrap",
-              "text-max-width": 200,
-            }
-          },
-          {
-            selector: "node[?isTarget]",  // Sélecteur Cytoscape correct pour booléen
-            style: {
-              "border-width": 4,
-              "border-color": "#0f172a",
-              "border-style": "solid",
-              "font-weight": "700",
-              "font-size": 12,
-            }
-          },
-          {
-            selector: "node[?isStart]",  // Sélecteur Cytoscape correct pour booléen
-            style: {
-              "background-color": "#86efac",  // Vert clair
-              "border-width": 4,
-              "border-color": "#16a34a",      // Bordure verte vive
-              "border-style": "solid",
-              "font-weight": "700",
-              "font-size": 11,
-              "color": "#14532d",             // Texte vert foncé (lisible)
-            }
-          },
-          {
-            selector: "edge",
-            style: {
-              width: 1.5,
-              "line-color": "#9ca3af",
-              "target-arrow-color": "#9ca3af",
-              "target-arrow-shape": "triangle",
-              "source-arrow-shape": "circle",
-              "source-arrow-color": "#9ca3af",
-              "curve-style": "bezier",
-              label: "data(label)",
-              "font-size": 7,
-              color: "#334155",
-              "text-background-color": "#ffffff",
-              "text-background-opacity": 0.9,
-              "text-background-padding": 2,
-            }
-          },
-          {
-            selector: "edge[kind = 'host']",
-            style: { "line-color": "#14532d", "target-arrow-color": "#14532d" }
-          },
-          {
-            selector: "edge[kind = 'subnet']",
-            style: { "line-color": "#2563eb", "target-arrow-color": "#2563eb" }
-          },
-          {
-            selector: "edge[kind = 'gateway']",
-            style: { "line-color": "#6b7280", "target-arrow-color": "#6b7280" }
-          },
-          {
-            selector: "edge[kind = 'dns']",
-            style: { "line-color": "#6b7280", "target-arrow-color": "#6b7280" }
-          },
-          {
-            selector: "edge[kind = 'domain']",
-            style: {
-              "line-color": "#64748b",
-              "target-arrow-color": "#64748b",
-              "line-style": "dotted",
-              "target-arrow-shape": "triangle",
-              "font-size": 7,
-              color: "#64748b",
-            }
-          },
-          {
-            selector: "edge[kind = 'ad']",
-            style: {
-              "line-color": "#7c3aed",
-              "target-arrow-color": "#7c3aed",
-              "target-arrow-shape": "triangle",
-              "line-style": "dashed",
-              "font-size": 7,
-              color: "#6b7280",
-            }
-          },
-          {
-            selector: "edge[kind = 'bridge']",
-            style: {
-              "line-color": "#0f172a",
-              "target-arrow-color": "#0f172a",
-              "target-arrow-shape": "triangle",
-              "line-style": "dotted",
-              "font-size": 7,
-              color: "#0f172a",
-            }
-          },
-          {
-            selector: "edge[severity = 'critical']",
-            style: { "line-color": "#dc2626", "target-arrow-color": "#dc2626" }
-          },
-          {
-            selector: "edge[severity = 'high']",
-            style: { "line-color": "#f97316", "target-arrow-color": "#f97316" }
-          },
-          {
-            selector: "edge[severity = 'medium']",
-            style: { "line-color": "#facc15", "target-arrow-color": "#facc15" }
-          },
-          {
-            selector: "edge[severity = 'low']",
-            style: { "line-color": "#22c55e", "target-arrow-color": "#22c55e" }
-          },
-          {
-            selector: "edge[isShortest = 1]",
-            style: { "line-color": "#dc2626", "target-arrow-color": "#dc2626", "width": 3 }
-          }
-        ],
+        style: getCytoscapeStyles(),
         layout: { name: "preset" },
         wheelSensitivity: 0.2,
+        pixelRatio: "auto",
+        textureOnViewport: false,
       });
-
-      cy.on("select", "node", (event) => {
-        selectedNode = event.target;
-        detailsEl.textContent = formatMeta(event.target.data());
-        showNodeCard(selectedNode);
-      });
-      cy.on("unselect", "node", () => {
-        selectedNode = null;
-        nodeCard.classList.remove("show");
-        nodeCard.innerHTML = "";
-        detailsEl.textContent = "Clique sur un nœud pour afficher ses métadonnées.";
-      });
+      cy.on("select", "node", (event) => { selectedNode = event.target; showNodeCard(selectedNode); });
+      cy.on("unselect", "node", () => { selectedNode = null; nodeCard.classList.remove("show"); nodeCard.innerHTML = ""; });
       cy.on("pan zoom layoutstop", updateNodeCardPosition);
       cy.on("render", updateNodeCardPosition);
-      summaryEl.textContent = scan.summary || "Graphe réseau chargé.";
-      renderLegend();
+      setupEdgeTooltip();
+      statusEl.textContent = "Graphe reseau charge.";
       runLayouts();
-
-      // Réafficher l'AD si il était visible avant
       if (wasAdVisible && adElements.length > 0) {
         setTimeout(() => {
-          cy.add(adElements);
-          adVisible = true;
-          if (adToggleButton) {
-            adToggleButton.textContent = `Masquer Tier ${currentTier}`;
-          }
+          cy.add(adElements); adVisible = true;
+          if (adToggleButton) adToggleButton.textContent = `Masquer T${currentTier}`;
           runLayouts();
         }, 100);
       }
     }
 
+    // ── Role detection ──
     const ROLE_PRIORITY = ["Domain Controller", "Routeur", "Serveur", "Poste", "Inconnu"];
-
     const roleToType = {
-      "Domain Controller": "dc",
-      "Routeur": "router",
-      "Serveur": "server",
-      "Poste": "workstation",
-      "Inconnu": "unknown",
-      "Firewall": "firewall",
-      "Switch": "switch",
+      "Domain Controller": "dc", "Routeur": "router", "Serveur": "server",
+      "Poste": "workstation", "Inconnu": "unknown", "Firewall": "firewall", "Switch": "switch",
     };
+    const serverPorts = new Set([21,22,23,25,53,80,110,111,143,389,443,445,465,587,636,993,995,1433,1521,2049,3306,3389,5432,5900,6379,8080,8443,27017,5985,5986,9200]);
+    const workstationPorts = new Set([135,139,445,3389,5985,5986,47001]);
+    const serverServiceNames = new Set(["http","https","ssh","ftp","smtp","imap","pop3","ldap","ldaps","kerberos","kpasswd","dns","domain","mysql","mssql","postgres","mongodb","redis","smb","microsoft-ds","netbios-ssn","nfs","rdp"]);
 
-    const serverPorts = new Set([
-      21, 22, 23, 25, 53, 80, 110, 111, 143, 389, 443, 445, 465, 587, 636, 993, 995,
-      1433, 1521, 2049, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 27017, 5985, 5986, 9200
-    ]);
-    const workstationPorts = new Set([135, 139, 445, 3389, 5985, 5986, 47001]);
-    const serverServiceNames = new Set([
-      "http", "https", "ssh", "ftp", "smtp", "imap", "pop3", "ldap", "ldaps",
-      "kerberos", "kpasswd", "dns", "domain", "mysql", "mssql", "postgres",
-      "mongodb", "redis", "smb", "microsoft-ds", "netbios-ssn", "nfs", "rdp"
-    ]);
-
-    function isOpenService(service) {
-      const state = (service.state || "").toLowerCase();
-      return !state || state === "open";
-    }
-
+    function isOpenService(service) { const s = (service.state || "").toLowerCase(); return !s || s === "open"; }
     function hasOpenPort(services, port, protocols) {
       const allowed = new Set((protocols || ["tcp"]).map(p => p.toLowerCase()));
-      return services.some(service => {
-        const svcPort = Number(service.port);
-        const proto = (service.protocol || "tcp").toLowerCase();
-        return svcPort === port && allowed.has(proto) && isOpenService(service);
-      });
+      return services.some(s => Number(s.port) === port && allowed.has((s.protocol || "tcp").toLowerCase()) && isOpenService(s));
     }
-
     function isDomainController(services) {
       if (!services || !services.length) return false;
-      const kerberos = hasOpenPort(services, 88, ["tcp", "udp"]);
-      const ldap = hasOpenPort(services, 389, ["tcp"]) || hasOpenPort(services, 636, ["tcp"]);
-      return kerberos && ldap;
+      return (hasOpenPort(services, 88, ["tcp","udp"])) && (hasOpenPort(services, 389, ["tcp"]) || hasOpenPort(services, 636, ["tcp"]));
     }
-
     function isServer(services) {
       if (!services || !services.length) return false;
-      return services.some(service => {
-        if (!isOpenService(service)) return false;
-        const svcPort = Number(service.port);
-        const name = (service.service || service.product || "").toLowerCase();
-        if (serverPorts.has(svcPort)) return true;
-        return serverServiceNames.has(name);
-      });
+      return services.some(s => { if (!isOpenService(s)) return false; return serverPorts.has(Number(s.port)) || serverServiceNames.has((s.service||s.product||"").toLowerCase()); });
     }
-
     function isWorkstation(services) {
       if (!services || !services.length) return false;
-      const openPorts = services
-        .filter(isOpenService)
-        .map(service => Number(service.port))
-        .filter(port => Number.isFinite(port));
+      const openPorts = services.filter(isOpenService).map(s => Number(s.port)).filter(p => Number.isFinite(p));
       if (!openPorts.length) return false;
       return openPorts.every(port => workstationPorts.has(port));
     }
-
     function deriveRole(data) {
       const services = data.services || [];
       if (isDomainController(services)) return "Domain Controller";
@@ -1086,30 +681,13 @@
     }
 
     function buildNetworkLabel(data) {
-      const lines = [];
-      if (data.role) lines.push(`ROLE: ${data.role}`);
-      lines.push(`IP: ${data.ip || "-"}`);
-      lines.push(`HOSTNAME: ${data.hostname || "-"}`);
-      if (data.services?.length) {
-        lines.push("");
-        lines.push("PORT   SERVICE            VERSION");
-        data.services.forEach(service => {
-          if (typeof service === "string") {
-            lines.push(service);
-            return;
-          }
-          const port = `${service.port ?? "?"}/${(service.protocol || "tcp").toLowerCase()}`.padEnd(7, " ");
-          const svc = String(service.service || service.product || "").padEnd(18, " ");
-          const version = [service.product, service.version, service.extrainfo].filter(Boolean).join(" ");
-          lines.push(`${port} ${svc}${version}`);
-        });
-      } else {
-        lines.push("");
-        lines.push("PORTS: aucun");
-      }
-      return lines.join("\n");
+      const ip = data.ip || "";
+      const hostname = data.hostname ? data.hostname.toUpperCase() : "";
+      if (hostname && hostname.toLowerCase() !== ip.toLowerCase()) return `${ip}\n${hostname}`;
+      return ip || data.id;
     }
 
+    // ── Build network elements ──
     function buildElements(scan) {
       const nodes = [];
       const edges = [];
@@ -1118,35 +696,20 @@
       nodeDataIndex = new Map();
       const serviceMap = new Map(
         (scan.service_scan?.results || []).map(entry => [entry.ip, {
-          services: entry.services || [],
-          os: entry.os || "",
-          hostname: entry.hostname || ""
+          services: entry.services || [], os: entry.os || "", hostname: entry.hostname || ""
         }])
       );
 
       const toId = (value) => value.replace(/[^0-9A-Za-z_:\-\.]/g, "_");
-      const extractDomain = (hostname) => {
-        if (!hostname || !hostname.includes(".")) return null;
-        return hostname.split(".").slice(1).join(".").toLowerCase();
-      };
 
       const normalizeServices = (serviceBlock) => {
         const services = serviceBlock?.services || [];
         if (!services || !services.length) return [];
         return services.map(s => ({
-          port: s.port ?? "?",
-          protocol: (s.protocol || "tcp").toLowerCase(),
-          state: s.state || "unknown",
-          service: s.service || s.name || "",
-          product: s.product || "",
-          version: s.version || "",
-          extrainfo: s.extrainfo || ""
+          port: s.port ?? "?", protocol: (s.protocol || "tcp").toLowerCase(),
+          state: s.state || "unknown", service: s.service || s.name || "",
+          product: s.product || "", version: s.version || "", extrainfo: s.extrainfo || ""
         }));
-      };
-
-      const pickTextColor = (type) => {
-        // Tous les fonds sont clairs → texte noir pour lisibilité
-        return "#1f2937";
       };
 
       const applyRoleAndType = (data) => {
@@ -1154,16 +717,14 @@
         data.roles = [data.role];
         const type = roleToType[data.role] || "unknown";
         data.meta.type = type;
+        data.nodeType = type;
         data.bg = typeColors[type] || typeColors.unknown;
-        data.textColor = pickTextColor(type);
-        data.borderColor = "#64748b";  // Bordure grise pour les nœuds réseau
+        data.textColor = "#0f172a";
+        data.borderColor = "#94a3b8";
       };
 
       const updateNode = (id, data) => {
-        if (!nodeMap.has(id)) {
-          nodeMap.set(id, { data: { ...data } });
-          return;
-        }
+        if (!nodeMap.has(id)) { nodeMap.set(id, { data: { ...data } }); return; }
         const existing = nodeMap.get(id).data;
         existing.meta = { ...(existing.meta || {}), ...(data.meta || {}) };
         existing.hostname = data.hostname || existing.hostname;
@@ -1179,18 +740,13 @@
         const serviceBlock = serviceMap.get(ip) || {};
         const services = normalizeServices(serviceBlock);
         const data = {
-          id,
-          ip,
-          hostname: meta.hostname || serviceBlock.hostname || "",
-          services,
-          context: meta.context || "",
+          id, ip, hostname: meta.hostname || serviceBlock.hostname || "",
+          services, context: meta.context || "",
           meta: { os: serviceBlock.os || "", ...meta },
         };
         if (role) {
           data.meta.roleHint = role;
-          if (role === "Routeur") {
-            data.meta.isRouter = true;
-          }
+          if (role === "Routeur") data.meta.isRouter = true;
         }
         applyRoleAndType(data);
         data.label = buildNetworkLabel(data);
@@ -1199,138 +755,95 @@
       };
 
       const addGroupNode = (id, label, type) => {
-        const data = {
-          id,
-          label,
+        nodeMap.set(id, { data: {
+          id, label,
           bg: typeColors[type] || typeColors.unknown,
-          borderColor: "#94a3b8",
-          textColor: "#1e293b",
-          meta: { type },
-          isGroup: 1
-        };
-        nodeMap.set(id, { data });
+          borderColor: "#94a3b8", textColor: "#0f172a",
+          meta: { type }, isGroup: 1
+        }});
         return id;
       };
 
       const addZoneNode = (id, label) => {
-        const data = {
-          id,
-          label,
+        nodeMap.set(id, { data: {
+          id, label,
           bg: "rgba(15, 23, 42, 0.02)",
-          borderColor: "#64748b",
-          textColor: "#1e293b",
-          meta: { type: "zone" },
-          isGroup: 1,
-          isZone: 1
-        };
-        nodeMap.set(id, { data });
+          borderColor: "#64748b", textColor: "#0f172a",
+          meta: { type: "zone" }, isGroup: 1, isZone: 1
+        }});
         return id;
       };
 
-      const addDomainNode = (domain) => {
-        const id = toId(`domain_${domain}`);
-        if (nodeMap.has(id)) return id;
-        nodeMap.set(id, {
-          data: {
-            id,
-            label: `Domaine\\n${domain}`,
-            bg: typeColors.domain,
-            borderColor: "#0369a1",
-            textColor: "#1e293b",
-            meta: { type: "domain" }
-          }
-        });
-        return id;
-      };
-
-      const addEdge = (from, to, label = "", kind = label) => {
+      // Simplified edge: no labels for network, just structural connections
+      const addEdge = (from, to, kind = "network") => {
         if (!from || !to) return;
-        edges.push({ data: { id: `${from}_${to}_${label}`, source: from, target: to, label, kind } });
+        edges.push({ data: { id: `${from}_${to}_${kind}`, source: from, target: to, label: "", kind } });
       };
 
       const config = scan.configuration || {};
-      addZoneNode("zone_network", "PARTIE RESEAU");
-      addGroupNode("local_network", `Réseau local\n${config.ip_cidr || "CIDR inconnu"}`, "network");
-      nodeMap.get("local_network").data.parent = "zone_network";
+      addZoneNode("zone_network", "RESEAU");
+
+      // Track which IPs are assigned to a subnet (to avoid double-parenting)
+      const assignedToSubnet = new Set();
+      // Traceroute order for subnet layout ordering
+      traceOrder = scan.router_discovery?.trace_discovered || [];
 
       if (config.gateway) {
-        const gwId = addIpNode(config.gateway, "Routeur", { isRouter: true });
-        addEdge(gwId, "local_network", "route locale", "gateway");
+        addIpNode(config.gateway, "Routeur", { isRouter: true });
       }
-      if (config.dns) {
-        const dnsId = addIpNode(config.dns, "Serveur", { roleHint: "Serveur" });
-        if (config.gateway) {
-          addEdge(dnsId, `ip_${config.gateway}`, "vers gateway", "gateway");
-        }
+      if (config.dns && config.dns !== config.gateway) {
+        addIpNode(config.dns, "Serveur", { roleHint: "Serveur" });
       }
 
       (scan.router_discovery?.router_details || []).forEach(router => {
-        const id = addIpNode(router.ip, "Routeur", { isRouter: true, hostname: router.hostname || "" });
-        if (config.gateway) {
-          addEdge(id, config.gateway ? `ip_${config.gateway}` : "local_network", "route", "gateway");
-        }
+        addIpNode(router.ip, "Routeur", { isRouter: true, hostname: router.hostname || "" });
       });
 
-      (scan.vlan_scan?.active_hosts || []).forEach(host => {
-        const hostId = addHost(host, "vlan", "VLAN Host");
-        if (hostId && config.gateway) {
-          addEdge(hostId, `ip_${config.gateway}`, "vers gateway", "gateway");
-        }
-        if (hostId) {
-          nodeMap.get(hostId).data.parent = "local_network";
-        }
-      });
-
+      // Process subnets — routers stay inside their subnet
       (scan.subnet_scans || []).forEach(subnet => {
         const network = subnet.related_router_network || subnet.target_cidr;
-        const subnetId = `subnet_${network}`;
-        const subnetNodeId = toId(subnetId);
-        addGroupNode(subnetNodeId, `Sous-réseau\n${network}\n${subnet.hosts_found || 0} hôtes`, "subnet");
+        const subnetNodeId = toId(`subnet_${network}`);
+        addGroupNode(subnetNodeId, `${network}`, "subnet");
         nodeMap.get(subnetNodeId).data.parent = "zone_network";
-        if (config.gateway) {
-          addEdge(`ip_${config.gateway}`, subnetNodeId, "route vers sous-réseau", "subnet");
-        }
         (subnet.active_hosts || []).forEach(host => {
-          const hostId = addHost(host, "host", `Host`);
+          const hostId = addHost(host, "host", "Host");
           if (hostId) {
-            nodeMap.get(hostId).data.parent = toId(subnetId);
-            if (config.gateway) addEdge(hostId, `ip_${config.gateway}`, "vers gateway", "gateway");
+            nodeMap.get(hostId).data.parent = subnetNodeId;
+            assignedToSubnet.add(hostId);
           }
         });
+      });
+
+      // Chain edges along traceroute: router[i] → router[i+1] (disabled for now)
+      // for (let i = 0; i < traceOrder.length - 1; i++) {
+      //   const fromId = toId(`ip_${traceOrder[i]}`);
+      //   const toIdVal = toId(`ip_${traceOrder[i + 1]}`);
+      //   addEdge(fromId, toIdVal, "route");
+      // }
+
+      // VLAN hosts: only assign to zone_network if not already in a subnet
+      (scan.vlan_scan?.active_hosts || []).forEach(host => {
+        const hostId = addHost(host, "vlan", "VLAN Host");
+        if (hostId && !assignedToSubnet.has(hostId)) {
+          nodeMap.get(hostId).data.parent = "zone_network";
+        }
       });
 
       function addHost(host, type, context) {
         if (!host.ip) return null;
-        return addIpNode(host.ip, null, {
-          type,
-          context,
-          hostname: host.hostname || "",
-          mac: host.mac || "",
-          status: host.status || "",
-        });
+        return addIpNode(host.ip, null, { type, context, hostname: host.hostname || "", mac: host.mac || "", status: host.status || "" });
       }
 
       nodeMap.forEach(value => {
-        if (value.data.roles instanceof Set) {
-          value.data.roles = Array.from(value.data.roles);
-        }
-        if (!value.data.label) {
-          value.data.label = value.data.id;
-        }
+        if (value.data.roles instanceof Set) value.data.roles = Array.from(value.data.roles);
+        if (!value.data.label) value.data.label = value.data.id;
         if (value.data.hostname) {
           hostIndex.set(value.data.hostname.toLowerCase(), value.data.id);
-          const domain = extractDomain(value.data.hostname);
-          if (domain) {
-            const domainId = addDomainNode(domain);
-            addEdge(value.data.id, domainId, "domaine", "domain");
-          }
+          const shortHost = value.data.hostname.toLowerCase().split(".")[0];
+          if (shortHost) hostIndex.set(shortHost, value.data.id);
         }
-        if (value.data.ip) {
-          hostIndex.set(value.data.ip.toLowerCase(), value.data.id);
-        }
-        if (!value.data.parent && value.data.id !== "zone_network") {
-          value.data.parent = "zone_network";
-        }
+        if (value.data.ip) hostIndex.set(value.data.ip.toLowerCase(), value.data.id);
+        if (!value.data.parent && value.data.id !== "zone_network") value.data.parent = "zone_network";
         nodeDataIndex.set(value.data.id, value.data);
         nodes.push(value);
       });
@@ -1338,19 +851,11 @@
       return { nodes, edges };
     }
 
+    // ── Node detail card ──
     function formatMeta(data) {
       const meta = data.meta || {};
       const role = data.role || (Array.isArray(data.roles) ? data.roles[0] : "") || meta.type || "inconnu";
-      const lines = [
-        `ID : ${data.id}`,
-        `ROLE : ${role}`,
-        `IP : ${data.ip || "-"}`,
-        `HOSTNAME : ${data.hostname || "-"}`,
-      ];
-      if (meta.context) lines.push(`Contexte : ${meta.context}`);
-      if (meta.mac) lines.push(`MAC : ${meta.mac}`);
-      if (meta.status) lines.push(`Status : ${meta.status}`);
-      return lines.join("\n");
+      return [`ID : ${data.id}`, `ROLE : ${role}`, `IP : ${data.ip || "-"}`, `HOSTNAME : ${data.hostname || "-"}`].join("\n");
     }
 
     function showNodeCard(node) {
@@ -1359,48 +864,31 @@
       const role = data.role || (Array.isArray(data.roles) ? data.roles[0] : "") || data.meta?.type || "Inconnu";
       const services = (data.services || []).map(service => {
         if (typeof service === "string") return service;
-        const port = service.port ?? "?";
-        const proto = (service.protocol || "tcp").toLowerCase();
-        const svc = service.service || service.product || "";
-        const version = [service.product, service.version, service.extrainfo].filter(Boolean).join(" ");
-        return { port, proto, svc, version };
+        return {
+          port: service.port ?? "?", proto: (service.protocol || "tcp").toLowerCase(),
+          svc: service.service || service.product || "",
+          version: [service.product, service.version, service.extrainfo].filter(Boolean).join(" ")
+        };
       });
-      const bodyLines = [];
-      if (role) bodyLines.push({ label: "ROLE", value: role, className: "node-card-role" });
-      bodyLines.push({ label: "IP", value: data.ip || "-", className: "node-card-sub" });
-      bodyLines.push({ label: "HOSTNAME", value: data.hostname || "-", className: "node-card-sub" });
-
-      const headerText = role || data.ip || data.id;
+      const bodyLines = [
+        { label: "ROLE", value: role },
+        { label: "IP", value: data.ip || "-" },
+        { label: "HOSTNAME", value: data.hostname || "-" },
+      ];
       const serviceTable = services.length ? `
         <table class="node-card-table">
-          <thead>
-            <tr><th>PORT</th><th>SERVICE</th><th>VERSION</th></tr>
-          </thead>
-          <tbody>
-            ${services.map(entry => {
-              if (typeof entry === "string") {
-                return `<tr><td colspan="3">${entry}</td></tr>`;
-              }
-              return `<tr>
-                <td>${entry.port}/${entry.proto}</td>
-                <td>${entry.svc || "-"}</td>
-                <td>${entry.version || "-"}</td>
-              </tr>`;
-            }).join("")}
-          </tbody>
-        </table>
-      ` : "";
-
+          <thead><tr><th>PORT</th><th>SERVICE</th><th>VERSION</th></tr></thead>
+          <tbody>${services.map(entry => {
+            if (typeof entry === "string") return `<tr><td colspan="3">${entry}</td></tr>`;
+            return `<tr><td>${entry.port}/${entry.proto}</td><td>${entry.svc||"-"}</td><td>${entry.version||"-"}</td></tr>`;
+          }).join("")}</tbody>
+        </table>` : "";
       nodeCard.innerHTML = `
-        <div class="node-card-header">${headerText}</div>
+        <div class="node-card-header">${role || data.ip || data.id}</div>
         <div class="node-card-body">
-          ${bodyLines.map(line => {
-            const cls = line.className ? `node-card-kv ${line.className}` : "node-card-kv";
-            return `<span class="${cls}"><strong>${line.label}:</strong> ${line.value}</span>`;
-          }).join("")}
+          ${bodyLines.map(l => `<span><strong>${l.label}:</strong> ${l.value}</span>`).join("")}
           ${serviceTable}
-        </div>
-      `;
+        </div>`;
       nodeCard.classList.add("show");
       updateNodeCardPosition();
     }
@@ -1408,273 +896,265 @@
     function updateNodeCardPosition() {
       if (!selectedNode || !nodeCard.classList.contains("show")) return;
       const bbox = selectedNode.renderedBoundingBox({ includeLabels: true, includeNodes: true });
-      const x = bbox.x1 + bbox.w / 2;
-      const y = bbox.y2 + 16;
-      nodeCard.style.left = `${x}px`;
-      nodeCard.style.top = `${y}px`;
+      nodeCard.style.left = `${bbox.x1 + bbox.w / 2}px`;
+      nodeCard.style.top = `${bbox.y2 + 12}px`;
     }
 
+    // ── Layouts ──
     function runLayouts() {
       if (subnetLayoutRunning || !cy) return;
       subnetLayoutRunning = true;
-
       layoutNetworkZone();
       layoutIdentityZone();
       positionIdentityBelowNetwork();
       positionTransitNodes();
-
-      cy.fit(undefined, 80);
+      cy.fit(undefined, 60);
       requestAnimationFrame(() => {
-        // Second pass after first paint: use renderedBoundingBox (label sizes are reliable here).
         layoutNetworkZoneRendered();
         positionIdentityBelowNetwork();
         positionTransitNodes();
-        cy.fit(undefined, 80);
+        cy.fit(undefined, 60);
       });
       subnetLayoutRunning = false;
     }
 
     function layoutNetworkZone() {
-      // Deterministic layout for compound nodes: position each top-level block (local_network, subnets,
-      // routers, etc.) in a non-overlapping grid, then stack children inside each subnet.
       if (!cy) return;
       const zone = cy.getElementById("zone_network");
       if (!zone.length) return;
-
       const topLevel = cy.nodes().filter(n => n.data("parent") === "zone_network" && n.id() !== "zone_network");
       if (!topLevel.length) return;
 
-      const gapX = 240;
-      const gapY = 240;
-
-      // Build clusters: for a parent node, we move its descendants; for a leaf, we move itself.
-      const clusters = topLevel.map(node => {
-        const members = node.isParent() ? node.descendants() : node;
-        const bb = members.boundingBox({ includeLabels: true });
-        return { node, members, bb };
+      // Children horizontal inside each subnet
+      topLevel.filter(n => n.isParent()).forEach(parent => {
+        stackChildren(parent, 40, false, true);
       });
 
-      // Place clusters left->right then wrap.
-      let cursorX = 0;
-      let cursorY = 0;
-      let rowH = 0;
-      const maxRowW = 1600;
+      // Order subnets by traceroute path
+      const orderedClusters = [];
+      const placedIds = new Set();
 
-      clusters.forEach(cluster => {
-        const w = Math.max(200, cluster.bb.w);
-        const h = Math.max(200, cluster.bb.h);
-        if (cursorX && cursorX + w > maxRowW) {
-          cursorX = 0;
-          cursorY += rowH + gapY;
-          rowH = 0;
-        }
+      if (traceOrder.length > 0) {
+        traceOrder.forEach(ip => {
+          // Find the subnet containing this router IP
+          const match = topLevel.filter(n => n.isParent()).filter(s => {
+            const cidr = s.data("label") || "";
+            return ipInCidr(ip, cidr);
+          });
+          match.forEach(s => {
+            if (!placedIds.has(s.id())) {
+              const members = s.descendants();
+              orderedClusters.push({ node: s, members, bb: members.boundingBox({ includeLabels: true }) });
+              placedIds.add(s.id());
+            }
+          });
+        });
+      }
+      // Add remaining top-level nodes not yet placed
+      topLevel.forEach(node => {
+        if (placedIds.has(node.id())) return;
+        const members = node.isParent() ? node.descendants() : node;
+        orderedClusters.push({ node, members, bb: members.boundingBox({ includeLabels: true }) });
+      });
+
+      const gapX = 60;
+      let cursorX = 0;
+      orderedClusters.forEach(cluster => {
+        const w = Math.max(120, cluster.bb.w);
+        const h = Math.max(80, cluster.bb.h);
         const targetCx = cursorX + w / 2;
-        const targetCy = cursorY + h / 2;
         const curCx = cluster.bb.x1 + cluster.bb.w / 2;
         const curCy = cluster.bb.y1 + cluster.bb.h / 2;
-        shiftCollection(cluster.members, targetCx - curCx, targetCy - curCy);
+        shiftCollection(cluster.members, targetCx - curCx, h / 2 - curCy);
         cursorX += w + gapX;
-        rowH = Math.max(rowH, h);
       });
+    }
 
-      // Stack children inside each compound node (subnets + local_network) using their *current* center.
-      topLevel.filter(n => n.isParent()).forEach(parent => {
-        stackChildren(parent, 160, true);
-      });
+    // Helper: check if IP belongs to a CIDR
+    function ipInCidr(ip, cidr) {
+      const parts = cidr.match(/^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/);
+      if (!parts) return false;
+      const toNum = s => s.split(".").reduce((a, o) => (a << 8) + parseInt(o), 0) >>> 0;
+      const ipNum = toNum(ip);
+      const netNum = toNum(parts[1]);
+      const mask = parts[2] == 0 ? 0 : (~0 << (32 - parseInt(parts[2]))) >>> 0;
+      return (ipNum & mask) === (netNum & mask);
     }
 
     function shiftCollection(collection, dx, dy) {
       if (!collection || !collection.length) return;
       if (typeof collection.positions === "function") {
-        collection.positions(node => ({
-          x: node.position("x") + dx,
-          y: node.position("y") + dy
-        }));
+        collection.positions(node => ({ x: node.position("x") + dx, y: node.position("y") + dy }));
         return;
       }
-      // Fallback for singular nodes (should be rare).
       collection.position({ x: collection.position("x") + dx, y: collection.position("y") + dy });
     }
 
-    function stackChildren(parent, gap = 60, useRendered = false) {
+    function stackChildren(parent, gap = 60, useRendered = false, horizontal = false) {
       const children = parent.children();
       if (!children.length) return;
       const sorted = children.sort((a, b) => a.id().localeCompare(b.id()));
       const boxes = [];
-      let totalH = 0;
       const zoom = useRendered ? (cy ? cy.zoom() : 1) : 1;
       const curChildrenBb = children.boundingBox({ includeLabels: true });
-      const anchorX = curChildrenBb.x1 + curChildrenBb.w / 2;
+      const centerX = curChildrenBb.x1 + curChildrenBb.w / 2;
+      const centerY = curChildrenBb.y1 + curChildrenBb.h / 2;
       sorted.forEach(node => {
         const bb = useRendered ? node.renderedBoundingBox({ includeLabels: true }) : node.boundingBox({ includeLabels: true });
+        const w = useRendered ? (bb.w / zoom) : bb.w;
         const h = useRendered ? (bb.h / zoom) : bb.h;
-        boxes.push({ h });
-        totalH += h;
+        boxes.push({ w, h });
       });
-      totalH += gap * (boxes.length - 1);
-      let yCursor = -totalH / 2;
-      sorted.forEach((node, idx) => {
-        const h = boxes[idx].h;
-        node.position({ x: anchorX, y: (curChildrenBb.y1 + curChildrenBb.h / 2) + (yCursor + h / 2) });
-        yCursor += h + gap;
-      });
-    }
-
-    function reflowNetworkChildren() {
-      if (!cy) return;
-      const zone = cy.getElementById("zone_network");
-      if (!zone.length) return;
-      const parentNodes = zone.descendants().filter(node => node.isParent() && node.id() !== "zone_network");
-      parentNodes.forEach(group => {
-        stackChildren(group, 140, true);
-      });
+      if (horizontal) {
+        // Wrap into grid rows if many nodes (max ~8 per row)
+        const maxCols = Math.min(8, sorted.length);
+        const numRows = Math.ceil(sorted.length / maxCols);
+        const rowGap = gap * 1.2;
+        // Build rows
+        const rows = [];
+        for (let r = 0; r < numRows; r++) {
+          const start = r * maxCols;
+          const end = Math.min(start + maxCols, sorted.length);
+          const rowNodes = [];
+          let rowW = 0;
+          let rowH = 0;
+          for (let i = start; i < end; i++) {
+            rowNodes.push({ node: sorted[i], box: boxes[i] });
+            rowW += boxes[i].w;
+            rowH = Math.max(rowH, boxes[i].h);
+          }
+          rowW += gap * (rowNodes.length - 1);
+          rows.push({ nodes: rowNodes, totalW: rowW, maxH: rowH });
+        }
+        const totalH = rows.reduce((s, r) => s + r.maxH, 0) + rowGap * (rows.length - 1);
+        let yCursor = -totalH / 2;
+        rows.forEach(row => {
+          let xCursor = -row.totalW / 2;
+          row.nodes.forEach(({ node, box }) => {
+            node.position({ x: centerX + xCursor + box.w / 2, y: centerY + yCursor + row.maxH / 2 });
+            xCursor += box.w + gap;
+          });
+          yCursor += row.maxH + rowGap;
+        });
+      } else {
+        let totalH = boxes.reduce((s, b) => s + b.h, 0) + gap * (boxes.length - 1);
+        let yCursor = -totalH / 2;
+        sorted.forEach((node, idx) => {
+          const h = boxes[idx].h;
+          node.position({ x: centerX, y: centerY + yCursor + h / 2 });
+          yCursor += h + gap;
+        });
+      }
     }
 
     function layoutNetworkZoneRendered() {
       if (!cy) return;
       const zone = cy.getElementById("zone_network");
       if (!zone.length) return;
-
       const topLevel = cy.nodes().filter(n => n.data("parent") === "zone_network" && n.id() !== "zone_network");
       if (!topLevel.length) return;
-
-      const gapX = 280;
-      const gapY = 280;
-      const maxRowW = 1600;
+      const gapX = 60;
       const zoom = cy.zoom() || 1;
 
-      const clusters = topLevel.map(node => {
+      topLevel.filter(n => n.isParent()).forEach(parent => {
+        stackChildren(parent, 40, true, true);
+      });
+
+      // Order subnets by traceroute path (same logic as layoutNetworkZone)
+      const orderedClusters = [];
+      const placedIds = new Set();
+
+      if (traceOrder.length > 0) {
+        traceOrder.forEach(ip => {
+          topLevel.filter(n => n.isParent()).filter(s => ipInCidr(ip, s.data("label") || "")).forEach(s => {
+            if (!placedIds.has(s.id())) {
+              const members = s.descendants();
+              const rbb = members.renderedBoundingBox({ includeLabels: true });
+              orderedClusters.push({ node: s, members, bb: { x1: rbb.x1/zoom, y1: rbb.y1/zoom, w: rbb.w/zoom, h: rbb.h/zoom } });
+              placedIds.add(s.id());
+            }
+          });
+        });
+      }
+      topLevel.forEach(node => {
+        if (placedIds.has(node.id())) return;
         const members = node.isParent() ? node.descendants() : node;
         const rbb = (typeof members.renderedBoundingBox === "function")
           ? members.renderedBoundingBox({ includeLabels: true })
           : members.boundingBox({ includeLabels: true });
-        // Convert rendered px to model coords to keep math consistent with positions().
-        const bb = {
-          x1: rbb.x1 / zoom,
-          y1: rbb.y1 / zoom,
-          w: rbb.w / zoom,
-          h: rbb.h / zoom,
-        };
-        return { node, members, bb };
+        orderedClusters.push({ node, members, bb: { x1: rbb.x1/zoom, y1: rbb.y1/zoom, w: rbb.w/zoom, h: rbb.h/zoom } });
       });
 
       let cursorX = 0;
-      let cursorY = 0;
-      let rowH = 0;
-
-      clusters.forEach(cluster => {
-        const w = Math.max(240, cluster.bb.w);
-        const h = Math.max(240, cluster.bb.h);
-        if (cursorX && cursorX + w > maxRowW) {
-          cursorX = 0;
-          cursorY += rowH + gapY;
-          rowH = 0;
-        }
-        const targetCx = cursorX + w / 2;
-        const targetCy = cursorY + h / 2;
-        const curCx = cluster.bb.x1 + cluster.bb.w / 2;
-        const curCy = cluster.bb.y1 + cluster.bb.h / 2;
-        shiftCollection(cluster.members, targetCx - curCx, targetCy - curCy);
+      orderedClusters.forEach(cluster => {
+        const w = Math.max(80, cluster.bb.w);
+        const h = Math.max(80, cluster.bb.h);
+        shiftCollection(cluster.members, cursorX + w/2 - (cluster.bb.x1 + cluster.bb.w/2), h/2 - (cluster.bb.y1 + cluster.bb.h/2));
         cursorX += w + gapX;
-        rowH = Math.max(rowH, h);
-      });
-
-      // Final pass: stack children inside each parent with rendered sizes.
-      topLevel.filter(n => n.isParent()).forEach(parent => {
-        stackChildren(parent, 180, true);
       });
     }
 
     function layoutIdentityZone() {
       if (!adGraphState) return;
-      layoutAdMode1();
+      // When network zone is displayed, scale identity to avoid being much wider
+      const zoneNetwork = cy ? cy.getElementById("zone_network") : null;
+      let maxWidth = null;
+      if (zoneNetwork && zoneNetwork.length) {
+        const netNodes = zoneNetwork.descendants();
+        if (netNodes.length) {
+          const netBox = netNodes.boundingBox();
+          // Allow identity to be up to 1.5x the network width, but no more
+          maxWidth = Math.max(netBox.w * 1.5, 800);
+        }
+      }
+      layoutAdMode1(maxWidth);
     }
 
     function positionIdentityBelowNetwork() {
       const zoneNetwork = cy.getElementById("zone_network");
       const zoneIdentity = cy.getElementById("zone_identity");
       if (!zoneNetwork.length || !zoneIdentity.length) return;
-
       const networkNodes = zoneNetwork.descendants().filter(n => n.id() !== "zone_network");
       const identityNodes = zoneIdentity.descendants().filter(n => n.id() !== "zone_identity");
       if (!identityNodes.length) return;
-
       const networkBox = networkNodes.boundingBox();
       const identityBox = identityNodes.boundingBox();
-
-      const gap = 220;
+      const gap = 120;
+      const networkCenterX = networkBox.x1 + networkBox.w / 2;
+      const identityCenterX = identityBox.x1 + identityBox.w / 2;
+      const dx = networkCenterX - identityCenterX;
       const dy = (networkBox.y2 + gap) - identityBox.y1;
-      const dx = networkBox.x1 - identityBox.x1;
-
-      identityNodes.positions(node => ({
-        x: node.position("x") + dx,
-        y: node.position("y") + dy
-      }));
+      identityNodes.positions(node => ({ x: node.position("x") + dx, y: node.position("y") + dy }));
     }
 
     function positionTransitNodes() {
       if (!cy) return;
       const parents = cy.nodes(":parent");
       const parentIds = new Set(parents.map(n => n.id()));
-
       cy.nodes().forEach(node => {
         if (node.parent().length) {
           const pid = node.parent().id();
           if (pid !== "zone_network") return;
         }
         const role = node.data("role");
-        const isRouter = role === "Routeur";
-        if (!isRouter) return;
-
-        const connectedParents = node.connectedEdges()
-          .connectedNodes()
-          .filter(n => parentIds.has(n.id()));
-
+        if (role !== "Routeur") return;
+        const connectedParents = node.connectedEdges().connectedNodes().filter(n => parentIds.has(n.id()));
         if (connectedParents.length < 2) return;
-
-        let sumX = 0;
-        let sumY = 0;
-        connectedParents.forEach(p => {
-          const pos = p.position();
-          sumX += pos.x;
-          sumY += pos.y;
-        });
-        const cx = sumX / connectedParents.length;
-        const cyPos = sumY / connectedParents.length;
-        node.position({ x: cx, y: cyPos });
+        let sumX = 0, sumY = 0;
+        connectedParents.forEach(p => { sumX += p.position().x; sumY += p.position().y; });
+        node.position({ x: sumX / connectedParents.length, y: sumY / connectedParents.length });
       });
     }
 
-    function renderLegend() {
-      const networkItems = ["network", "subnet", "domain", "router", "firewall", "switch", "dc", "server", "workstation", "unknown"];
-      legendNetworkEl.innerHTML = networkItems.map(type => {
-        const color = typeColors[type] || typeColors.unknown;
-        const label = typeLabels[type] || type;
-        return `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span>${label}</div>`;
-      }).join("");
-      // Show tier-based legend (scientific classification)
-      const tierItems = [0, 1, 2, 3];
-      const tierLegend = tierItems.map(tier => {
-        const color = tierColors[tier];
-        const label = tierNames[tier];
-        return `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span>${label}</div>`;
-      }).join("");
-
-      // Add start user indicator (vert lime très visible)
-      const startUserLegend = `<div class="legend-item"><span class="legend-swatch" style="background:${START_USER_COLOR};border:2px double ${START_USER_BORDER}"></span>Utilisateur de départ</div>`;
-
-      legendAdEl.innerHTML = startUserLegend + tierLegend;
-    }
-
+    // ── AD elements builder ──
     function normalizeHostname(value) {
       if (!value) return "";
-      const lower = value.toLowerCase();
-      return lower.replace(/\.$/, "").split(".")[0];
+      return value.toLowerCase().replace(/\.$/, "").split(".")[0];
     }
 
     function buildAdElements(adGraph) {
       const nodes = adGraph.nodes || [];
-      const edges = adGraph.edges || [];
+      const edgesRaw = adGraph.edges || [];
       const idMap = new Map();
       const elements = [];
       const adNodeIds = new Set();
@@ -1683,19 +1163,17 @@
 
       elements.push({
         data: {
-          id: "zone_identity",
-          label: "PARTIE IDENTITE",
-          bg: "rgba(15, 23, 42, 0.02)",
-          borderColor: "#64748b",
-          textColor: "#1e293b",
-          meta: { type: "zone" },
-          isGroup: 1,
-          isZone: 1,
-          isAD: 1  // Marqueur pour identifier les éléments AD
+          id: "zone_identity", label: "IDENTITE",
+          bg: "rgba(15, 23, 42, 0.02)", borderColor: "#94a3b8", textColor: "#0f172a",
+          meta: { type: "zone" }, isGroup: 1, isZone: 1, isAD: 1
         }
       });
 
       const startNodeId = adGraph.start_node;
+      const computerNodeIds = new Set();
+
+      // Pre-scan to identify Computer nodes
+      nodes.forEach(n => { if ((n.type || "Unknown") === "Computer") computerNodeIds.add(n.id); });
 
       nodes.forEach(node => {
         const nodeId = node.id;
@@ -1706,20 +1184,14 @@
         if (type === "Computer") {
           const hostKey = normalizeHostname(label);
           const mapped = hostIndex.get(hostKey) || hostIndex.get(label.toLowerCase());
-          // If we can map an AD Computer to a physical host, we reuse the *same node id*.
-          // No duplicate "AD Computer" node: AD edges will connect directly to the physical node.
-          // IMPORTANT: Only map if the physical node actually exists in the graph!
           if (mapped) {
             const physical = nodeDataIndex.get(mapped);
             if (physical) {
-              // Le nœud réseau existe → fusion
               idMap.set(nodeId, mapped);
               physical.meta = { ...(physical.meta || {}), ad_computer: true };
               physical.label = buildNetworkLabel(physical);
               return;
             }
-            // Sinon le nœud n'existe pas → on crée le nœud AD normalement
-            console.warn(`[Mapping] Nœud réseau "${mapped}" non trouvé, création du nœud AD pour ${label}`);
           }
         }
 
@@ -1727,74 +1199,62 @@
         idMap.set(nodeId, adId);
         adNodeIds.add(adId);
 
-        // Use tier-based color if available, fallback to type-based
-        // Start node gets special green color (very visible)
         const tier = node.tier !== undefined ? node.tier : null;
         const isTarget = node.is_target || false;
-        const bgColor = isStartNode ? START_USER_COLOR : (tier !== null ? (tierColors[tier] || tierColors[3]) : (adTypeColors[type] || adTypeColors.Unknown));
-        const borderColor = isStartNode ? START_USER_BORDER : (tier !== null ? (tierBorderColors[tier] || tierBorderColors[3]) : "#9ca3af");
-        // Tous les fonds sont clairs → texte noir pour lisibilité
-        const textColor = "#1f2937";
+        const isCertTemplate = type === "CertTemplate";
+        const isComputer = type === "Computer";
+        // Computers keep their own color (#c4b5fd) with tier-colored border
+        const bgColor = isStartNode ? START_USER_COLOR
+          : isComputer ? adTypeColors.Computer
+          : isCertTemplate ? adTypeColors.CertTemplate
+          : (tier !== null ? (tierColors[tier] || tierColors[2]) : (adTypeColors[type] || adTypeColors.Unknown));
+        const borderColor = isStartNode ? START_USER_BORDER
+          : isCertTemplate ? "#be185d"
+          : (tier !== null ? (tierBorderColors[tier] || tierBorderColors[2]) : "#9ca3af");
 
         elements.push({
           data: {
-            id: adId,
-            label,
-            type,
-            roles: [type],
-            bg: bgColor,
-            borderColor: borderColor,  // Bordure selon le tier
-            textColor: textColor,      // Texte adapté au fond
-            meta: { type, tier },
-            isTarget: isTarget,
-            isStart: isStartNode,
-            isAD: 1,  // Marqueur pour identifier les éléments AD
-            parent: "zone_identity"
+            id: adId, label, type, roles: [type],
+            bg: bgColor, borderColor, textColor: "#0f172a",
+            meta: { type, tier }, isTarget, isStart: isStartNode,
+            isAD: 1, parent: "zone_identity"
           }
         });
       });
 
       let edgeCounter = 0;
-      edges.forEach(edge => {
-        const src = idMap.get(edge.src);
-        const dst = idMap.get(edge.dst);
-        if (!src || !dst) return;
+      edgesRaw.forEach(edge => {
+        const rawSrc = edge.src || edge.source;
+        const rawDst = edge.dst || edge.target;
+        const src = idMap.get(rawSrc) || idMap.get(rawSrc?.toString()) || rawSrc;
+        const dst = idMap.get(rawDst) || idMap.get(rawDst?.toString()) || rawDst;
         const right = edge.right || edge.kind || "AD";
         const srcIsAd = adNodeIds.has(src);
         const dstIsAd = adNodeIds.has(dst);
-        // Keep identity layout stable: only consider edges among AD nodes.
-        if (srcIsAd && dstIsAd) {
-          mappedEdges.push({ source: src, target: dst });
-        }
-        // Explicit cross-zone links (identity ↔ machine) are styled as "bridge".
+        if (srcIsAd && dstIsAd) mappedEdges.push({ source: src, target: dst });
         const kind = (bridgeRights.has(edge.right) && (!srcIsAd || !dstIsAd)) ? "bridge" : "ad";
+        // Edge from a Computer = uncertain (requires local admin, not guaranteed)
+        const viaComputer = computerNodeIds.has(rawSrc) ? 1 : 0;
         elements.push({
           data: {
-            id: `ad_e${edgeCounter++}`,
-            source: src,
-            target: dst,
-            label: right,
-            kind,
+            id: `ad_e${edgeCounter++}`, source: src, target: dst,
+            label: right, kind, viaComputer,
             severity: edge.severity || null,
             isShortest: edge.is_shortest ? 1 : 0,
-            isAD: 1  // Marqueur pour identifier les éléments AD
+            isAD: 1,
+            allRights: (edge.all_rights && edge.all_rights.length > 1) ? edge.all_rights : null
           }
         });
       });
 
       const startIdRaw = adGraph.start_node;
       const startIdMapped = startIdRaw ? (idMap.get(startIdRaw) || idMap.get(startIdRaw.toString()) || startIdRaw) : null;
-      adGraphState = {
-        startId: startIdMapped,
-        adNodeIds,
-        edges: mappedEdges
-      };
-
+      adGraphState = { startId: startIdMapped, adNodeIds, edges: mappedEdges };
       return elements;
     }
 
-
-    function layoutAdMode1() {
+    // ── AD BFS layout ──
+    function layoutAdMode1(maxWidth) {
       if (!cy || !adGraphState) return;
       const { startId, adNodeIds, edges } = adGraphState;
       if (!adNodeIds || !adNodeIds.size) return;
@@ -1810,15 +1270,10 @@
       const queue = [];
       depths.set(rootId, 0);
       queue.push(rootId);
-
       while (queue.length) {
         const cur = queue.shift();
-        const nexts = adjacency.get(cur) || [];
-        nexts.forEach(nxt => {
-          if (!depths.has(nxt)) {
-            depths.set(nxt, depths.get(cur) + 1);
-            queue.push(nxt);
-          }
+        (adjacency.get(cur) || []).forEach(nxt => {
+          if (!depths.has(nxt)) { depths.set(nxt, depths.get(cur) + 1); queue.push(nxt); }
         });
       }
 
@@ -1829,20 +1284,19 @@
         byDepth.get(depth).push(id);
       });
 
-      const depthKeys = Array.from(byDepth.keys()).sort((a, b) => a - b);
-      const xStep = 260;
-      const yStep = 140;
-
-      depthKeys.forEach((depth, idx) => {
-        const ids = byDepth.get(depth);
+      const maxDepth = Math.max(...byDepth.keys(), 1);
+      // Target total width ~1200px, clamp xStep between 250 and 400
+      const targetWidth = 1200;
+      let xStep = maxDepth > 0 ? Math.round(targetWidth / maxDepth) : 400;
+      xStep = Math.min(400, Math.max(250, xStep));
+      const yStep = 150;
+      byDepth.forEach((ids, depth) => {
         ids.sort();
         const totalHeight = (ids.length - 1) * yStep;
         ids.forEach((id, i) => {
           const node = cy.getElementById(id);
           if (!node.length) return;
-          const x = (depth * xStep);
-          const y = -totalHeight / 2 + i * yStep;
-          node.position({ x, y });
+          node.position({ x: depth * xStep, y: -totalHeight / 2 + i * yStep });
         });
       });
     }

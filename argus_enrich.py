@@ -8,10 +8,8 @@ BloodHound Computer objects (hostnames) to network IPs discovered during scannin
 Features:
 - Direct DNS queries to DC (using dnspython)
 - LDAP queries for additional attributes (optional, requires ldap3)
-- Fallback to system resolver if DC not reachable
-
 Usage:
-    python3 enrich_network_mapping.py \\
+    python3 argus_enrich.py \\
         --bh-dir bh/jsonBoxDomain \\
         --dc-ip 192.168.1.1 \\
         --domain domain.local \\
@@ -19,19 +17,13 @@ Usage:
 """
 import argparse
 import json
-import socket
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-try:
-    import dns.resolver
-    import dns.query
-    import dns.message
-    DNS_AVAILABLE = True
-except ImportError:
-    DNS_AVAILABLE = False
-    print("[WARNING] dnspython not installed. Install with: pip install dnspython")
+import dns.resolver
+import dns.query
+import dns.message
 
 
 def load_bloodhound_computers(bh_dir: str) -> List[Dict]:
@@ -66,15 +58,13 @@ def load_bloodhound_computers(bh_dir: str) -> List[Dict]:
     return computers
 
 
-def resolve_with_dnspython(hostname: str, dc_ip: str, timeout: int = 2) -> List[str]:
+def resolve_with_dnspython(hostname: str, dc_ip: str, timeout: int = 2, use_tcp: bool = False) -> List[str]:
     """
     Resolve hostname using dnspython with direct query to DC.
 
     This bypasses system resolver and queries the DC directly.
+    use_tcp: force TCP transport (required when going through proxychains/SOCKS).
     """
-    if not DNS_AVAILABLE:
-        return []
-
     ips = []
 
     try:
@@ -83,6 +73,8 @@ def resolve_with_dnspython(hostname: str, dc_ip: str, timeout: int = 2) -> List[
         resolver.nameservers = [dc_ip]
         resolver.timeout = timeout
         resolver.lifetime = timeout
+        if use_tcp:
+            resolver.use_tcp = True
 
         # Query A records (IPv4)
         try:
@@ -91,13 +83,6 @@ def resolve_with_dnspython(hostname: str, dc_ip: str, timeout: int = 2) -> List[
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
             pass
 
-        # Optionally query AAAA records (IPv6) - uncomment if needed
-        # try:
-        #     answers = resolver.resolve(hostname, 'AAAA')
-        #     ips.extend([str(rdata.address) for rdata in answers])
-        # except:
-        #     pass
-
     except Exception as e:
         # DNS query failed
         pass
@@ -105,57 +90,56 @@ def resolve_with_dnspython(hostname: str, dc_ip: str, timeout: int = 2) -> List[
     return ips
 
 
-def resolve_with_system(hostname: str, timeout: int = 2) -> List[str]:
-    """
-    Fallback: Resolve hostname using system resolver.
+def resolve_hostname_to_ip(hostname: str, dc_ip: Optional[str] = None, timeout: int = 2, use_tcp: bool = False) -> List[str]:
+    """Resolve hostname to IP address(es) via DNS query to DC."""
+    if dc_ip:
+        return resolve_with_dnspython(hostname, dc_ip, timeout, use_tcp=use_tcp)
+    return []
 
-    This uses /etc/resolv.conf and requires DNS to point to DC.
-    """
-    ips = []
 
+def build_nmap_hostname_index(network_scan_path: str) -> Dict[str, str]:
+    """Build a hostname -> IP index from a network_scan.json (nmap SMB discovery).
+
+    Returns: Dict mapping normalized_hostname -> ip
+    """
+    index = {}
+    if not network_scan_path:
+        return index
     try:
-        # Set socket timeout
-        original_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(timeout)
+        with open(network_scan_path, "r", encoding="utf-8") as f:
+            scan = json.load(f)
+    except (IOError, json.JSONDecodeError):
+        print(f"  ⚠ Cannot read network scan: {network_scan_path}")
+        return index
 
-        # Standard DNS resolution
-        result = socket.getaddrinfo(hostname, None, socket.AF_INET)
-        ips = list(set([r[4][0] for r in result]))
+    # Collect hosts from all scan sections
+    hosts = []
+    for h in scan.get("vlan_scan", {}).get("active_hosts", []):
+        hosts.append(h)
+    for result in scan.get("service_scan", {}).get("results", []):
+        hosts.append(result)
 
-        # Restore original timeout
-        socket.setdefaulttimeout(original_timeout)
+    for h in hosts:
+        ip = h.get("ip")
+        hostname = h.get("hostname")
+        if ip and hostname:
+            # Index by short name and FQDN
+            key_fqdn = hostname.lower().rstrip(".")
+            key_short = key_fqdn.split(".")[0]
+            index[key_fqdn] = ip
+            index[key_short] = ip
 
-    except (socket.gaierror, socket.timeout):
-        pass
-
-    return ips
-
-
-def resolve_hostname_to_ip(hostname: str, dc_ip: Optional[str] = None, timeout: int = 2) -> List[str]:
-    """
-    Resolve hostname to IP address(es).
-
-    Strategy:
-    1. Try direct DNS query to DC (if dc_ip provided and dnspython available)
-    2. Fallback to system resolver
-    """
-    ips = []
-
-    # Try dnspython first (direct DC query)
-    if dc_ip and DNS_AVAILABLE:
-        ips = resolve_with_dnspython(hostname, dc_ip, timeout)
-        if ips:
-            return ips
-
-    # Fallback to system resolver
-    ips = resolve_with_system(hostname, timeout)
-
-    return ips
+    if index:
+        print(f"  → Network scan hostnames indexed: {len(index)} entries from {network_scan_path}")
+    return index
 
 
-def enrich_mapping(computers: List[Dict], dc_ip: Optional[str] = None, timeout: int = 2) -> Dict[str, Dict]:
+def enrich_mapping(computers: List[Dict], dc_ip: Optional[str] = None, timeout: int = 2,
+                   use_tcp: bool = False, nmap_index: Optional[Dict[str, str]] = None) -> Dict[str, Dict]:
     """
     Enrich Computer objects with IP addresses by resolving hostnames.
+
+    Priority: nmap SMB hostname index > DNS (TCP or UDP) > system resolver
 
     Returns: Dict mapping hostname -> {ips: [], objectid: str, properties: {}}
     """
@@ -165,13 +149,13 @@ def enrich_mapping(computers: List[Dict], dc_ip: Optional[str] = None, timeout: 
 
     print("\n[ENRICHMENT] Resolving Computer hostnames to IPs...")
 
-    if dc_ip:
-        if DNS_AVAILABLE:
-            print(f"  → Using direct DNS queries to DC: {dc_ip}")
-        else:
-            print(f"  ⚠ dnspython not available, using system resolver")
+    if nmap_index:
+        print(f"  → Using nmap SMB hostnames (pivot mode, no DNS needed)")
+    elif dc_ip:
+        proto = "TCP" if use_tcp else "UDP"
+        print(f"  → Using direct DNS queries to DC: {dc_ip} ({proto})")
     else:
-        print(f"  → Using system resolver (check /etc/resolv.conf points to DC)")
+        print(f"  ⚠ No DC IP provided, DNS resolution disabled")
 
     for i, comp in enumerate(computers):
         object_id = comp.get("ObjectIdentifier", "")
@@ -186,7 +170,19 @@ def enrich_mapping(computers: List[Dict], dc_ip: Optional[str] = None, timeout: 
 
         # Try to resolve (prefer dNSHostName which is FQDN)
         hostname = dns_hostname or name
-        ips = resolve_hostname_to_ip(hostname, dc_ip, timeout)
+
+        # Priority 1: nmap SMB index (most reliable in pivot mode)
+        ips = []
+        if nmap_index:
+            key_fqdn = hostname.lower().rstrip(".")
+            key_short = key_fqdn.split(".")[0]
+            ip = nmap_index.get(key_fqdn) or nmap_index.get(key_short)
+            if ip:
+                ips = [ip]
+
+        # Priority 2: DNS resolution
+        if not ips:
+            ips = resolve_hostname_to_ip(hostname, dc_ip, timeout, use_tcp=use_tcp)
 
         # Store mapping
         hostname_key = hostname.lower()
@@ -227,16 +223,16 @@ def main():
         epilog="""
 Examples:
   # Basic usage (system resolver)
-  python3 enrich_network_mapping.py --bh-dir bh/jsonBoxDomain
+  python3 argus_enrich.py --bh-dir bh/jsonBoxDomain
 
   # With DC IP (direct DNS queries)
-  python3 enrich_network_mapping.py \\
+  python3 argus_enrich.py \\
     --bh-dir bh/jsonBoxDomain \\
     --dc-ip 192.168.1.1 \\
     --domain domain.local
 
   # Custom output and timeout
-  python3 enrich_network_mapping.py \\
+  python3 argus_enrich.py \\
     --bh-dir bh/jsonBoxDomain \\
     --dc-ip 192.168.1.1 \\
     --output results/mapping.json \\
@@ -267,6 +263,16 @@ Examples:
         default=2,
         help="DNS resolution timeout in seconds (default: 2)"
     )
+    parser.add_argument(
+        "--dns-tcp",
+        action="store_true",
+        help="Use TCP for DNS queries (required when going through proxychains/SOCKS)"
+    )
+    parser.add_argument(
+        "--network-scan",
+        default=None,
+        help="Path to network_scan.json to use nmap SMB hostnames instead of DNS (pivot mode)"
+    )
 
     args = parser.parse_args()
 
@@ -280,15 +286,8 @@ Examples:
         print(f"Domain: {args.domain}")
     print(f"Output: {args.output}")
     print(f"Timeout: {args.timeout}s")
-
-    # Check dnspython availability
-    if not DNS_AVAILABLE:
-        print("\n⚠ WARNING: dnspython not installed!")
-        print("   Install with: pip install dnspython")
-        print("   Falling back to system resolver (less reliable)")
-        if not args.dc_ip:
-            print("\n   Make sure /etc/resolv.conf points to the DC:")
-            print("   echo 'nameserver <DC_IP>' | sudo tee /etc/resolv.conf")
+    if args.dns_tcp:
+        print(f"DNS transport: TCP (proxychains mode)")
 
     # Load BloodHound computers
     computers = load_bloodhound_computers(args.bh_dir)
@@ -296,8 +295,11 @@ Examples:
         print("\n✗ No computers found in BloodHound data")
         return 1
 
+    # Build nmap SMB hostname index (pivot mode)
+    nmap_index = build_nmap_hostname_index(args.network_scan) if args.network_scan else None
+
     # Enrich with IP resolution
-    mapping = enrich_mapping(computers, args.dc_ip, args.timeout)
+    mapping = enrich_mapping(computers, args.dc_ip, args.timeout, use_tcp=args.dns_tcp, nmap_index=nmap_index)
 
     # Save mapping
     output_path = Path(args.output)

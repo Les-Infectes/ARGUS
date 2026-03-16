@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-CartoAD - Full Scan Pipeline
+ARGUS - Full Scan Pipeline
 Execute the complete workflow: Network scan → BloodHound → Enrichment → Graph generation
 
 Usage:
     # IMPORTANT: Use the virtualenv Python with sudo to ensure dependencies are found
-    sudo .env/bin/python3 run_full_scan.py \\
+    sudo .env/bin/python3 argus_pipeline.py \\
         --ip-cidr 192.168.30.0/24 \\
         --gateway 192.168.30.1 \\
         --dns 192.168.30.254 \\
@@ -76,7 +76,7 @@ def check_root():
     """Check if running as root (required for nmap)."""
     if os.geteuid() != 0:
         print_error("This script requires root privileges for network scanning.")
-        print_info("Please run with: sudo .env/bin/python3 run_full_scan.py ...")
+        print_info("Please run with: sudo .env/bin/python3 argus_pipeline.py ...")
         return False
     return True
 
@@ -116,54 +116,38 @@ def check_dependencies():
     return True
 
 
-def detect_network_class(ip_cidr):
-    """Detect if network is class C or larger."""
-    ip_part = ip_cidr.split('/')[0]
-    first_octet = int(ip_part.split('.')[0])
-
-    # Get CIDR mask
-    if '/' in ip_cidr:
-        mask = int(ip_cidr.split('/')[1])
-    else:
-        mask = 24
-
-    # Class C: 192.168.x.x/24 or similar small networks
-    if first_octet == 192 and mask >= 24:
-        return "C"
-    else:
-        return "AB"
-
 
 def run_network_scan(args, output_dir):
     """Run the network scan script."""
-    # Detect which script to use
-    network_class = detect_network_class(args.ip_cidr)
-
-    if network_class == "C":
-        script = SCRIPT_DIR / "global_network_scan_classeC.py"
-        print_info(f"Detected Class C network, using: {script.name}")
-    else:
-        script = SCRIPT_DIR / "global_network_scan_classeAB.py"
-        print_info(f"Detected Class A/B network, using: {script.name}")
-
+    script = SCRIPT_DIR / "argus_network.py"
     output_file = output_dir / "network_scan.json"
 
     cmd = [
         sys.executable,
         str(script),
         "--ip_cidr", args.ip_cidr,
-        "--gateway", args.gateway,
-        "--dns", args.dns,
         "--output", str(output_file),
     ]
 
-    if args.port_scan:
+    if args.gateway:
+        cmd.extend(["--gateway", args.gateway])
+    if args.dns:
+        cmd.extend(["--dns", args.dns])
+
+    if args.proxychains_conf:
+        cmd += ["--proxychains", "--proxychains-conf", args.proxychains_conf]
+
+    if args.targets:
+        cmd += ["--targets", args.targets]
+
+    if args.port_scan or args.proxychains_conf:
         cmd.append("--port-scan")
 
     if args.port_list:
         cmd.extend(["--port-list", args.port_list])
 
-    print_info(f"Command: {' '.join(cmd)}")
+    if args.single_host:
+        cmd.append("--single-host")
 
     try:
         result = subprocess.run(cmd, check=True)
@@ -202,16 +186,25 @@ def run_bloodhound_collection(args, output_dir):
     cmd = [
         str(bh_executable),
         "-u", username,
-        "-p", args.password,
         "-d", args.domain,
         "-ns", args.dc_ip,
         "-c", "All",
         "--zip",
     ]
+    if args.hashes:
+        # bloodhound-python expects LM:NT format
+        cmd.extend(["--hashes", f"aad3b435b51404eeaad3b435b51404ee:{args.hashes}"])
+        auth_display = "-H ***"
+    else:
+        cmd.extend(["-p", args.password])
+        auth_display = "-p ***"
+    if args.dns_tcp:
+        cmd.append("--dns-tcp")
+    cmd += ["--dns-timeout", str(args.dns_timeout)]
+    if args.dc_hostname:
+        cmd += ["-dc", args.dc_hostname]
 
     # Run from output_dir to get the zip there
-    print_info(f"Command: bloodhound-python -u {username} -p *** -d {args.domain} -ns {args.dc_ip} -c All --zip")
-
     try:
         result = subprocess.run(cmd, check=True, cwd=str(output_dir))
 
@@ -231,10 +224,27 @@ def run_bloodhound_collection(args, output_dir):
             # Remove zip after extraction
             zip_file.unlink()
 
-            print_success(f"BloodHound data extracted to: {bh_dir}")
+            # Validate extracted data
+            json_files = list(bh_dir.glob("*.json"))
+            if not json_files:
+                print_error("BloodHound zip extracted but no JSON files found inside")
+                return None
+
+            print_success(f"BloodHound data extracted to: {bh_dir} ({len(json_files)} JSON files)")
             return str(bh_dir)
         else:
-            print_error("BloodHound completed but no zip file found")
+            # Fallback: check if bloodhound-python created JSON files directly (no zip)
+            json_files = list(output_dir.glob("*_computers.json")) + list(output_dir.glob("*_users.json"))
+            if json_files:
+                print_info("No zip found, but JSON files detected. Moving to bloodhound_data/...")
+                for jf in output_dir.glob("*.json"):
+                    if jf.name.startswith("20"):  # bloodhound timestamp format
+                        jf.rename(bh_dir / jf.name)
+                json_files = list(bh_dir.glob("*.json"))
+                if json_files:
+                    print_success(f"BloodHound data moved to: {bh_dir} ({len(json_files)} JSON files)")
+                    return str(bh_dir)
+            print_error("BloodHound completed but no zip file or JSON data found")
             return None
 
     except subprocess.CalledProcessError as e:
@@ -247,7 +257,7 @@ def run_bloodhound_collection(args, output_dir):
 
 def run_enrichment(args, output_dir, bh_dir):
     """Run hostname enrichment."""
-    script = SCRIPT_DIR / "enrich_network_mapping.py"
+    script = SCRIPT_DIR / "argus_enrich.py"
     output_file = output_dir / "hostname_mapping.json"
 
     cmd = [
@@ -258,8 +268,12 @@ def run_enrichment(args, output_dir, bh_dir):
         "--domain", args.domain,
         "--output", str(output_file),
     ]
-
-    print_info(f"Command: {' '.join(cmd)}")
+    if args.dns_tcp:
+        cmd.append("--dns-tcp")
+    # Pass network_scan.json if it exists: nmap/SMB hostnames take priority over DNS
+    network_scan_file = output_dir / "network_scan.json"
+    if network_scan_file.exists():
+        cmd.extend(["--network-scan", str(network_scan_file)])
 
     try:
         result = subprocess.run(cmd, check=True)
@@ -274,9 +288,55 @@ def run_enrichment(args, output_dir, bh_dir):
         return False
 
 
-def run_graph_generation(args, output_dir, bh_dir):
+def run_certipy_enumeration(args, output_dir, bh_dir):
+    """Run Certipy ADCS enumeration and parse results."""
+    script = SCRIPT_DIR / "argus_certipy.py"
+    certipy_data_file = output_dir / "certipy_data.json"
+
+    cmd = [
+        sys.executable,
+        str(script),
+        "--data-dir", bh_dir,
+        "--out", str(certipy_data_file),
+    ]
+
+    if args.certipy_json:
+        cmd.extend(["--certipy-json", args.certipy_json])
+    else:
+        certipy_prefix = str(output_dir / "certipy_scan")
+        cmd.extend([
+            "--domain", args.domain,
+            "--username", args.user,
+            "--dc-ip", args.dc_ip,
+            "--output-prefix", certipy_prefix,
+        ])
+        if args.hashes:
+            cmd.extend(["--hashes", args.hashes])
+        else:
+            cmd.extend(["--password", args.password])
+        if args.dns_tcp:
+            cmd.append("--dns-tcp")
+
+    try:
+        result = subprocess.run(cmd, check=True)
+        if certipy_data_file.exists():
+            print_success(f"Certipy ADCS enumeration completed: {certipy_data_file}")
+            return str(certipy_data_file)
+        else:
+            print_warning("Certipy completed but output file not found")
+            return None
+    except subprocess.CalledProcessError as e:
+        print_warning(f"Certipy enumeration failed with code {e.returncode} (non-blocking)")
+        # Fallback: check if certipy_data.json exists from a previous run
+        if certipy_data_file.exists():
+            print_info(f"Using existing certipy data: {certipy_data_file}")
+            return str(certipy_data_file)
+        return None
+
+
+def run_graph_generation(args, output_dir, bh_dir, certipy_data=None):
     """Run graph generation for all tiers."""
-    script = SCRIPT_DIR / "run_all_modes.py"
+    script = SCRIPT_DIR / "argus_graph.py"
 
     cmd = [
         sys.executable,
@@ -285,14 +345,14 @@ def run_graph_generation(args, output_dir, bh_dir):
         "--start", args.start,
         "--output-dir", str(output_dir),
     ]
-
-    print_info(f"Command: {' '.join(cmd)}")
+    if certipy_data:
+        cmd.extend(["--certipy-json", certipy_data])
 
     try:
         result = subprocess.run(cmd, check=True)
 
         # Check output files
-        expected_files = ["graph_tier0.json", "graph_tier1.json", "graph_tier2.json", "graph_tier3.json"]
+        expected_files = ["graph_tier0.json", "graph_tier1.json", "graph_tier2.json"]
         found = [f for f in expected_files if (output_dir / f).exists()]
 
         if found:
@@ -309,12 +369,12 @@ def run_graph_generation(args, output_dir, bh_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CartoAD - Full Scan Pipeline: Network + BloodHound + Enrichment + Graphs",
+        description="ARGUS - Full Scan Pipeline: Network + BloodHound + Enrichment + Graphs",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Full scan with port detection
-  sudo python3 run_full_scan.py \\
+  sudo python3 argus_pipeline.py \\
       --ip-cidr 192.168.30.0/24 \\
       --gateway 192.168.30.1 \\
       --dns 192.168.30.254 \\
@@ -326,7 +386,7 @@ Examples:
       --port-scan
 
   # Minimal scan (no port scan)
-  sudo python3 run_full_scan.py \\
+  sudo python3 argus_pipeline.py \\
       --ip-cidr 10.0.0.0/24 \\
       --gateway 10.0.0.1 \\
       --dns 10.0.0.10 \\
@@ -337,7 +397,7 @@ Examples:
       --start "scanner@corp.local"
 
   # Skip network scan (BloodHound only)
-  python3 run_full_scan.py \\
+  python3 argus_pipeline.py \\
       --skip-network \\
       --domain domain.local \\
       --dc-ip 192.168.30.254 \\
@@ -350,21 +410,34 @@ Examples:
     # Network arguments
     net_group = parser.add_argument_group('Network scan options')
     net_group.add_argument("--ip-cidr", help="IP range to scan (e.g., 192.168.30.0/24)")
-    net_group.add_argument("--gateway", help="Gateway IP address")
-    net_group.add_argument("--dns", help="DNS server IP (usually DC)")
+    net_group.add_argument("--gateway", help="Gateway IP address (not required in --proxychains-conf mode)")
+    net_group.add_argument("--dns", help="DNS server IP (not required in --proxychains-conf mode)")
     net_group.add_argument("--port-scan", action="store_true", help="Enable port/service scanning")
     net_group.add_argument("--port-list", help="Custom port list (e.g., '22,80,443,445')")
     net_group.add_argument("--skip-network", action="store_true", help="Skip network scan (AD only)")
+    net_group.add_argument("--proxychains-conf", default=None, help="Pivot mode: proxychains4 config file for network scan (e.g., pivot.conf). Skips ARP/ICMP/traceroute, uses TCP connect only.")
+    net_group.add_argument("--targets", default=None, help="Pivot mode: comma-separated list of known IPs to port-scan (e.g., '172.16.1.20,172.16.1.45'). Much faster than full CIDR scan.")
+    net_group.add_argument("--single-host", action="store_true", help="Single host mode: skip traceroute/ARP, only port scan the target IP")
 
     # AD arguments
     ad_group = parser.add_argument_group('Active Directory options')
     ad_group.add_argument("--domain", required=True, help="AD domain name (e.g., domain.local)")
     ad_group.add_argument("--dc-ip", required=True, help="Domain Controller IP address")
     ad_group.add_argument("--user", required=True, help="AD username for BloodHound collection")
-    ad_group.add_argument("--password", required=True, help="AD password")
+    auth_group = ad_group.add_mutually_exclusive_group()
+    auth_group.add_argument("--password", help="AD password")
+    auth_group.add_argument("-H", "--hashes", help="NTLM hash for authentication (NT hash only, e.g., 31d6cfe0d16ae931b73c59d7e0c089c0)")
     ad_group.add_argument("--start", required=True, help="Start node for path analysis (e.g., user@domain.local)")
+    ad_group.add_argument("--dns-tcp", action="store_true", help="Use TCP instead of UDP for DNS queries (required for proxychains/SOCKS)")
+    ad_group.add_argument("--dns-timeout", type=int, default=10, help="DNS query timeout in seconds for bloodhound-python (default: 10)")
+    ad_group.add_argument("--dc-hostname", default=None, help="DC FQDN for bloodhound-python -dc flag (e.g., dc01.DANTE.local)")
     ad_group.add_argument("--skip-bloodhound", action="store_true", help="Skip BloodHound collection (use existing data)")
     ad_group.add_argument("--bh-dir", help="Existing BloodHound data directory (with --skip-bloodhound)")
+
+    # ADCS arguments
+    adcs_group = parser.add_argument_group('ADCS options')
+    adcs_group.add_argument("--skip-certipy", action="store_true", help="Skip Certipy ADCS enumeration")
+    adcs_group.add_argument("--certipy-json", default=None, help="Use existing Certipy JSON file instead of running certipy")
 
     # Output arguments
     out_group = parser.add_argument_group('Output options')
@@ -375,23 +448,27 @@ Examples:
 
     # Validate arguments
     if not args.skip_network:
-        if not args.ip_cidr or not args.gateway or not args.dns:
-            parser.error("--ip-cidr, --gateway, and --dns are required unless --skip-network is used")
+        if not args.ip_cidr:
+            parser.error("--ip-cidr is required unless --skip-network is used")
+        if not args.proxychains_conf and not args.single_host and (not args.gateway or not args.dns):
+            parser.error("--gateway and --dns are required unless --skip-network, --proxychains-conf, or --single-host is used")
 
-    if args.skip_bloodhound and not args.bh_dir:
-        parser.error("--bh-dir is required when using --skip-bloodhound")
+    if not args.password and not args.hashes:
+        parser.error("one of --password or -H/--hashes is required")
+
+    dummy_start = not args.start or args.start.lower() == "x@x"
+    if args.skip_bloodhound and not args.bh_dir and not dummy_start:
+        parser.error("--bh-dir is required when using --skip-bloodhound with a real --start node")
 
     # Check root for network scan
     if not args.skip_network and not check_root():
         return 1
 
-    print_header("CartoAD - Full Scan Pipeline")
+    print(f"\n{Colors.BOLD}ARGUS Pipeline{Colors.ENDC}")
 
     # Check dependencies
-    print_step(0, 4, "Checking dependencies...")
     if not check_dependencies():
         return 1
-    print_success("All dependencies found")
 
     # Setup output directory
     if args.output_dir:
@@ -401,17 +478,17 @@ Examples:
         output_dir = SCRIPT_DIR / "results" / f"scan_{timestamp}"
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    print_info(f"Output directory: {output_dir}")
 
     # Track results
     results = {
         "network_scan": None,
         "bloodhound": None,
         "enrichment": None,
+        "certipy": None,
         "graphs": None,
     }
 
-    total_steps = 4
+    total_steps = 5
     current_step = 0
 
     # Step 1: Network scan
@@ -445,60 +522,62 @@ Examples:
             return 1
 
     # Step 3: Enrichment
+    # In pivot mode (--proxychains-conf), force enrichment even if --skip-enrichment was passed,
+    # using nmap SMB hostnames from network_scan.json (no DNS needed).
     current_step += 1
-    if args.skip_enrichment:
+    force_enrichment = bool(args.proxychains_conf and args.bh_dir)
+    if (args.skip_enrichment and not force_enrichment) or not bh_dir:
         print_step(current_step, total_steps, "Hostname enrichment (SKIPPED)")
         results["enrichment"] = "skipped"
     else:
-        print_step(current_step, total_steps, "Hostname enrichment...")
+        label = "Hostname enrichment (pivot: SMB hostnames)..." if force_enrichment else "Hostname enrichment..."
+        print_step(current_step, total_steps, label)
         if run_enrichment(args, output_dir, bh_dir):
             results["enrichment"] = "success"
         else:
             results["enrichment"] = "warning"
             print_warning("Enrichment failed but continuing (non-blocking)")
 
-    # Step 4: Graph generation
+    # Step 4: Certipy ADCS enumeration
     current_step += 1
-    print_step(current_step, total_steps, "Graph generation...")
-    if run_graph_generation(args, output_dir, bh_dir):
+    certipy_data = None
+    if args.skip_certipy:
+        print_step(current_step, total_steps, "Certipy ADCS enumeration (SKIPPED)")
+        results["certipy"] = "skipped"
+    else:
+        print_step(current_step, total_steps, "Certipy ADCS enumeration...")
+        certipy_data = run_certipy_enumeration(args, output_dir, bh_dir)
+        if certipy_data:
+            results["certipy"] = "success"
+        else:
+            results["certipy"] = "warning"
+            print_warning("Certipy failed but continuing (non-blocking)")
+
+    # Step 5: Graph generation
+    current_step += 1
+    # Skip graphs if no usable BH data: skip-bloodhound with a dummy start (x@x = network-only intent)
+    dummy_start = not args.start or args.start.lower() == "x@x"
+    network_only_pass = args.skip_bloodhound and dummy_start
+    if network_only_pass:
+        print_step(current_step, total_steps, "Graph generation (SKIPPED - network-only pass)")
+        results["graphs"] = "skipped"
+    elif run_graph_generation(args, output_dir, bh_dir, certipy_data):
         results["graphs"] = "success"
     else:
         results["graphs"] = "failed"
 
     # Summary
-    print_header("SUMMARY")
+    icons = {"success": "✓", "failed": "✗", "warning": "⚠", "skipped": "○"}
+    print(f"\n{Colors.BOLD}── Summary ──{Colors.ENDC}")
+    for key, label in [("network_scan", "Network"), ("bloodhound", "BloodHound"),
+                       ("enrichment", "Mapping"), ("certipy", "Certipy"), ("graphs", "Graphs")]:
+        print(f"  {icons[results[key]]} {label}: {results[key]}")
+    print(f"  Output: {output_dir}")
 
-    status_icons = {
-        "success": f"{Colors.GREEN}✓{Colors.ENDC}",
-        "failed": f"{Colors.RED}✗{Colors.ENDC}",
-        "warning": f"{Colors.YELLOW}⚠{Colors.ENDC}",
-        "skipped": f"{Colors.BLUE}○{Colors.ENDC}",
-    }
-
-    print(f"  {status_icons[results['network_scan']]} Network scan: {results['network_scan']}")
-    print(f"  {status_icons[results['bloodhound']]} BloodHound collection: {results['bloodhound']}")
-    print(f"  {status_icons[results['enrichment']]} Hostname enrichment: {results['enrichment']}")
-    print(f"  {status_icons[results['graphs']]} Graph generation: {results['graphs']}")
-
-    print(f"\n{Colors.BOLD}Output directory:{Colors.ENDC} {output_dir}")
-
-    # List generated files
-    print(f"\n{Colors.BOLD}Generated files:{Colors.ENDC}")
-    for f in sorted(output_dir.glob("*.json")):
-        print(f"  - {f.name}")
-
-    # Instructions
-    print(f"\n{Colors.BOLD}Next steps:{Colors.ENDC}")
-    print(f"  1. Open cartographie.html in a browser")
-    print(f"  2. Load network_scan.json (network layer)")
-    print(f"  3. Load graph_tier0.json (AD attack paths)")
-
-    # Return code
-    if results["graphs"] == "success":
-        print_success("\nPipeline completed successfully!")
+    if results["graphs"] in ("success", "skipped"):
         return 0
     else:
-        print_error("\nPipeline completed with errors")
+        print_error("Pipeline completed with errors")
         return 1
 
 

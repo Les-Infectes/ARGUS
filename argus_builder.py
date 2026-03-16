@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import sys
 import time
 import re
 from collections import defaultdict, deque
@@ -14,21 +15,20 @@ from typing import Dict, List, Tuple, Optional, Set
 # TIER 0 — Contrôle DÉTERMINISTE du domaine :
 #   1. SEED (statique)     : Domain, DCs, KRBTGT, groupes critiques, DCSync, Cert Publishers
 #   2. CLOSURE (hérité)    : Droits de contrôle direct sur Tier 0 (whitelist stricte)
-#   3. INDIRECT (accès DC) : TOUS les accès aux DCs (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM)
+#   3. INDIRECT (accès machines T0) : TOUS les accès aux machines Tier 0 (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM)
 #   4. MEMBRES             : Membres directs des groupes Tier 0
 #   5. DISTANCE BFS        : Calcul distance depuis Tier 0 FINAL
 #
-# TIER 1/2/3 — Distance BFS depuis Tier 0 :
-#   - Tier 1 : 1-2 hops depuis Tier 0
-#   - Tier 2 : 3-5 hops depuis Tier 0
-#   - Tier 3 : 6+ hops depuis Tier 0 (inclut les noeuds unreachable/terminaux)
+# TIER 1/2 — Distance BFS depuis Tier 0 :
+#   - Tier 1 : 1-7 hops depuis Tier 0 (proximite)
+#   - Tier 2 : 8+ hops depuis Tier 0 (inclut les noeuds unreachable/terminaux)
 #
 # Principes :
 #   - Tier 0 = contrôle IMMÉDIAT et DÉTERMINISTE du domaine
 #   - Tier 1/2/3 = classification par distance uniquement (pas de promotions directes)
 #   - Computers = noeuds normaux, traversables (héritage des droits du compte machine)
 #   - Tous les edges (AdminTo, CanRDP, CanPSRemote, sessions) sont utilisés pour le BFS
-#   - Phase INDIRECT complète tous les accès aux DCs AVANT le calcul BFS (distances correctes)
+#   - Phase INDIRECT complète tous les accès aux machines Tier 0 AVANT le calcul BFS (distances correctes)
 # ============================================================================
 
 # Well-known RID suffixes for Tier 0 SEED (domain-relative)
@@ -40,6 +40,9 @@ TIER0_RID_SUFFIXES = [
     "-517",   # Cert Publishers (PKI - ESC attacks)
     "-518",   # Schema Admins
     "-519",   # Enterprise Admins
+    "-520",   # Group Policy Creator Owners (Owns GPOs they create → pivot T0)
+    "-526",   # Key Admins (Shadow Credentials on any account, WHfB)
+    "-527",   # Enterprise Key Admins (forest-wide Key Admins)
     "-544",   # Administrators (BUILTIN)
     "-548",   # Account Operators
     "-549",   # Server Operators
@@ -89,6 +92,13 @@ ACE_RIGHTS_HIERARCHY = [
     # Tier 8: Limited modification
     "GenericWrite",
     "AllExtendedRights",
+
+    # Tier 9: Account restrictions (UAC manipulation)
+    "WriteAccountRestrictions",
+
+    # Tier 10: ADCS enrollment
+    "Enroll",
+    "AutoEnroll",
 ]
 
 # TIER 0 CLOSURE - Whitelist STRICTE
@@ -152,6 +162,10 @@ ALL_PRIVILEGE_RIGHTS = {
     "AddKeyCredentialLink", "WriteKeyCredentialLink",
     # GPO
     "WriteGPO", "EditGPO",
+    # ADCS Certificate Templates
+    "Enroll", "AutoEnroll",
+    # Account restrictions (UAC flags: AS-REPRoasting, disable account)
+    "WriteAccountRestrictions",
 }
 
 WELL_KNOWN_PREFIXES = (
@@ -172,6 +186,7 @@ TYPE_BY_META = {
     "gpos": "GPO",
     "containers": "Container",
     "domains": "Domain",
+    "certtemplates": "CertTemplate",
 }
 
 
@@ -205,23 +220,33 @@ def get_dc_computers(by_type: Dict[str, dict]) -> Set[str]:
     return dc_ids
 
 
-def get_ous_containing_dcs(by_type: Dict[str, dict], dc_ids: Set[str]) -> Set[str]:
+def get_tier0_computers(tier0: Set[str], by_type: Dict[str, dict]) -> Set[str]:
     """
-    Find OUs that contain Domain Controllers (for LAPS/GPO propagation).
+    Return the subset of Tier 0 SIDs that are Computer objects.
+    """
+    computer_ids = set()
+    computers = by_type.get("computers", {}).get("data", [])
+    for comp in computers:
+        cid = comp.get("ObjectIdentifier")
+        if cid and cid in tier0:
+            computer_ids.add(cid)
+    return computer_ids
+
+
+def get_ous_containing_machines(by_type: Dict[str, dict], machine_ids: Set[str]) -> Set[str]:
+    """
+    Find OUs that contain the given machines (for LAPS/GPO propagation).
     """
     ou_ids = set()
     ous = by_type.get("ous", {}).get("data", [])
 
-    # Build OU → children index from computers
     computers = by_type.get("computers", {}).get("data", [])
     for comp in computers:
         cid = comp.get("ObjectIdentifier")
-        if cid not in dc_ids:
+        if cid not in machine_ids:
             continue
-        # Extract OU from distinguishedName
         props = comp.get("Properties", {}) or {}
         dn = props.get("distinguishedname", "")
-        # Find parent OU in DN
         for ou in ous:
             ou_props = ou.get("Properties", {}) or {}
             ou_dn = ou_props.get("distinguishedname", "")
@@ -231,26 +256,24 @@ def get_ous_containing_dcs(by_type: Dict[str, dict], dc_ids: Set[str]) -> Set[st
     return ou_ids
 
 
-def get_gpos_linked_to_dc_ous(by_type: Dict[str, dict], dc_ou_ids: Set[str]) -> Set[str]:
+def get_gpos_linked_to_ous(by_type: Dict[str, dict], ou_ids: Set[str]) -> Set[str]:
     """
-    Find GPOs linked to OUs containing DCs.
+    Find GPOs linked to the given OUs + domain-level GPOs.
     """
     gpo_ids = set()
 
-    # Check GPO links on OUs
     ous = by_type.get("ous", {}).get("data", [])
     for ou in ous:
-        ou_id = ou.get("ObjectIdentifier")
-        if ou_id not in dc_ou_ids:
+        oid = ou.get("ObjectIdentifier")
+        if oid not in ou_ids:
             continue
-        # Check Links on this OU
         links = ou.get("Links", []) or []
         for link in links:
             gpo_id = link.get("GUID") or link.get("ObjectIdentifier")
             if gpo_id:
                 gpo_ids.add(gpo_id)
 
-    # Also check domain-level GPO links
+    # Domain-level GPOs apply to all machines
     domains = by_type.get("domains", {}).get("data", [])
     for domain in domains:
         links = domain.get("Links", []) or []
@@ -319,6 +342,43 @@ def identify_tier0_seed(nodes_by_id: Dict[str, dict], by_type: Dict[str, dict]) 
                 if right in TIER0_DCSYNC_RIGHTS and principal:
                     tier0.add(principal)
 
+    # 6. ADCS Certificate Templates with ESC vulnerabilities = Tier 0
+    for nid, node in nodes_by_id.items():
+        if node.get("type") == "CertTemplate":
+            esc = node.get("_properties", {}).get("esc_vulnerabilities", [])
+            if esc:
+                tier0.add(nid)
+
+    # 7. Default Domain Policy & Default Domain Controllers Policy = Tier 0
+    # These GPOs control security settings for the entire domain and all DCs.
+    # Promoting them in SEED lets CLOSURE automatically handle anyone with
+    # GenericAll/WriteDacl/WriteOwner on them.
+    for nid, node in nodes_by_id.items():
+        if node.get("type") == "GPO":
+            gpo_name = (node.get("name") or "").upper()
+            if "DEFAULT DOMAIN POLICY" in gpo_name or "DEFAULT DOMAIN CONTROLLERS POLICY" in gpo_name:
+                tier0.add(nid)
+
+    # 8. Enterprise CA host machines = Tier 0
+    # If certipy data identifies CA server names, find the matching computers.
+    # Compromising the CA machine = forge certificates, extract CA private key.
+    ca_hostnames = set()
+    for nid, node in nodes_by_id.items():
+        if node.get("type") == "CertTemplate":
+            ca_names = node.get("_properties", {}).get("ca_names", []) or []
+            for ca in ca_names:
+                ca_hostnames.add(ca.upper())
+    if ca_hostnames:
+        for nid, node in nodes_by_id.items():
+            if node.get("type") == "Computer":
+                comp_name = (node.get("name") or "").upper()
+                # Match CA name against computer name (e.g. "AUTHORITY-CA" in "AUTHORITY.AUTHORITY.HTB")
+                for ca in ca_hostnames:
+                    # CA name often matches the hostname prefix (AUTHORITY-CA → AUTHORITY)
+                    ca_host_prefix = ca.split("-")[0] if "-" in ca else ca
+                    if comp_name.startswith(ca_host_prefix + ".") or ca in comp_name:
+                        tier0.add(nid)
+
     return tier0
 
 
@@ -381,33 +441,37 @@ def expand_tier0_indirect(
     by_type: Dict[str, dict]
 ) -> Set[str]:
     """
-    PHASE 3: TIER 0 INDIRECT (via DC) - Déterministe
-    PHASE 3: TIER 0 INDIRECT (accès DC)
+    PHASE 3: TIER 0 INDIRECT (accès machines Tier 0) - Déterministe
 
-    Expand Tier 0 with ALL DC access methods:
-    - AdminTo on DC → Tier 0
-    - ReadLAPSPassword on DC (or OU containing DC) → Tier 0
-    - WriteGPO/GenericAll on GPO linked to DC OU → Tier 0
-    - CanRDP/CanPSRemote/DCOM on DC → Tier 0 (remote access)
+    Expand Tier 0 with ALL access methods to Tier 0 machines (DCs + others):
+    - AdminTo on Tier 0 machine → Tier 0
+    - ReadLAPSPassword on Tier 0 machine (or OU containing it) → Tier 0
+    - WriteGPO/GenericAll on GPO linked to Tier 0 machine OU → Tier 0
+    - CanRDP/CanPSRemote/DCOM on Tier 0 machine → Tier 0
     """
     tier0 = set(tier0_closure)
     dc_ids = get_dc_computers(by_type)
-    dc_ou_ids = get_ous_containing_dcs(by_type, dc_ids)
-    gpos_on_dc = get_gpos_linked_to_dc_ous(by_type, dc_ou_ids)
+    t0_machine_ids = get_tier0_computers(tier0, by_type)
+    t0_ou_ids = get_ous_containing_machines(by_type, t0_machine_ids)
+    gpos_on_t0 = get_gpos_linked_to_ous(by_type, t0_ou_ids)
+
+    non_dc_count = len(t0_machine_ids - dc_ids)
+    if non_dc_count > 0:
+        print(f"  ℹ Indirect: {len(t0_machine_ids)} Tier 0 machines ({len(dc_ids)} DCs + {non_dc_count} others)")
 
     added_adminto = 0
     added_laps = 0
     added_gpo = 0
     added_remote = 0
 
-    # Scan all computers for AdminTo and ReadLAPSPassword
+    # Scan all computers for AdminTo and ReadLAPSPassword on Tier 0 machines
     computers = by_type.get("computers", {}).get("data", [])
     for comp in computers:
         cid = comp.get("ObjectIdentifier")
-        is_dc = cid in dc_ids
+        is_t0 = cid in t0_machine_ids
 
-        # AdminTo on DC → Tier 0
-        if is_dc:
+        # AdminTo on Tier 0 machine → Tier 0
+        if is_t0:
             la = comp.get("LocalAdmins", {}) or {}
             for r in la.get("Results", []) or []:
                 pid = r.get("ObjectIdentifier")
@@ -415,22 +479,20 @@ def expand_tier0_indirect(
                     tier0.add(pid)
                     added_adminto += 1
 
-        # Check ACEs for ReadLAPSPassword
+        # ReadLAPSPassword on Tier 0 machine → Tier 0
         for ace in comp.get("Aces", []) or []:
             principal = ace.get("PrincipalSID")
             right = ace.get("RightName")
-
-            # ReadLAPSPassword on DC → Tier 0
-            if right == "ReadLAPSPassword" and is_dc:
+            if right == "ReadLAPSPassword" and is_t0:
                 if principal and principal not in tier0:
                     tier0.add(principal)
                     added_laps += 1
 
-    # ReadLAPSPassword on OU containing DC → Tier 0
+    # ReadLAPSPassword on OU containing Tier 0 machine → Tier 0
     ous = by_type.get("ous", {}).get("data", [])
     for ou in ous:
         ou_id = ou.get("ObjectIdentifier")
-        if ou_id not in dc_ou_ids:
+        if ou_id not in t0_ou_ids:
             continue
         for ace in ou.get("Aces", []) or []:
             principal = ace.get("PrincipalSID")
@@ -440,28 +502,25 @@ def expand_tier0_indirect(
                     tier0.add(principal)
                     added_laps += 1
 
-    # WriteGPO on GPO linked to DC OU → Tier 0
+    # WriteGPO on GPO linked to Tier 0 machine OU → Tier 0
     gpos = by_type.get("gpos", {}).get("data", [])
     for gpo in gpos:
         gpo_id = gpo.get("ObjectIdentifier")
-        if gpo_id not in gpos_on_dc:
+        if gpo_id not in gpos_on_t0:
             continue
         for ace in gpo.get("Aces", []) or []:
             principal = ace.get("PrincipalSID")
             right = ace.get("RightName")
-            # WriteGPO, EditGPO, or GenericAll on GPO linked to DC
             if right in {"WriteGPO", "EditGPO", "GenericAll", "WriteDacl", "WriteOwner"}:
                 if principal and principal not in tier0:
                     tier0.add(principal)
                     added_gpo += 1
 
-    # DC Remote Access: CanRDP/CanPSRemote/DCOM on DC → Tier 0
-    computers = by_type.get("computers", {}).get("data", [])
+    # Remote Access on Tier 0 machine: CanRDP/CanPSRemote/DCOM → Tier 0
     for comp in computers:
         cid = comp.get("ObjectIdentifier")
-        if not cid or cid not in dc_ids:
+        if not cid or cid not in t0_machine_ids:
             continue
-        # Check all remote access methods
         for collector_key in ("RemoteDesktopUsers", "PSRemoteUsers", "DcomUsers"):
             collector = comp.get(collector_key, {}) or {}
             for r in collector.get("Results", []) or []:
@@ -471,13 +530,13 @@ def expand_tier0_indirect(
                     added_remote += 1
 
     if added_adminto > 0:
-        print(f"  ✓ Indirect: +{added_adminto} objects with AdminTo on DC")
+        print(f"  ✓ Indirect: +{added_adminto} objects with AdminTo on Tier 0 machine")
     if added_laps > 0:
-        print(f"  ✓ Indirect: +{added_laps} objects with ReadLAPSPassword on DC/OU")
+        print(f"  ✓ Indirect: +{added_laps} objects with ReadLAPSPassword on Tier 0 machine/OU")
     if added_gpo > 0:
-        print(f"  ✓ Indirect: +{added_gpo} objects with WriteGPO on DC-linked GPO")
+        print(f"  ✓ Indirect: +{added_gpo} objects with WriteGPO on Tier 0-linked GPO")
     if added_remote > 0:
-        print(f"  ✓ Indirect: +{added_remote} objects with CanRDP/CanPSRemote/DCOM on DC")
+        print(f"  ✓ Indirect: +{added_remote} objects with CanRDP/CanPSRemote/DCOM on Tier 0 machine")
 
     return tier0
 
@@ -574,12 +633,10 @@ def classify_objects_by_tier(
         else:
             distance = shortest_distance_to_tier0(nid)
 
-            if distance <= 2:
-                classification[nid] = 1  # Tier 1: 1-2 hops
-            elif distance <= 7:
-                classification[nid] = 2  # Tier 2: 3-7 hops
+            if distance <= 7:
+                classification[nid] = 1  # Tier 1: 1-7 hops (proximity)
             else:
-                classification[nid] = 3  # Tier 3: 8+ hops or unreachable
+                classification[nid] = 2  # Tier 2: 8+ hops or unreachable
 
     return classification
 
@@ -595,16 +652,15 @@ def compute_full_tier_classification(
     TIER 0 — Déterministe :
     1. SEED: Domain, DCs, KRBTGT, critical groups, DCSync, Cert Publishers
     2. CLOSURE: Control rights over Tier 0 (whitelist stricte)
-    3. INDIRECT: ALL DC access (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM)
+    3. INDIRECT: ALL Tier 0 machine access (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM)
     4. MEMBERS: Direct members of Tier 0 groups
     5. DISTANCE BFS: calcul distance depuis Tier 0 FINAL
 
-    TIER 1/2/3 — Distance BFS uniquement :
-    - Tier 1: 1-2 hops depuis Tier 0
-    - Tier 2: 3-7 hops depuis Tier 0
-    - Tier 3: 8+ hops depuis Tier 0 (inclut unreachable)
+    TIER 1/2 — Distance BFS uniquement :
+    - Tier 1: 1-7 hops depuis Tier 0 (proximite)
+    - Tier 2: 8+ hops depuis Tier 0 (inclut unreachable)
 
-    Note: Mode 3 uses ego-graph exploration from start_node, not just Tier 3 classification.
+    Note: Mode 2 uses ego-graph exploration from start_node.
 
     Returns: (tier0_nodes, classification_dict)
     """
@@ -621,7 +677,7 @@ def compute_full_tier_classification(
     # Phase 2: CLOSURE
     tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type, max_iterations=10)
 
-    # Phase 3: INDIRECT (via DC)
+    # Phase 3: INDIRECT (accès machines Tier 0)
     tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
 
     # Phase 4: MEMBERS of Tier 0 groups
@@ -641,9 +697,8 @@ def compute_full_tier_classification(
         tier_counts[tier] += 1
 
     print(f"\n  Tier 0: {tier_counts[0]} objects (deterministic domain control)")
-    print(f"  Tier 1: {tier_counts[1]} objects (1-2 hops)")
-    print(f"  Tier 2: {tier_counts[2]} objects (3-7 hops)")
-    print(f"  Tier 3: {tier_counts[3]} objects (8+ hops or unreachable)")
+    print(f"  Tier 1: {tier_counts[1]} objects (1-7 hops)")
+    print(f"  Tier 2: {tier_counts[2]} objects (8+ hops or unreachable)")
 
     return tier0, classification
 
@@ -658,18 +713,18 @@ def get_tier_targets(
     """
     Get all targets for a specific tier.
 
-    For Tier 3 (mode 3): If start_node_id and all_edges are provided,
-    returns ALL objects reachable from start_node that are NOT in Tier 0/1/2.
+    For Tier 2 (mode 2): If start_node_id and all_edges are provided,
+    returns ALL objects reachable from start_node that are NOT in Tier 0/1.
     This creates an "ego-graph exploration" view of the start node.
 
-    For Tier 0/1/2: Returns objects classified in that tier.
+    For Tier 0/1: Returns objects classified in that tier.
 
     Returns: List of (goal_type, node_id, node_name) tuples
     """
     targets = []
 
-    # Special handling for Tier 3: ego-graph exploration
-    if tier == 3 and start_node_id and all_edges:
+    # Special handling for Tier 2: ego-graph exploration
+    if tier == 2 and start_node_id and all_edges:
         # Build adjacency list
         from collections import deque, defaultdict
         adjacency = defaultdict(list)
@@ -691,10 +746,10 @@ def get_tier_targets(
                     visited.add(neighbor)
                     queue.append(neighbor)
 
-        # Filter: only objects NOT in Tier 0/1/2
+        # Filter: only objects NOT in Tier 0/1
         for nid in visited:
-            tier_level = classification.get(nid, 3)
-            if tier_level == 3:  # Not in Tier 0/1/2
+            tier_level = classification.get(nid, 2)
+            if tier_level == 2:  # Not in Tier 0/1
                 node = nodes_by_id.get(nid, {})
                 node_type = node.get("type", "Unknown").lower()
                 node_name = node.get("name", nid)
@@ -702,7 +757,7 @@ def get_tier_targets(
 
         return targets
 
-    # Standard behavior for Tier 0/1/2
+    # Standard behavior for Tier 0/1
     for nid, tier_level in classification.items():
         if tier_level == tier:
             node = nodes_by_id.get(nid, {})
@@ -717,8 +772,14 @@ def is_well_known_sid(sid: str) -> bool:
     return sid.startswith(WELL_KNOWN_PREFIXES)
 
 
-def load_json_files(data_dir: str) -> Dict[str, dict]:
+def load_json_files(data_dir: str, certipy_json: str = None) -> Dict[str, dict]:
+    if not os.path.isdir(data_dir):
+        print(f"[!] Data directory not found: {data_dir}", file=sys.stderr)
+        sys.exit(1)
     files = [f for f in os.listdir(data_dir) if f.endswith(".json")]
+    if not files:
+        print(f"[!] No JSON files found in: {data_dir}", file=sys.stderr)
+        sys.exit(1)
     by_type = {}
     for fname in files:
         path = os.path.join(data_dir, fname)
@@ -733,6 +794,13 @@ def load_json_files(data_dir: str) -> Dict[str, dict]:
                 if fname.endswith(f"_{key}.json"):
                     by_type[key] = content
                     break
+
+    # Load certipy data if provided
+    if certipy_json and os.path.exists(certipy_json):
+        with open(certipy_json, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        by_type["certtemplates"] = content
+
     return by_type
 
 
@@ -1193,6 +1261,7 @@ def main():
     parser.add_argument("--data-dir", required=True, help="Path to BloodHound JSON folder")
     parser.add_argument("--start", required=True, help="Start node identifier")
     parser.add_argument("--out", default="graph.json", help="Output JSON path")
+    parser.add_argument("--certipy-json", default=None, help="Path to certipy_data.json (ADCS templates)")
     parser.add_argument(
         "--mode",
         choices=["0", "1", "2", "3"],
@@ -1217,7 +1286,7 @@ def main():
     max_controlled = 500
     max_time = 3.0
 
-    by_type = load_json_files(args.data_dir)
+    by_type = load_json_files(args.data_dir, getattr(args, 'certipy_json', None))
     validate_bloodhound_data(by_type)
     nodes_by_id, key_to_ids = build_node_index(by_type)
 
@@ -1377,6 +1446,13 @@ def main():
             all_computer_ids.add(cid)
     dc_ids = get_dc_computers(by_type)
 
+    # Pre-compute domain object IDs (AllExtendedRights on a domain = DCSync capability)
+    domain_ids = set()
+    for obj in by_type.get("domains", {}).get("data", []):
+        oid = obj.get("ObjectIdentifier")
+        if oid:
+            domain_ids.add(oid)
+
     # Build unified edge set (all edges for both BFS classification and visual paths)
     all_edges = []
 
@@ -1446,8 +1522,16 @@ def main():
             rights_set = ace_data["rights"]
             inherited = ace_data["inherited"]
 
+            # AllExtendedRights on a domain object = GetChanges + GetChangesAll = DCSync
+            # BloodHound often doesn't enumerate separate GetChanges/GetChangesAll for Domain Admins
+            # even though AllExtendedRights on a domain grants replication (DCSync) capability
+            if target_id in domain_ids and "AllExtendedRights" in rights_set:
+                effective_rights = rights_set | {"GetChanges", "GetChangesAll"}
+            else:
+                effective_rights = rights_set
+
             # Select strongest right for display
-            strongest_right = select_strongest_right(rights_set)
+            strongest_right = select_strongest_right(effective_rights)
 
             # Create single consolidated edge
             edge = {
@@ -1567,24 +1651,22 @@ def main():
         tier_counts[tier] += 1
 
     # Step 4: Get targets for the requested mode
-    target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2, Mode 3 -> Tier 3
-    tier_name = ["Tier 0", "Tier 1", "Tier 2", "Tier 3"][target_tier]
+    target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2
+    tier_name = ["Tier 0", "Tier 1", "Tier 2"][target_tier]
 
     # Progressive path limits:
     # - Tier 0: ALL paths (no limit) - critical targets must all be visible
-    # - Tier 1: 30 paths (1-2 hops from Tier 0)
-    # - Tier 2: 30 paths (3-7 hops from Tier 0)
-    # - Tier 3: 40 paths (ego-graph exploration: all relations from start_node not in Tier 0/1/2)
+    # - Tier 1: 30 paths (1-7 hops from Tier 0)
+    # - Tier 2: 40 paths (ego-graph exploration: all relations from start_node not in Tier 0/1)
     max_paths_by_tier = {
         0: 9999,  # Tier 0: ALL paths (no artificial limit)
-        1: 30,    # Tier 1: 1-2 hops from Tier 0
-        2: 30,    # Tier 2: 3-7 hops from Tier 0
-        3: 40,    # Tier 3: ego-graph exploration from start_node
+        1: 30,    # Tier 1: 1-7 hops from Tier 0
+        2: 40,    # Tier 2: ego-graph exploration from start_node
     }
     max_paths = max_paths_by_tier[target_tier]
 
-    # For Mode 3: pass start_id and all_edges to enable ego-graph exploration
-    if target_tier == 3:
+    # For Mode 2: pass start_id and all_edges to enable ego-graph exploration
+    if target_tier == 2:
         tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id, start_id, all_edges)
     else:
         tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
@@ -1688,15 +1770,6 @@ def main():
         for e in shortest_ep:
             e["is_shortest"] = True
 
-    # Step 10: Deduplicate edges
-    def edge_key(e):
-        return (e.get("src"), e.get("dst"), e.get("kind"), e.get("right"), e.get("confidence"))
-
-    dedup = {}
-    for e in edges_in_paths:
-        dedup[edge_key(e)] = e
-    edges = list(dedup.values())
-
     node_ids = set(nodes_in_paths)
     paths_info = selected_paths
 
@@ -1704,6 +1777,28 @@ def main():
     target_node_ids = set()
     for path in selected_paths:
         target_node_ids.add(path["target_id"])
+
+    # Always include CertTemplate Tier 0 nodes + their ACE edges (even if unreachable by BFS)
+    # These templates represent critical ADCS attack surfaces that must always be visible
+    for nid, node in nodes_by_id.items():
+        if node.get("type") == "CertTemplate" and tier_classification.get(nid) == 0:
+            node_ids.add(nid)
+            target_node_ids.add(nid)
+            # Add edges where this template is src or dst
+            for e in all_edges:
+                if e["src"] == nid or e["dst"] == nid:
+                    edges_in_paths.append(e)
+                    node_ids.add(e["src"])
+                    node_ids.add(e["dst"])
+
+    # Step 10: Deduplicate edges (AFTER CertTemplate inclusion)
+    def edge_key(e):
+        return (e.get("src"), e.get("dst"), e.get("kind"), e.get("right"), e.get("confidence"))
+
+    dedup = {}
+    for e in edges_in_paths:
+        dedup[edge_key(e)] = e
+    edges = list(dedup.values())
 
     # ========================================================================
     # OUTPUT GENERATION
@@ -1790,7 +1885,6 @@ def main():
         "0": "tier0",
         "1": "tier1",
         "2": "tier2",
-        "3": "tier3",
     }
     view = tier_names.get(args.mode, "tier0")
 
@@ -1804,7 +1898,6 @@ def main():
             "tier0_count": tier_counts[0],
             "tier1_count": tier_counts[1],
             "tier2_count": tier_counts[2],
-            "tier3_count": tier_counts[3],
         },
         "coverage": coverage,
         "nodes": nodes,
@@ -1815,7 +1908,7 @@ def main():
         "edges_derived": edges_derived,
         "summary": summary,
         "paths": paths_info,
-        "disclaimer": "Classification Tier v5.2. Tier 0 = déterministe (SEED + Cert Publishers → CLOSURE → INDIRECT [ALL DC access] → MEMBERS → BFS). Tier 1/2 = BFS distance depuis Tier 0 (1-2 hops, 3-7 hops). Tier 3 = ego-graph exploration depuis start_node (toutes relations non-Tier 0/1/2). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples → single edge (right = strongest, all_rights = complete list).",
+        "disclaimer": "Classification Tier v6. Tier 0 = deterministe (SEED + Cert Publishers -> CLOSURE -> INDIRECT [ALL Tier 0 machine access] -> MEMBERS -> BFS). Tier 1 = BFS distance depuis Tier 0 (1-7 hops). Tier 2 = ego-graph exploration depuis start_node (8+ hops ou unreachable). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples -> single edge (right = strongest, all_rights = complete list).",
     }
 
     with open(args.out, "w", encoding="utf-8") as f:

@@ -11,11 +11,11 @@ from pathlib import Path
 
 # Get the directory where this script is located
 SCRIPT_DIR = Path(__file__).parent.resolve()
-GRAPH_BUILDER = SCRIPT_DIR / "graph_builder.py"
+GRAPH_BUILDER = SCRIPT_DIR / "argus_builder.py"
 
 
-def run_mode(data_dir, start, mode, output_file):
-    """Run graph_builder.py with specified mode."""
+def run_mode(data_dir, start, mode, output_file, certipy_json=None):
+    """Run argus_builder.py with specified mode."""
     cmd = [
         sys.executable,
         str(GRAPH_BUILDER),
@@ -24,6 +24,8 @@ def run_mode(data_dir, start, mode, output_file):
         "--mode", str(mode),
         "--out", output_file,
     ]
+    if certipy_json:
+        cmd.extend(["--certipy-json", certipy_json])
 
     print(f"\n{'='*70}")
     print(f"Running Mode {mode}...")
@@ -57,6 +59,11 @@ def main():
         default="results",
         help="Output directory for JSON files (default: results/)"
     )
+    parser.add_argument(
+        "--certipy-json",
+        default=None,
+        help="Path to certipy_data.json (ADCS certificate templates)"
+    )
 
     args = parser.parse_args()
 
@@ -69,7 +76,6 @@ def main():
         0: output_dir / "graph_tier0.json",
         1: output_dir / "graph_tier1.json",
         2: output_dir / "graph_tier2.json",
-        3: output_dir / "graph_tier3.json",
     }
 
     print("="*70)
@@ -78,12 +84,12 @@ def main():
     print(f"Data directory: {args.data_dir}")
     print(f"Start node: {args.start}")
     print(f"Output directory: {output_dir}")
-    print(f"\nGenerating 4 tier-based reports...")
+    print(f"\nGenerating 3 tier-based reports...")
 
     # Run all modes
     results = {}
     for mode, output_file in outputs.items():
-        success = run_mode(args.data_dir, args.start, mode, str(output_file))
+        success = run_mode(args.data_dir, args.start, mode, str(output_file), args.certipy_json)
         results[mode] = success
 
     # Summary
@@ -93,9 +99,8 @@ def main():
 
     mode_names = {
         0: "Mode 0 - Tier 0 (ALL paths to Domain/DCs/DA/Cert Publishers - Critical)",
-        1: "Mode 1 - Tier 1 (30 paths, 1-2 hops from Tier 0)",
-        2: "Mode 2 - Tier 2 (30 paths, 3-7 hops from Tier 0)",
-        3: "Mode 3 - Tier 3 (40 paths, ego-graph exploration)",
+        1: "Mode 1 - Tier 1 (30 paths, 1-7 hops from Tier 0)",
+        2: "Mode 2 - Tier 2 (40 paths, ego-graph exploration)",
     }
 
     for mode, success in results.items():
@@ -111,17 +116,13 @@ def main():
         print("\n✓ All tier analyses completed successfully!")
         print(f"\nGenerated files in: {output_dir}/")
         print("  - graph_tier0.json  (Tier 0: Domain control - ALL paths)")
-        print("  - graph_tier1.json  (Tier 1: 1-2 hops - 30 paths)")
-        print("  - graph_tier2.json  (Tier 2: 3-7 hops - 30 paths)")
-        print("  - graph_tier3.json  (Tier 3: ego-graph exploration - 40 paths)")
+        print("  - graph_tier1.json  (Tier 1: 1-7 hops - 30 paths)")
+        print("  - graph_tier2.json  (Tier 2: ego-graph exploration - 40 paths)")
         print("\nYou can now load these files in the UI (cartographie.html)")
-        print("\nℹ Classification v5 criteria:")
-        print("  • Tier 0: SID-based (RID -500, -502, -512, -516, -517, -518, -519, etc.)")
-        print("  • Tier 0: ALL DC access (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM)")
-        print("  • Tier 1/2: BFS distance from Tier 0 (1-2, 3-7 hops)")
-        print("  • Tier 3: Ego-graph exploration (all relations from start_node)")
-        print("  • Computers: traversable nodes (identity inheritance)")
-        print("  • 5-phase pipeline: SEED → CLOSURE → INDIRECT → MEMBERS → BFS")
+        print("\nClassification v6:")
+        print("  Tier 0: deterministic (SEED + CLOSURE + INDIRECT + MEMBERS)")
+        print("  Tier 1: BFS distance 1-7 hops from Tier 0")
+        print("  Tier 2: ego-graph exploration (8+ hops or unreachable)")
         return 0
     else:
         failed_modes = [mode for mode, success in results.items() if not success]

@@ -1,253 +1,188 @@
-# CartoAD — Cartographie Unifiee Reseau & Identite AD
+<p align="center">
+  <img src="img/logo.png" alt="ARGUS" width="400">
+</p>
+<h3 align="center">Cartographie Réseau & Objet Active Directory</h3>
 
-**CartoAD** est un outil de cartographie qui fusionne dans une interface interactive :
-
-- **Cartographie reseau** : infrastructure physique (IP, MAC, services, topologie)
-- **Cartographie Active Directory** : identites, permissions, chemins d'attaque
-
-## Innovation
-
-Premiere solution open source fusionnant automatiquement :
-
-- Infrastructure physique (scan reseau nmap)
-- Graphe identite (analyse BloodHound)
-- Ponts intelligents (Computer AD <-> Machine reseau)
+ARGUS fusionne automatiquement l'infrastructure reseau (IPs, services, topologie) et le graphe d'identite Active Directory (utilisateurs, groupes, permissions, chemins d'attaque) dans une interface de visualisation interactive unique.
 
 ---
 
-## Structure du projet
+## Qu'est-ce qu'ARGUS ?
 
-```
-cartographie/
-├── run_full_scan.py              # Pipeline complet (une seule commande)
-├── global_network_scan_classeC.py   # Scan reseau classe C
-├── global_network_scan_classeAB.py  # Scan reseau classe A/B
-├── enrich_network_mapping.py     # Mapping hostname -> IP
-├── graph_builder.py              # Generateur de graphes tier-based
-├── run_all_modes.py              # Lance les 4 modes d'analyse
-├── cartographie.html             # Interface de visualisation
-├── results/                      # Fichiers JSON generes
-├── bh/                           # Donnees BloodHound (input)
-├── requirements.txt              # Dependances Python
-└── TECHNICAL.md                  # Documentation technique
-```
+Dans un audit Active Directory, deux mondes coexistent sans se parler :
+
+- **Le reseau** : des machines identifiees par leurs adresses IP, leurs ports ouverts, leurs services.
+- **L'identite** : des utilisateurs, des groupes, des permissions — relies par des chemins d'attaque potentiels.
+
+ARGUS est le pont entre ces deux mondes. A partir d'un compte utilisateur AD compromis, l'outil :
+
+1. **Scanne le reseau** pour decouvrir les machines actives, les sous-reseaux et les services exposes.
+2. **Collecte les donnees AD** via BloodHound (identites, ACLs, sessions) et Certipy (vulnerabilites ADCS).
+3. **Classifie les objets AD en tiers** (Tier 0, 1, 2) selon leur proximite aux actifs critiques du domaine.
+4. **Fusionne les deux couches** en reliant chaque machine reseau a son objet Computer AD correspondant.
+5. **Visualise le tout** dans une cartographie interactive HTML — reseau en haut, identite en bas, ponts entre les deux.
 
 ---
 
-## Installation
+## Cartographie
 
-### Pre-requis
+ARGUS produit une visualisation interactive a deux couches. La partie superieure affiche la topologie reseau (sous-reseaux, machines, passerelles). La partie inferieure affiche les chemins d'attaque AD avec les permissions entre objets. Les ponts relient les machines physiques a leurs objets Computer AD.
+
+**Tier 0 — Forest (HTB)** : graphe complexe avec Exchange, groupes privilegies et multiples chemins d'escalade vers le domaine.
+
+![Cartographie Tier 0 — Forest](img/exempleCarto1.png)
+
+**Tier 0 — Administrator (HTB)** : chemin d'attaque lineaire emily → ethan → DCSync avec la couche reseau associee.
+
+![Cartographie Tier 1 — Administrator](img/exempleCarto2.png)
+
+**Wizard interactif** : interface CLI guidee avec choix des modes et des scans.
+
+![Interface CLI — Wizard interactif](img/exempleCLI.png)
+
+---
+
+## Fonctionnalites
+
+- **Mode direct et pivot** : acces direct au reseau cible ou a travers un tunnel SOCKS/proxychains.
+- **Scan reseau** : decouverte ARP, traceroute, detection de services via nmap — adapte automatiquement les techniques selon le mode.
+- **Collecte AD et ADCS** : integration BloodHound (identites, ACLs, sessions) et Certipy (vulnerabilites ESC1-ESC16).
+- **Classification en 3 tiers** : Tier 0 deterministe (DC, Domain Admins, KRBTGT, Cert Publishers...), Tier 1 a proximite (1-7 hops), Tier 2 eloigne (8+ hops).
+- **Fusion reseau/identite** : resolution DNS des hostnames AD vers les IPs pour creer les ponts dans la cartographie.
+- **Wizard interactif** : interface CLI guidee pour construire les commandes sans memoriser les options.
+
+---
+
+## Quick Start
+
+### Prerequis
 
 - Python 3.8+
-- nmap, traceroute (avec sudo)
-- bloodhound-python
+- `nmap` et `traceroute` installes (avec acces sudo pour le scan reseau)
+- `bloodhound-python` et `certipy-ad` (collecteurs AD)
 
-### Quick Start
+### Installation
 
 ```bash
-# 1. Creer environnement virtuel
+git clone <repository-url> && cd argus
 python3 -m venv .env
 source .env/bin/activate
-
-# 2. Installer dependances
 pip install -r requirements.txt
-
-# 3. Verifier nmap
-nmap --version
 ```
 
----
-
-## Usage
-
-### Pipeline complet (recommande)
-
-Une seule commande pour executer tout le workflow :
+### Premier lancement
 
 ```bash
-# IMPORTANT: Utiliser le Python du virtualenv avec sudo
-sudo .env/bin/python3 run_full_scan.py \
-    --ip-cidr 192.168.30.0/24 \
-    --gateway 192.168.30.1 \
-    --dns 192.168.30.254 \
-    --domain domain.local \
-    --dc-ip 192.168.30.254 \
-    --user admin \
+# Wizard interactif (recommande)
+python3 argus.py
+
+# Ou directement : scan AD + ADCS depuis un compte compromis
+sudo .env/bin/python3 argus_pipeline.py \
+    --domain corp.local \
+    --dc-ip 10.0.1.10 \
+    --user john.doe \
     --password 'P@ssw0rd' \
-    --start "admin@domain.local" \
-    --port-scan
+    --start "john.doe@corp.local" \
+    --ip-cidr 10.0.1.0/24 \
+    --gateway 10.0.1.1 \
+    --dns 10.0.1.10 \
+    --output-dir results/corp
 ```
 
-**Etapes executees automatiquement** :
+### Visualisation
 
-1. Scan reseau -> `network_scan.json`
-2. Collecte BloodHound -> `bloodhound_data/`
-3. Mapping hostname -> `hostname_mapping.json`
-4. Generation graphes -> `graph_tier0.json` ... `graph_tier3.json`
-
-**Options** :
-
-| Option | Description |
-| --------- | ------------- |
-| `--skip-network` | Sauter le scan reseau |
-| `--skip-bloodhound --bh-dir <path>` | Utiliser des donnees BH existantes |
-| `--skip-enrichment` | Sauter le mapping hostname |
-| `--output-dir <path>` | Dossier de sortie |
-| `--port-scan` | Activer le scan de ports |
-| `--port-list "22,80,443"` | Ports specifiques |
+Ouvrir `cartographie.html` dans un navigateur (double-clic) et charger les fichiers generes (`network_scan.json`, `graph_tierX.json`, `hostname_mapping.json`) pour afficher la cartographie complete.
 
 ---
 
-### Scripts individuels
+## Modes d'utilisation
 
-#### 1. Scan reseau
+### Mode direct
 
-**Classe C** (192.168.x.0/24) :
+L'attaquant est directement connecte au reseau cible. ARGUS effectue une decouverte complete : ARP, traceroute, ICMP, scan de ports TCP. La resolution des hostnames AD se fait par requetes DNS directes au Domain Controller.
 
 ```bash
-sudo python3 global_network_scan_classeC.py \
-    --ip_cidr 192.168.30.0/24 \
-    --gateway 192.168.30.1 \
-    --dns 192.168.30.254 \
-    --port-scan \
-    --output results/network_scan.json
+# Scan complet (reseau + AD + ADCS)
+sudo .env/bin/python3 argus_pipeline.py \
+    --ip-cidr 10.0.1.0/24 --gateway 10.0.1.1 --dns 10.0.1.10 \
+    --domain corp.local --dc-ip 10.0.1.10 \
+    --user john.doe --password 'P@ssw0rd' \
+    --start "john.doe@corp.local"
 ```
 
-**Classe A/B** (10.0.0.0/8) :
+### Mode pivot
+
+L'attaquant accede au reseau cible a travers un tunnel SOCKS (proxychains). Le scan reseau est limite au TCP (`nmap -sT`) car proxychains intercepte les appels `connect()` via `LD_PRELOAD` — les raw sockets (ARP, ICMP, SYN) ne passent pas par le tunnel. Les IPs cibles doivent etre connues a l'avance.
 
 ```bash
-sudo python3 global_network_scan_classeAB.py \
-    --ip_cidr 10.100.50.0/20 \
-    --gateway 10.100.50.1 \
-    --dns 10.100.50.2 \
-    --port-scan \
-    --output results/network_scan.json
-```
+# Passe 1 — AD + ADCS via proxychains
+proxychains4 -f proxy.conf .env/bin/python3 argus_pipeline.py \
+    --skip-network \
+    --domain corp.local --dc-ip 10.0.1.10 --dc-hostname dc01.corp.local \
+    --user john.doe -H ':<NT_HASH>' \
+    --start "john.doe@corp.local" --dns-tcp \
+    --output-dir results/corp
 
-#### 2. Collecte BloodHound
-
-```bash
-bloodhound-python -u user@domain.local -p password \
-    -d domain.local -ns 192.168.30.254 -c All --zip
-
-mkdir -p bh/jsonBoxDomain
-unzip *_bloodhound.zip -d bh/jsonBoxDomain/
-```
-
-#### 3. Mapping hostname -> IP
-
-```bash
-python3 enrich_network_mapping.py \
-    --bh-dir bh/jsonBoxDomain \
-    --dc-ip 192.168.30.254 \
-    --domain domain.local \
-    --output results/hostname_mapping.json
-```
-
-#### 4. Generation des graphes
-
-**Tous les tiers** :
-
-```bash
-python3 run_all_modes.py \
-    --data-dir bh/jsonBoxDomain \
-    --start "user@domain.local" \
-    --output-dir results
-```
-
-**Un seul tier** :
-
-```bash
-python3 graph_builder.py \
-    --data-dir bh/jsonBoxDomain \
-    --start "user@domain.local" \
-    --mode 0 \
-    --out results/graph_tier0.json
+# Passe 2 — Scan reseau pivot (sudo, IPs connues)
+sudo .env/bin/python3 argus_pipeline.py \
+    --ip-cidr 10.0.1.0/24 \
+    --proxychains-conf proxy.conf --targets '10.0.1.10,10.0.1.20,10.0.1.30' \
+    --domain x --dc-ip x --user x --password x --start "x@x" \
+    --skip-bloodhound --bh-dir results/corp/bloodhound_data \
+    --skip-certipy --skip-enrichment \
+    --output-dir results/corp
 ```
 
 ---
 
-## Les 4 modes d'analyse
+## Scripts
 
-| Mode | Tier | Chemins | Cibles | Cas d'usage |
-|------|------|---------|--------|-------------|
-| 0 | Tier 0 | Tous | Domain, DCs, DA, KRBTGT, Cert Publishers | Pentest rapide |
-| 1 | Tier 1 | 30 | 1-2 hops depuis Tier 0 | Escalade directe |
-| 2 | Tier 2 | 30 | 3-5 hops depuis Tier 0 | Mouvement lateral |
-| 3 | Tier 3 | 40 | 6+ hops / unreachable | Vue exhaustive |
-
-**Classification v5** : Tier 0 déterministe (SEED + Cert Publishers + CLOSURE + INDIRECT + MEMBERS + DC REMOTE), Tier 1/2/3 par distance BFS uniquement. Computers = noeuds normaux traversables.
-
----
-
-## Visualisation
-
-```bash
-python3 -m http.server 8000
-# Ouvrir http://localhost:8000/cartographie.html
-```
-
-**Etapes** :
-
-1. Charger `network_scan.json` (reseau)
-2. Charger `hostname_mapping.json` (optionnel, ameliore les ponts)
-3. Charger un ou plusieurs `graph_tierX.json` (AD) - selection multiple possible
-4. Utiliser les boutons Tier 0/1/2/3 pour switcher rapidement entre les tiers
-5. Cliquer "Afficher AD" pour activer/desactiver l'overlay
-
-**Changement de tier rapide** :
-
-- Charger plusieurs fichiers tier en une seule selection (Ctrl+clic)
-- Les boutons Tier apparaissent automatiquement
-- Cliquer sur un tier pour switcher sans recharger le reseau
-
-**Organisation visuelle** :
-
-- Partie haute : Cartographie reseau (IP, MAC, services)
-- Partie basse : Chemins AD (identites, permissions)
-- Ponts : Liens entre machines physiques et Computer AD
+| Script | Role |
+|--------|------|
+| `argus.py` | Wizard interactif — point d'entree principal |
+| `argus_pipeline.py` | Orchestrateur du pipeline complet |
+| `argus_network.py` | Scan reseau (ARP, traceroute, ports) |
+| `argus_enrich.py` | Resolution hostname AD → IP (DNS / SMB) |
+| `argus_builder.py` | Generateur de graphes avec classification en tiers |
+| `argus_graph.py` | Execution des 3 modes de tiers |
+| `argus_certipy.py` | Traducteur Certipy → format ARGUS |
 
 ---
 
-## Workflow pentest
+## Documentation
 
-```bash
-# 1. Pipeline complet (utiliser le Python du virtualenv)
-sudo .env/bin/python3 run_full_scan.py \
-    --ip-cidr <MON_IP>/<MASQUE> \
-    --gateway <MA_GATEWAY> \
-    --dns <DOMAIN_DNS_IP> \
-    --domain domain.local \
-    --dc-ip <DC_IP> \
-    --user compromised.user \
-    --password 'P@ssw0rd' \
-    --start "compromised.user@domain.local" \
-    --port-scan
+La documentation technique detaillee est disponible dans le dossier [docs/](docs/) :
 
-# 2. Visualisation
-python3 -m http.server 8000
-
-# 3. Analyse des resultats
-cat results/*/graph_tier0.json | jq '.tier_classification'
-cat results/*/graph_tier0.json | jq '.paths[0]'
-```
+| Document | Contenu |
+|----------|---------|
+| [01 — Pipeline](docs/01-pipeline.md) | Architecture et enchainement des etapes |
+| [02 — Reseau](docs/02-network.md) | Algorithmes de decouverte reseau (direct et pivot) |
+| [03 — Classification](docs/03-classification.md) | Algorithme de classification en tiers (SEED, CLOSURE, BFS) |
+| [04 — Mapping](docs/04-mapping-reseau-ad.md) | Resolution hostname → IP (DNS, SMB) |
+| [05 — Collecteurs](docs/05-collecteurs.md) | BloodHound et Certipy : collecte et traduction |
+| [06 — Cartographie](docs/06-cartographie.md) | Interface de visualisation HTML |
 
 ---
 
-## Documentation technique
+## Dependances
 
-Voir [TECHNICAL.md](TECHNICAL.md) pour :
+| Paquet | Usage |
+|--------|-------|
+| `python-nmap` | Interface Python pour nmap |
+| `bloodhound` | Collecteur BloodHound Python (LDAP + SMB) |
+| `dnspython` | Resolution DNS directe vers le DC |
+| `certipy-ad` | Enumeration ADCS (installe separement) |
 
-- Algorithmes de scan reseau
-- Collecte BloodHound et donnees AD
-- Algorithme de mapping hostname/IP
-- Classification Tier et calcul des chemins
-- Fusion reseau/identite dans l'UI
+Outils systeme requis : `nmap`, `traceroute`, `proxychains4` (mode pivot uniquement).
 
 ---
 
-## Licence
+## Auteurs
 
-A definir (GPL/MIT/Apache)
+- Laurent MINATCHY
+- Maxime HERRY
+- Albert BRAME
 
-**CartoAD** - *Cartographie Unifiee pour la Cybersecurite*
+---
+
+**ARGUS** — *Cartographie unifiee pour l'audit Active Directory*
