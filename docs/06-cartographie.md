@@ -34,7 +34,7 @@ Les outils existants (BloodHound GUI, Neo4j) nécessitent une installation lourd
   │                                                                                                          │
   │  Ouvrir dans un navigateur → visualisation immédiate                                                     │
   │                                                                                                          │
-  │  Pas de backend    ·    Pas d'installation    ·    Pas de base de données    ·    Un seul fichier         │
+  │  Pas de backend    ·    Pas d'installation    ·    Pas de base de données    ·    Un seul fichier        │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -82,11 +82,11 @@ Cytoscape.js a été choisi car :
   │  └── <script>                                                                                            │
   │      ├── Cytoscape.js        (CDN: unpkg.com)                                                            │
   │      └── Code ARGUS          (~1000 lignes JS vanilla)                                                   │
-  │          ├── Parsing JSON              (réseau, AD, mapping)                                              │
-  │          ├── Construction noeuds/edges (éléments Cytoscape)                                               │
-  │          ├── Détection de rôle         (DC, serveur, poste...)                                            │
-  │          ├── Layout et positionnement                                                                     │
-  │          └── Interactions              (tooltip, node card, toggle)                                       │
+  │          ├── Parsing JSON              (réseau, AD, mapping)                                             │
+  │          ├── Construction noeuds/edges (éléments Cytoscape)                                              │
+  │          ├── Détection de rôle         (DC, serveur, poste...)                                           │
+  │          ├── Layout et positionnement                                                                    │
+  │          └── Interactions              (tooltip, node card, toggle)                                      │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -129,7 +129,7 @@ L'upload AD supporte le **multi-fichier** : on peut charger les 3 tiers d'un cou
   │                                                                                                          │
   │   ZONE IDENTITÉ (en bas)                             Layout BFS horizontal                               │
   │                                                                                                          │
-  │   [start] ────▶ [hop1] ────▶ [hop2] ────▶ [hop3] ────▶ ... ────▶ [Tier 0 targets]                       │
+  │   [start] ────▶ [hop1] ────▶ [hop2] ────▶ [hop3] ────▶ ... ────▶ [Tier 0 targets]                        │
   │                                                                                                          │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -146,11 +146,11 @@ Chaque machine réseau reçoit un rôle basé sur ses **ports ouverts** :
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │  RÔLE                    CRITÈRES DE DÉTECTION                                                           │
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  Domain Controller       Port 88 (Kerberos) + port 389 ou 636 (LDAP/LDAPS) ouverts                      │
+  │  Domain Controller       Port 88 (Kerberos) + port 389 ou 636 (LDAP/LDAPS) ouverts                       │
   │                                                                                                          │
-  │  Routeur                 Flag isRouter (depuis traceroute)                                                │
+  │  Routeur                 Flag isRouter (depuis traceroute)                                               │
   │                                                                                                          │
-  │  Serveur                 Au moins un port serveur ouvert : 21, 22, 25, 53, 80, 443, 445, 389, 636,      │
+  │  Serveur                 Au moins un port serveur ouvert : 21, 22, 25, 53, 80, 443, 445, 389, 636,       │
   │                          1433, 3306, 5432, 8080...                                                       │
   │                                                                                                          │
   │  Poste                   Tous les ports ouverts sont dans le set workstation (135, 139, 445, 3389, 5985) │
@@ -167,11 +167,11 @@ Les machines sont groupées visuellement par sous-réseau (compound nodes Cytosc
 
 ```
   ┌─ VLAN 10.0.1.0/24 ────────────────────────────────────────────────────────────────────────────────────┐
-  │                                                                                                        │
-  │  [10.0.1.1]                    [10.0.1.10]                    [10.0.1.20]                              │
-  │   Routeur                       DC01                           SRV01                                    │
-  │                                                                                                        │
-  └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+  │                                                                                                       │
+  │  [10.0.1.1]                    [10.0.1.10]                    [10.0.1.20]                             │
+  │   Routeur                       DC01                           SRV01                                  │
+  │                                                                                                       │
+  └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -206,7 +206,7 @@ Quand les deux couches sont chargées, la cartographie crée des **edges bridge*
 ```
   Noeud AD                                                            Noeud Réseau
   ┌────────────────────────────────────┐                             ┌────────────────────────────────────┐
-  │ DC01.CORP.LOCAL                    │ ──── bridge (hostname) ──▶ │ 10.0.1.10                          │
+  │ DC01.CORP.LOCAL                    │ ──── bridge (hostname) ──▶ │ 10.0.1.10                           │
   │ (Computer, Tier 0)                 │         match               │ DC01.CORP.LOCAL                    │
   └────────────────────────────────────┘                             └────────────────────────────────────┘
 ```
@@ -267,9 +267,9 @@ Le graphe est **orienté** : `src → dst`. Un chemin `A → B → C` signifie q
 ```
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │  MemberOf :          membre ─────────────────▶ groupe                                                    │
-  │  ACE :               principal ──────────────▶ cible (celui qui a le droit → objet ciblé)                 │
+  │  ACE :               principal ──────────────▶ cible (celui qui a le droit → objet ciblé)                │
   │  AdminTo :           principal ──────────────▶ machine                                                   │
-  │  HasSession :        utilisateur ────────────▶ machine (où il est connecté)                               │
+  │  HasSession :        utilisateur ────────────▶ machine (où il est connecté)                              │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -316,7 +316,7 @@ Pour chaque paire (principal, cible), un seul edge est affiché avec le **droit 
   │    → On ajoute synthétiquement GetChanges + GetChangesAll                                                │
   │    → L'edge affiché devient "DCSync"                                                                     │
   │                                                                                                          │
-  │  Si un principal a GetChanges ET GetChangesAll :                                                          │
+  │  Si un principal a GetChanges ET GetChangesAll :                                                         │
   │    → L'edge affiché est "DCSync" (consolidé)                                                             │
   │                                                                                                          │
   │  Si un principal a seulement GetChanges :                                                                │

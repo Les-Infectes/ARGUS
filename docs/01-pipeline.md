@@ -52,11 +52,11 @@ ARGUS est composé de plusieurs modules indépendants, chacun avec ses propres a
        │  sudo .env/bin/python3 argus.py
        ▼
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  1. Mode ?              → Direct / Pivot                                                               │
-  │  2. Type de scan ?      → DC only / Network / AD+ADCS / Full / Network+mapping                        │
-  │  3. Cibles ?            → IP, CIDR, gateway...                                                         │
-  │  4. Identifiants ?      → user, password/hash                                                          │
-  │  5. Options ?           → port-scan, timeout...                                                        │
+  │  1. Mode ?              → Direct / Pivot                                                                 │
+  │  2. Type de scan ?      → DC only / Network / AD+ADCS / Full / Network+mapping                           │
+  │  3. Cibles ?            → IP, CIDR, gateway...                                                           │
+  │  4. Identifiants ?      → user, password/hash                                                            │
+  │  5. Options ?           → port-scan, timeout...                                                          │
   └──────────────────────────────────────────────────────┬───────────────────────────────────────────────────┘
                                                          │
                                                          ▼
@@ -284,13 +284,13 @@ Le chemin absolu du Python du venv garantit que `sudo` utilise les dépendances 
 
 ### Étapes bloquantes vs non-bloquantes
 
-| Étape            | En cas d'échec                              |
-|------------------|---------------------------------------------|
-| Scan réseau      | Avertissement + continue (AD still works)   |
-| BloodHound       | **STOP** — pas de données AD = pas de graphe|
-| Mapping          | Avertissement + continue (pas de liens hostname) |
-| Certipy          | Avertissement + continue (pas de CertTemplates) |
-| Génération graphe| Erreur finale reportée                      |
+| Étape             | En cas d'échec                                   |
+| ----------------- | ------------------------------------------------ |
+| Scan réseau       | Avertissement + continue (AD fonctionne encore)  |
+| BloodHound        | **STOP** — pas de données AD = pas de graphe     |
+| Mapping           | Avertissement + continue (pas de liens hostname) |
+| Certipy           | Avertissement + continue (pas de CertTemplates)  |
+| Génération graphe | Erreur finale reportée                           |
 
 ### Code de retour
 

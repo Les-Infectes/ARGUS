@@ -20,10 +20,10 @@ ARGUS ne collecte pas lui-même les données Active Directory. Il s'appuie sur d
 
 ```
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                        DOMAINE ACTIVE DIRECTORY                                        │
-  │                                                                                                        │
-  │         LDAP (389/636)                         SMB (445)                             ADCS            │
-  └──────────────┬──────────────────────────┬──────────────────────────────────────────────────┬────────────┘
+  │                                        DOMAINE ACTIVE DIRECTORY                                          │
+  │                                                                                                          │
+  │         LDAP (389/636)                         SMB (445)                             ADCS                │
+  └──────────────┬──────────────────────────┬──────────────────────────────────────────────────┬─────────────┘
                  │                          │                                                  │
                  ▼                          ▼                                                  ▼
   ┌────────────────────────┐    ┌────────────────────────┐                       ┌────────────────────────┐
@@ -60,15 +60,15 @@ Certipy est un collecteur **spécialisé ADCS** qui analyse la configuration de 
 
 ```
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  PROTOCOLE              DONNÉES COLLECTÉES                                                             │
+  │  PROTOCOLE              DONNÉES COLLECTÉES                                                               │
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  LDAP (389/636)         Users, Groups, Computers, GPOs, OUs, Containers, Domains, Trusts,              │
-  │                         CertTemplates + ACLs (DACLs de chaque objet)                                   │
-  │                                                                                                        │
-  │  SMB (445)              Sessions actives sur les machines (qui est connecté où),                        │
-  │                         admins locaux, Remote Desktop Users, DCOM Users                                │
-  │                                                                                                        │
-  │  DNS                    Résolution de noms pour joindre les DCs                                        │
+  │  LDAP (389/636)         Users, Groups, Computers, GPOs, OUs, Containers, Domains, Trusts,                │
+  │                         CertTemplates + ACLs (DACLs de chaque objet)                                     │
+  │                                                                                                          │
+  │  SMB (445)              Sessions actives sur les machines (qui est connecté où),                         │
+  │                         admins locaux, Remote Desktop Users, DCOM Users                                  │
+  │                                                                                                          │
+  │  DNS                    Résolution de noms pour joindre les DCs                                          │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -121,19 +121,19 @@ BloodHound résout les ACEs binaires du DACL en edges nommés. Voici les 15 Righ
 
 ```
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  DROITS GÉNÉRIQUES                                  DROITS ÉTENDUS                                     │
+  │  DROITS GÉNÉRIQUES                                  DROITS ÉTENDUS                                       │
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  GenericAll                                         ForceChangePassword                                │
-  │  GenericWrite                                       AllExtendedRights                                  │
-  │  WriteDacl                                          AddKeyCredentialLink                               │
-  │  WriteOwner                                         WriteAccountRestrictions                           │
-  │  Owns                                               ReadLAPSPassword                                   │
-  │                                                     ReadGMSAPassword                                   │
+  │  GenericAll                                         ForceChangePassword                                  │
+  │  GenericWrite                                       AllExtendedRights                                    │
+  │  WriteDacl                                          AddKeyCredentialLink                                 │
+  │  WriteOwner                                         WriteAccountRestrictions                             │
+  │  Owns                                               ReadLAPSPassword                                     │
+  │                                                     ReadGMSAPassword                                     │
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  DROITS D'ÉCRITURE                                  DROITS ADCS                                        │
+  │  DROITS D'ÉCRITURE                                  DROITS ADCS                                          │
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  AddMember (WriteMember)                            Enroll                                             │
-  │                                                     AutoEnroll                                         │
+  │  AddMember (WriteMember)                            Enroll                                               │
+  │                                                     AutoEnroll                                           │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 

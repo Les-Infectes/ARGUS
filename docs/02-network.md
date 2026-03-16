@@ -63,7 +63,7 @@ L'accès au réseau cible détermine ce qu'ARGUS peut faire :
   │  │ (interne)│              accès réseau complet                  │          │                             │
   │  └──────────┘                                                    └──────────┘                             │
   │                                                                                                           │
-  │  Protocoles disponibles : ARP ✔   ICMP ✔   UDP ✔   TCP ✔                                                │
+  │  Protocoles disponibles : ARP ✔   ICMP ✔   UDP ✔   TCP ✔                                                  │
   │  → Découverte réseau complète possible (ARP, traceroute, ICMP, port scan)                                 │
   │                                                                                                           │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -71,12 +71,12 @@ L'accès au réseau cible détermine ce qu'ARGUS peut faire :
   │  MODE INDIRECT (PIVOT)                                                                                    │
   │  L'attaquant passe par un tunnel SOCKS après compromission d'une machine.                                 │
   │                                                                                                           │
-  │  ┌──────────┐     SOCKS5      ┌──────────┐                      ┌──────────┐                             │
-  │  │ Attacker │ ═══════════════▶│  Pivot   │ ════════════════════▶│ Cibles   │                             │
-  │  │ (externe)│    TCP only     │  (pwn)   │                      │          │                             │
-  │  └──────────┘                 └──────────┘                      └──────────┘                             │
+  │  ┌──────────┐     SOCKS5      ┌──────────┐                      ┌──────────┐                              │
+  │  │ Attacker │ ═══════════════▶│  Pivot   │ ════════════════════▶│ Cibles   │                              │
+  │  │ (externe)│    TCP only     │  (pwn)   │                      │          │                              │
+  │  └──────────┘                 └──────────┘                      └──────────┘                              │
   │                                                                                                           │
-  │  Protocoles disponibles : ARP ✘   ICMP ✘   UDP ✘   TCP ✔ (via proxychains4)                             │
+  │  Protocoles disponibles : ARP ✘   ICMP ✘   UDP ✘   TCP ✔ (via proxychains4)                               │
   │  → Pas de découverte réseau, scan TCP uniquement sur des IPs connues                                      │
   │                                                                                                           │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -138,11 +138,11 @@ En accès direct, ARGUS exécute **4 phases séquentielles**. Chaque phase alime
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │  MÉTHODE          COMMANDE                                          AVANTAGE                              │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  UDP              traceroute -n {target}                             Standard, le plus compatible          │
+  │  UDP              traceroute -n {target}                             Standard, le plus compatible         │
   │                                                                                                           │
   │  ICMP             traceroute -n -I {target}                          Passe les FW qui autorisent le ping  │
   │                                                                                                           │
-  │  TCP/80           traceroute -n -T -p 80 {target}                   Passe les FW qui autorisent HTTP     │
+  │  TCP/80           traceroute -n -T -p 80 {target}                   Passe les FW qui autorisent HTTP      │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -180,8 +180,8 @@ En accès direct, ARGUS exécute **4 phases séquentielles**. Chaque phase alime
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                       10.0.2.0/24 (ICMP)                                                  │
   │                                                                                                           │
-  │  10.0.2.1    ✔ up               10.0.2.20   ✔ up                                                         │
-  │  10.0.2.10   ✔ up               10.0.2.55   ✘ down                                                       │
+  │  10.0.2.1    ✔ up               10.0.2.20   ✔ up                                                          │
+  │  10.0.2.10   ✔ up               10.0.2.55   ✘ down                                                        │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -208,9 +208,9 @@ En accès direct, ARGUS exécute **4 phases séquentielles**. Chaque phase alime
        │
        ▼
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  10.0.1.10 : 53/dns, 88/kerberos, 389/ldap, 445/microsoft-ds, 636/ldaps                                  │
-  │  10.0.1.20 : 80/http, 443/https, 3389/ms-wbt                                                             │
-  │  10.0.2.10 : 22/ssh, 445/microsoft-ds                                                                    │
+  │  10.0.1.10 : 53/dns, 88/kerberos, 389/ldap, 445/microsoft-ds, 636/ldaps                                   │
+  │  10.0.1.20 : 80/http, 443/https, 3389/ms-wbt                                                              │
+  │  10.0.2.10 : 22/ssh, 445/microsoft-ds                                                                     │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -280,9 +280,9 @@ Le mode pivot utilise `proxychains4` + `nmap -sT` (TCP connect scan).
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                                                                                           │
-  │  -sS (SYN scan)     raw socket → paquet SYN forgé → CONTOURNE proxychains → scan local, pas le réseau    │
+  │  -sS (SYN scan)     raw socket → paquet SYN forgé → CONTOURNE proxychains → scan local, pas le réseau     │
   │                                                                                                           │
-  │  -sT (TCP connect)  connect() → intercepté par LD_PRELOAD → proxychains → tunnel SOCKS → cible distante  │
+  │  -sT (TCP connect)  connect() → intercepté par LD_PRELOAD → proxychains → tunnel SOCKS → cible distante   │
   │                                                                                                           │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -295,12 +295,12 @@ Le mode pivot utilise `proxychains4` + `nmap -sT` (TCP connect scan).
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                                                                                           │
   │  DIRECT — réseau complet          ARP → traceroute → ICMP → port scan TCP                                 │
-  │  --gateway 10.0.1.1 --dns 10.0.1.10                                                                      │
+  │  --gateway 10.0.1.1 --dns 10.0.1.10                                                                       │
   │                                                                                                           │
   │  DIRECT — machine ciblée          port scan TCP uniquement                                                │
   │  --single-host -i 10.10.11.42/32                                                                          │
   │                                                                                                           │
-  │  INDIRECT — pivot SOCKS           port scan TCP via proxychains sur IPs connues                            │
+  │  INDIRECT — pivot SOCKS           port scan TCP via proxychains sur IPs connues                           │
   │  --proxychains-conf pivot.conf --targets 172.16.1.5,172.16.1.20                                           │
   │                                                                                                           │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘

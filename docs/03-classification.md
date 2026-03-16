@@ -30,15 +30,15 @@ ARGUS classe chaque objet AD dans un **tier de criticité** basé sur deux crit�
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                                         │
-│  TIER 0 — Contrôle DÉTERMINISTE du domaine                                                             │
+│  TIER 0 — Contrôle DÉTERMINISTE du domaine                                                              │
 │           Un attaquant qui compromet un objet Tier 0 peut prendre le contrôle total du domaine          │
-│           IMMÉDIATEMENT. Classification : algorithme déterministe (5 phases)                             │
+│           IMMÉDIATEMENT. Classification : algorithme déterministe (5 phases)                            │
 │                                                                                                         │
-│  TIER 1 — Proximité (1-7 hops depuis Tier 0)                                                           │
+│  TIER 1 — Proximité (1-7 hops depuis Tier 0)                                                            │
 │           Objets proches du contrôle du domaine. Un ou quelques sauts suffisent pour atteindre Tier 0.  │
 │           Classification : distance BFS                                                                 │
 │                                                                                                         │
-│  TIER 2 — Éloigné (8+ hops ou inaccessible)                                                            │
+│  TIER 2 — Éloigné (8+ hops ou inaccessible)                                                             │
 │           Objets distants, utilisateurs standards, ou objets sans chemin connu vers Tier 0.             │
 │           Classification : distance BFS ou absence de chemin                                            │
 │                                                                                                         │
@@ -64,8 +64,8 @@ L'algorithme classe les objets AD en tiers de criticité via **5 phases séquent
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                  QUI CONTRÔLE LE DOMAINE ?                                           │
-  │                                  (Tier 0 — déterministe)                                             │
+  │                                  QUI CONTRÔLE LE DOMAINE ?                                            │
+  │                                  (Tier 0 — déterministe)                                              │
   │                                                                                                       │
   │  Phase 1                          Phase 2                          Phase 3                            │
   │  ATTRIBUTION DIRECTE              HÉRITAGE DIRECT                  HÉRITAGE INDIRECT                  │
@@ -74,17 +74,17 @@ L'algorithme classe les objets AD en tiers de criticité via **5 phases séquent
   │  │ contrôle est CERTAIN  │───────▶│ sur un objet déjà     │───────▶│ aux machines Tier 0 ? │          │
   │  │ par nature            │        │ Tier 0 ?              │        │ (admin, RDP, LAPS,    │          │
   │  └───────────────────────┘        └───────────────────────┘        │  GPO, PSRemote, DCOM) │          │
-  │   Domain Admins                    GenericAll sur DA                └───────────────────────┘          │
+  │   Domain Admins                    GenericAll sur DA               └───────────────────────┘          │
   │   Enterprise Admins                WriteDacl sur DC                                                   │
   │   KRBTGT, DCs                      WriteOwner sur EA                AdminTo sur T0                    │
   │   DCSync holders                   Owns sur KRBTGT                  ReadLAPS sur T0                   │
-  │   CertTemplates ESC                ...itère jusqu'à stabilisation   GPO liée à T0                    │
-  │                                    (point fixe)                     CanPSRemote / CanRDP / DCOM T0   │
+  │   CertTemplates ESC                ...itère jusqu'à stabilisation   GPO liée à T0                     │
+  │                                    (point fixe)                     CanPSRemote / CanRDP / DCOM T0    │
   │                                                                                                       │
   │  Phase 4                                                                                              │
   │  MEMBRES DES GROUPES T0                                                                               │
   │  ┌───────────────────────────────────────────────────┐                                                │
-  │  │ Membres des groupes déjà classés T0               │    Un membre de Domain Admins EST Tier 0,     │
+  │  │ Membres des groupes déjà classés T0               │    Un membre de Domain Admins EST Tier 0,      │
   │  │                                                   │    pas "1 hop de distance".                    │
   │  └───────────────────────────────────────────────────┘                                                │
   │                                                                                                       │
@@ -93,17 +93,17 @@ L'algorithme classe les objets AD en tiers de criticité via **5 phases séquent
                                                  │  Tier 0 complet et final
                                                  ▼
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                  À QUELLE DISTANCE DU CONTRÔLE ?                                     │
-  │                                  (Tier 1 & 2 — distance BFS)                                         │
+  │                                  À QUELLE DISTANCE DU CONTRÔLE ?                                      │
+  │                                  (Tier 1 & 2 — distance BFS)                                          │
   │                                                                                                       │
   │  Phase 5                                                                                              │
   │  CALCUL DE DISTANCE                                                                                   │
   │  ┌───────────────────────────────────────────────────────────────────────────────────────────┐        │
-  │  │ BFS (parcours en largeur) depuis tous les noeuds Tier 0                                  │        │
+  │  │ BFS (parcours en largeur) depuis tous les noeuds Tier 0                                   │        │
   │  │                                                                                           │        │
-  │  │    1 à 7 hops         ──▶  Tier 1 (proximité)                                            │        │
-  │  │    8+ hops            ──▶  Tier 2 (éloigné)                                              │        │
-  │  │    ∞ (aucun chemin)   ──▶  Tier 2                                                        │        │
+  │  │    1 à 7 hops         ──▶  Tier 1 (proximité)                                             │        │
+  │  │    8+ hops            ──▶  Tier 2 (éloigné)                                               │        │
+  │  │    ∞ (aucun chemin)   ──▶  Tier 2                                                         │        │ 
   │  └───────────────────────────────────────────────────────────────────────────────────────────┘        │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -141,21 +141,21 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                CRITÈRES D'ATTRIBUTION DIRECTE TIER 0                                    │
+│                                CRITÈRES D'ATTRIBUTION DIRECTE TIER 0                                     │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                          │
 │  1. Objets Domain (type == "Domain")                                                                     │
 │     → Le domaine lui-même est Tier 0 par définition                                                      │
 │                                                                                                          │
 │  2. Groupes/comptes critiques par RID (SID suffix) :                                                     │
-│     -500  Administrator (compte builtin)                 -518  Schema Admins                              │
-│     -502  KRBTGT (clé de chiffrement Kerberos)           -519  Enterprise Admins                          │
-│     -512  Domain Admins                                  -520  Group Policy Creator Owners                │
-│     -516  Domain Controllers (groupe)                    -526  Key Admins (Shadow Credentials WHfB)       │
-│     -517  Cert Publishers (PKI — attaques ESC)           -527  Enterprise Key Admins (forêt entière)      │
-│     -544  Administrators (BUILTIN)                       -549  Server Operators                           │
-│     -548  Account Operators                              -550  Print Operators                            │
-│     -551  Backup Operators                                                                                │
+│     -500  Administrator (compte builtin)                 -518  Schema Admins                             │
+│     -502  KRBTGT (clé de chiffrement Kerberos)           -519  Enterprise Admins                         │
+│     -512  Domain Admins                                  -520  Group Policy Creator Owners               │
+│     -516  Domain Controllers (groupe)                    -526  Key Admins (Shadow Credentials WHfB)      │
+│     -517  Cert Publishers (PKI — attaques ESC)           -527  Enterprise Key Admins (forêt entière)     │
+│     -544  Administrators (BUILTIN)                       -549  Server Operators                          │
+│     -548  Account Operators                              -550  Print Operators                           │
+│     -551  Backup Operators                                                                               │
 │                                                                                                          │
 │  3. Contrôleurs de domaine (machines) :                                                                  │
 │     → Détection primaire : userAccountControl & 0x2000 (flag SERVER_TRUST_ACCOUNT)                       │
@@ -174,11 +174,11 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
 │                                                                                                          │
 │  7. GPO critiques du domaine :                                                                           │
 │     → Default Domain Policy / Default Domain Controllers Policy                                          │
-│     → Contrôlent les paramètres de sécurité globaux. En les classant Tier 0, la Phase 2 promeut         │
+│     → Contrôlent les paramètres de sécurité globaux. En les classant Tier 0, la Phase 2 promeut          │
 │       automatiquement quiconque a GenericAll/WriteDacl dessus — sans logique spécifique GPO en Phase 3.  │
 │                                                                                                          │
 │  8. Machine hébergeant l'Enterprise CA :                                                                 │
-│     → Identifiée via le champ ca_names des CertTemplates                                                │
+│     → Identifiée via le champ ca_names des CertTemplates                                                 │
 │     → Compromission = forge de certificats, extraction de la clé privée CA, approbation de requêtes      │
 │     → Note : dépend des données certipy (BloodHound ne collecte pas les objets EnterpriseCA nativement)  │
 │                                                                                                          │
@@ -215,17 +215,17 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
   │                                                                                                       │
   │  Tour 1 : On parcourt toutes les permissions du domaine                                               │
   │                                                                                                       │
-  │    UserX ──GenericAll──▶ Domain Admins (Tier 0)                                                      │
+  │    UserX ──GenericAll──▶ Domain Admins (Tier 0)                                                       │
   │    │                                                                                                  │
-  │    └──▶ UserX a le contrôle total sur un objet Tier 0 → UserX devient Tier 0                         │
+  │    └──▶ UserX a le contrôle total sur un objet Tier 0 → UserX devient Tier 0                          │
   │                                                                                                       │
   │  Tour 2 : On recommence avec les nouveaux Tier 0                                                      │
   │                                                                                                       │
-  │    GroupeY ──WriteDacl──▶ UserX (nouveau Tier 0)                                                     │
+  │    GroupeY ──WriteDacl──▶ UserX (nouveau Tier 0)                                                      │
   │    │                                                                                                  │
-  │    └──▶ GroupeY contrôle un objet devenu Tier 0 au tour 1 → GroupeY devient Tier 0                   │
+  │    └──▶ GroupeY contrôle un objet devenu Tier 0 au tour 1 → GroupeY devient Tier 0                    │
   │                                                                                                       │
-  │  Tour 3 : On recommence... Aucun nouveau Tier 0 trouvé → on s'arrête.                                │
+  │  Tour 3 : On recommence... Aucun nouveau Tier 0 trouvé → on s'arrête.                                 │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -237,7 +237,7 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  DROITS DE PROMOTION TIER 0 (Phase 2)                                                                │
+  │  DROITS DE PROMOTION TIER 0 (Phase 2)                                                                 │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  Contrôle total :                                          Modification de groupe :                   │
@@ -247,8 +247,8 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
   │    Owns              → Propriétaire = contrôle             Prise de contrôle de compte :              │
   │                                                              ForceChangePassword → Reset sans mdp     │
   │  Shadow Credentials :                                        ResetPassword       → Alias              │
-  │    AddKeyCredentialLink    → msDS-KeyCredentialLink                                                    │
-  │    WriteKeyCredentialLink  → Alias                                                                     │
+  │    AddKeyCredentialLink    → msDS-KeyCredentialLink                                                   │
+  │    WriteKeyCredentialLink  → Alias                                                                    │
   │                                                                                                       │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
@@ -268,8 +268,8 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                  ACCÈS MACHINE TIER 0 → TIER 0                                       │
-  ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │                                  ACCÈS MACHINE TIER 0 → TIER 0                                        │
+  ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  1. AdminTo sur machine Tier 0                                                                        │
   │     → Admin local = contrôle total de la machine. Source : collecteur LocalAdmins de BloodHound       │
@@ -278,9 +278,9 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
   │     → Permet de lire le mot de passe admin local. Recherche sur la machine ET sur l'OU parente        │
   │                                                                                                       │
   │  3. Accès distant à une machine Tier 0                                                                │
-  │     → CanRDP (Remote Desktop)     → CanPSRemote (PowerShell Remoting / WinRM)     → DCOM (Dist. COM) │
+  │     → CanRDP (Remote Desktop)     → CanPSRemote (PowerShell Remoting / WinRM)     → DCOM (Dist. COM)  │
   │                                                                                                       │
-  │  4. WriteGPO sur GPO liée à l'OU d'une machine Tier 0                                                │
+  │  4. WriteGPO sur GPO liée à l'OU d'une machine Tier 0                                                 │
   │     → Droits vérifiés : WriteGPO, EditGPO, GenericAll, WriteDacl, WriteOwner                          │
   │     → Permet d'exécuter du code sur la machine via GPO                                                │
   │                                                                                                       │
@@ -298,18 +298,18 @@ Le problème : il faut remonter la chaîne pour trouver quelles GPO s'appliquent
   │                                                                                                       │
   │  1. Où sont les machines Tier 0 dans l'arborescence AD ?                                              │
   │                                                                                                       │
-  │     DC01 est dans l'OU "Domain Controllers"        SRV-PKI est dans l'OU "Servers"                   │
-  │     (visible via leur distinguishedName)                                                               │
+  │     DC01 est dans l'OU "Domain Controllers"        SRV-PKI est dans l'OU "Servers"                    │
+  │     (visible via leur distinguishedName)                                                              │
   │                                                                                                       │
   │  2. Quelles GPO s'appliquent à ces OUs ?                                                              │
   │                                                                                                       │
-  │     OU "Domain Controllers" ← GPO "Default DC Policy"        Domaine corp.local ← GPO "Default DP"  │
-  │     OU "Servers"            ← GPO "Server Hardening"         (les GPO domaine → toutes les machines) │
+  │     OU "Domain Controllers" ← GPO "Default DC Policy"        Domaine corp.local ← GPO "Default DP"    │
+  │     OU "Servers"            ← GPO "Server Hardening"         (les GPO domaine → toutes les machines)  │
   │                                                                                                       │
   │  3. Qui peut modifier ces GPO ?                                                                       │
   │                                                                                                       │
-  │     UserX ──WriteGPO──▶ "Server Hardening"                                                           │
-  │     → UserX peut injecter du code sur SRV-PKI via GPO → UserX devient Tier 0                         │
+  │     UserX ──WriteGPO──▶ "Server Hardening"                                                            │
+  │     → UserX peut injecter du code sur SRV-PKI via GPO → UserX devient Tier 0                          │ 
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -343,8 +343,8 @@ Le BFS parcourt un graphe où **chaque permission AD = un edge**. Il utilise **t
   │                                  EDGES UTILISÉS PAR LE BFS                                            │
   │                                                                                                       │
   │  PERMISSIONS ACE (toutes, pas juste celles de Phase 2) :                                              │
-  │    GenericAll, GenericWrite, WriteDacl, WriteOwner, Owns, ForceChangePassword, AddMember,              │
-  │    AddKeyCredentialLink, AllExtendedRights, WriteAccountRestrictions, Enroll, AutoEnroll,              │
+  │    GenericAll, GenericWrite, WriteDacl, WriteOwner, Owns, ForceChangePassword, AddMember,             │
+  │    AddKeyCredentialLink, AllExtendedRights, WriteAccountRestrictions, Enroll, AutoEnroll,             │
   │    ReadLAPSPassword, ReadGMSAPassword                                                                 │
   │                                                                                                       │
   │  RELATIONS DE GROUPE :                        ACCÈS MACHINE :                                         │
@@ -365,18 +365,18 @@ Le BFS part de chaque objet non-Tier-0 et cherche le chemin le plus court jusqu'
 
 ```
   ┌──────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ Distance │ Tier                                                                                      │
+  │ Distance │ Tier                                                                                       │
   ├──────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-  │    0     │ Tier 0 — Déterministe                                                                     │
+  │    0     │ Tier 0 — Déterministe                                                                      │
   │          │ Contrôle garanti sur le domaine. Les phases 1-4 ont identifié tous les chemins             │
   │          │ d'escalade possibles et les ont consolidés dans ce tier.                                   │
   ├──────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-  │   1-7    │ Tier 1 — Chemins incertains                                                               │
+  │   1-7    │ Tier 1 — Chemins incertains                                                                │
   │          │ Chemin potentiel vers le Tier 0, mais l'exploitation dépend de conditions non garanties    │
   │          │ (attribut modifiable, session active, template vulnérable, etc.).                          │
   ├──────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  8+ / ∞  │ Tier 2 — Reste du domaine                                                                 │
-  │          │ Objets éloignés ou sans chemin connu vers le Tier 0. Faible risque d'escalade directe.    │
+  │  8+ / ∞  │ Tier 2 — Reste du domaine                                                                  │
+  │          │ Objets éloignés ou sans chemin connu vers le Tier 0. Faible risque d'escalade directe.     │
   └──────────┴────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -767,8 +767,8 @@ Ces SIDs sont **génériques** et identiques sur tous les systèmes Windows. Sur
   │                                                                                                       │
   │  14 RIDs inclus dans l'attribution directe Tier 0 (Phase 1)                                           │
   │  ──────────────────────────────────                                                                   │
-  │  Domaine : 500, 502, 512, 516, 517, 518, 519, 520, 526, 527                                          │
-  │  Built-In : 544, 548, 549, 550, 551                                                                  │
+  │  Domaine : 500, 502, 512, 516, 517, 518, 519, 520, 526, 527                                           │
+  │  Built-In : 544, 548, 549, 550, 551                                                                   │
   │                                                                                                       │
   │  Critère d'inclusion :                                                                                │
   │  "Un attaquant membre de ce groupe peut-il compromettre le domaine SANS dépendre d'une autre          │
@@ -776,9 +776,9 @@ Ces SIDs sont **génériques** et identiques sur tous les systèmes Windows. Sur
   │                                                                                                       │
   │  Exclusions notables et leur gestion :                                                                │
   │  ─────────────────────────────────────                                                                │
-  │  555 (RDP Users)    → Phase 3 : CanRDP vers DC = T0                                                  │
-  │  562 (DCOM Users)   → Phase 3 : DCOM vers DC = T0                                                    │
-  │  580 (WinRM Users)  → Phase 3 : CanPSRemote vers DC = T0                                             │
+  │  555 (RDP Users)    → Phase 3 : CanRDP vers DC = T0                                                   │
+  │  562 (DCOM Users)   → Phase 3 : DCOM vers DC = T0                                                     │
+  │  580 (WinRM Users)  → Phase 3 : CanPSRemote vers DC = T0                                              │
   │  515 (Domain Comp.) → Pas de droit direct, mais vecteur ADCS implicite via MachineAccountQuota        │
   │  521 (RODC)         → Secrets limités, pas de compromission directe du domaine principal              │
   │                                                                                                       │
@@ -912,40 +912,40 @@ ARGUS travaille avec les données que le collecteur fournit. Recoder et mainteni
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  GUIDS RÉSOLUS PAR BLOODHOUND → edge distinct                                                        │
+  │  GUIDS RÉSOLUS PAR BLOODHOUND → edge distinct                                                         │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │  msDS-KeyCredentialLink   5b47d60f-...  → AddKeyCredentialLink                                       │
-  │  userAccountControl       bf967a68-...  → WriteAccountRestrictions                                   │
-  │  member                   bf9679c0-...  → AddMember                                                  │
+  │  msDS-KeyCredentialLink   5b47d60f-...  → AddKeyCredentialLink                                        │
+  │  userAccountControl       bf967a68-...  → WriteAccountRestrictions                                    │
+  │  member                   bf9679c0-...  → AddMember                                                   │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
-  │  GUIDS NON RÉSOLUS → noyés dans GenericWrite                                                         │
+  │  GUIDS NON RÉSOLUS → noyés dans GenericWrite                                                          │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  servicePrincipalName     f3a64788-...     Targeted Kerberoasting                                     │
-  │    → Ajouter un SPN sur un compte → demander un ticket Kerberos (TGS) → cracker le hash hors-ligne.  │
+  │    → Ajouter un SPN sur un compte → demander un ticket Kerberos (TGS) → cracker le hash hors-ligne.   │
   │      Succès dépend de la force du mot de passe.                                                       │
   │                                                                                                       │
   │  msDS-AllowedToActOn...   3f78c3e5-...     RBCD                                                       │
   │    → Resource-Based Constrained Delegation. Configurer la cible pour accepter la délégation depuis    │
-  │      un compte qu'on contrôle → impersonation via S4U2Self + S4U2Proxy. Contrôle total.              │
+  │      un compte qu'on contrôle → impersonation via S4U2Self + S4U2Proxy. Contrôle total.               │
   │                                                                                                       │
   │  gPLink                   f30e3bbe-...     GPO Link manipulation                                      │
-  │    → Lier une GPO malveillante à une OU critique. Si l'attaquant contrôle une GPO + a ce droit sur   │
-  │      l'OU des DCs → exécution de code sur les DCs.                                                   │
+  │    → Lier une GPO malveillante à une OU critique. Si l'attaquant contrôle une GPO + a ce droit sur    │
+  │      l'OU des DCs → exécution de code sur les DCs.                                                    │
   │                                                                                                       │
   │  scriptPath               bf967a7c-...     Logon script injection                                     │
-  │    → Modifier le script de logon d'un utilisateur. Exécution de code au prochain login de la cible.  │
+  │    → Modifier le script de logon d'un utilisateur. Exécution de code au prochain login de la cible.   │
   │      Discret et efficace.                                                                             │
   │                                                                                                       │
   │  msDS-GroupMSAMembership  888eedd6-...     gMSA reader hijack                                         │
-  │    → Modifier la liste des principals autorisés à lire le hash du compte gMSA → lecture du mot de    │
+  │    → Modifier la liste des principals autorisés à lire le hash du compte gMSA → lecture du mot de     │
   │      passe du service account.                                                                        │
   │                                                                                                       │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  CONSÉQUENCE POUR ARGUS :                                                                             │
-  │  GenericWrite est dans le BFS (Phase 5) mais EXCLU de la Phase 2 car on ne peut pas distinguer un    │
+  │  GenericWrite est dans le BFS (Phase 5) mais EXCLU de la Phase 2 car on ne peut pas distinguer un     │
   │  WriteProperty sur servicePrincipalName (critique) d'un WriteProperty sur description (inoffensif).   │
   │  Si BloodHound CE décompose ces GUIDs à l'avenir, ils pourront être ajoutés individuellement.         │
   │                                                                                                       │
