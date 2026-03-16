@@ -52,7 +52,7 @@ Le module utilise `dnspython` pour envoyer les requêtes directement au DC via `
 
 ## 3. Mode pivot — optimisation SMB
 
-En mode pivot, la résolution DNS fonctionne aussi (via `--dns-tcp` à travers le tunnel SOCKS), mais chaque requête doit traverser le tunnel ce qui est lent (2-5 sec par hostname).
+En mode pivot, la résolution DNS fonctionne aussi (via `--dns-tcp` à travers le tunnel SOCKS), mais chaque requête doit traverser le tunnel, ce qui est lent (2-5 sec par hostname).
 
 Pour accélérer, ARGUS exploite une donnée déjà collectée : pendant le scan pivot ([doc réseau, section 5](02-network.md)), nmap exécute le script `--script=smb-os-discovery` sur chaque cible. Ce script interroge le service SMB (port 445) et extrait le FQDN de la machine. Ces hostnames sont stockés dans le JSON du scan réseau.
 

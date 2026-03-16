@@ -159,7 +159,7 @@ En accès direct, ARGUS exécute **4 phases séquentielles**. Chaque phase alime
    4    * * *              * * *              142.250.x.x        142.250.x.x
 ```
 
-**Filtre de sécurité** : Seules les IPs privées (RFC1918) sont conservées. Les IPs publiques apparaissant dans le traceroute vers 8.8.8.8 sont silencieusement ignorées — on ne veut pas scanner l'internet.
+**Filtre de sécurité** : Seules les IPs privées (RFC1918) sont conservées. Les IPs publiques apparaissant dans le traceroute vers 8.8.8.8 sont silencieusement ignorées — on ne veut pas scanner l'Internet.
 
 ### Phase 3 — Scan ICMP des sous-réseaux distants
 
@@ -239,7 +239,7 @@ Quand on connaît déjà le réseau (ex: un seul DC dans un lab HTB) on n'a pas 
   argus_network.py --single-host --ip-cidr 10.10.11.42/32 --port-scan
 
   → Pas d'ARP, pas de traceroute, pas d'ICMP
-  → Scan de ports TCP directement sur 10.10.11.42
+  → Scan de ports TCP directement on 10.10.11.42
 ```
 
 Ce mode est utile pour les labs ou quand on veut simplement ajouter les données de ports d'une machine connue au JSON réseau.

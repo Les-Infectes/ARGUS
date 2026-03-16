@@ -269,7 +269,7 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                  ACCÈS MACHINE TIER 0 → TIER 0                                       │
-  ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  1. AdminTo sur machine Tier 0                                                                        │
   │     → Admin local = contrôle total de la machine. Source : collecteur LocalAdmins de BloodHound       │
@@ -492,7 +492,7 @@ Dans un **domaine d'entreprise** (1000+ objets), le Tier 1 contiendra typiquemen
   │   └── compute_full_tier_classification()  # Pipeline complète
   │
   ├── Recherche de chemins
-  │   ├── k_shortest_loopless_paths()  # Yen's algorithm (k plus courts)
+  │   ├── k_shortest_loopless_paths()  # Yen's algorithm (k-plus courts)
   │   └── get_tier_targets()           # Cibles par tier
   │
   └── Construction du graphe

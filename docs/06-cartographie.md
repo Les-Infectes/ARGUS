@@ -18,7 +18,7 @@
 ### Contexte
 
 ARGUS produit des fichiers JSON structurés : graphes de tiers (chemins d'attaque AD), scans réseau (topologie IP), mappings hostname. Ces données sont exploitables programmatiquement, mais un auditeur a besoin d'une **visualisation interactive** pour :
-- comprendre la topologie réseau et les chemins d'attaque en un coup d'oeil,
+- comprendre la topologie réseau et les chemins d'attaque en un coup d'œil,
 - présenter les résultats à un client ou une équipe sécurité,
 - explorer interactivement les relations entre objets AD.
 
@@ -250,7 +250,7 @@ Le bouton "Afficher/Masquer AD" ajoute ou supprime la couche identité sans la p
 
 ### Noeuds
 
-Les noeuds utilisent un code couleur par type pour distinguer les rôles d'un coup d'oeil. Les types AD (User, Group, Computer, GPO, CertTemplate...) et réseau (DC, Serveur, Routeur, Poste...) ont chacun leur couleur.
+Les noeuds utilisent un code couleur par type pour distinguer les rôles d'un coup d'œil. Les types AD (User, Group, Computer, GPO, CertTemplate...) et réseau (DC, Serveur, Routeur, Poste...) ont chacun leur couleur.
 
 Le **tier** est indiqué par la couleur de bordure du noeud (rouge = T0, orange = T1, jaune = T2). Exception : les Computer ont toujours un fond violet quel que soit le tier.
 

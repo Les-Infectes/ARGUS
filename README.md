@@ -1,7 +1,7 @@
 <p align="center">
   <img src="img/logo.png" alt="ARGUS" width="400">
 </p>
-<h3 align="center">Cartographie Réseau & Objet Active Directory</h3>
+<h3 align="center">Cartographie Réseau & Objets Active Directory</h3>
 
 ARGUS fusionne automatiquement l'infrastructure réseau (IPs, services, topologie) et le graphe d'identité Active Directory (utilisateurs, groupes, permissions, chemins d'attaque) dans une interface de visualisation interactive unique.
 

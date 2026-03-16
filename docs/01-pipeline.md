@@ -25,7 +25,7 @@ ARGUS est composé de plusieurs modules indépendants, chacun avec ses propres a
   argus.py                              Wizard interactif (point d'entrée)
        │                                Questions → construit la ligne de commande
        ▼
-  argus_pipeline.py                     Orchestrateur séquentiel — 5 étapes dans l'ordre — Gestion des erreurs + skip
+  argus_pipeline.py                     Orchestrateur séquentiel — 5 étapes dans l'ordre — Gestion des erreurs + options de saut
        │
        ├── argus_network.py             Scan réseau (ARP, traceroute, ports)
        ├── bloodhound-python            Collecte AD (users, groups, computers, domains)
@@ -97,31 +97,31 @@ Une fois la commande construite, `argus.py` l'affiche et la lance automatiquemen
 ### Dépendances entre les étapes
 
 ```
-  Step 1 (Network)     → indépendant, peut être skip
-  Step 2 (BloodHound)  → indépendant, BLOQUANT si échec (pas de données AD = pas de graphe)
-  Step 3 (Mapping)     → dépend de Step 2 (BH data) + optionnel Step 1 (SMB index)
-  Step 4 (Certipy)     → dépend de Step 2 (BH data pour name → SID)
-  Step 5 (Graph)       → dépend de Step 2 + optionnel Step 4 (certipy_data)
+  Étape 1 (Network)     → indépendant, peut être sautée
+  Étape 2 (BloodHound)  → indépendant, BLOQUANT si échec (pas de données AD = pas de graphe)
+  Étape 3 (Mapping)     → dépend de l'Étape 2 (BH data) + optionnel Étape 1 (SMB index)
+  Étape 4 (Certipy)     → dépend de l'Étape 2 (BH data pour name → SID)
+  Étape 5 (Graph)       → dépend de l'Étape 2 + optionnel Étape 4 (certipy_data)
 ```
 
-Seul l'échec de Step 2 (BloodHound) est bloquant. Les autres étapes sont résilientes : un échec produit un warning mais n'arrête pas le pipeline.
+Seul l'échec de l'Étape 2 (BloodHound) est bloquant. Les autres étapes sont résilientes : un échec produit un avertissement mais n'arrête pas le pipeline.
 
 ### Fichiers produits
 
 ```
   output_dir/
-  ├── network_scan.json                    Step 1 — topologie réseau
-  ├── bloodhound_data/                     Step 2 — données AD brutes
+  ├── network_scan.json                    Étape 1 — topologie réseau
+  ├── bloodhound_data/                     Étape 2 — données AD brutes
   │   ├── *_users.json
   │   ├── *_groups.json
   │   ├── *_computers.json
   │   ├── *_domains.json
   │   └── ...
-  ├── hostname_mapping.json                Step 3 — hostname → IP
-  ├── certipy_data.json                    Step 4 — templates ADCS
-  ├── graph_tier0.json                     Step 5 — Tier 0 (déterministe)
-  ├── graph_tier1.json                     Step 5 — Tier 1 (1-7 hops)
-  └── graph_tier2.json                     Step 5 — Tier 2 (8+ hops)
+  ├── hostname_mapping.json                Étape 3 — hostname → IP
+  ├── certipy_data.json                    Étape 4 — templates ADCS
+  ├── graph_tier0.json                     Étape 5 — Tier 0 (déterministe)
+  ├── graph_tier1.json                     Étape 5 — Tier 1 (1-7 hops)
+  └── graph_tier2.json                     Étape 5 — Tier 2 (8+ hops)
 ```
 
 ---
@@ -161,7 +161,7 @@ Le pipeline cherche `bloodhound-python` dans le **même répertoire bin que le P
 
 Le collecteur BloodHound produit un `.zip` automatiquement extrait dans `bloodhound_data/` puis supprimé.
 
-### Options de skip
+### Options d'omission (skip)
 
 | Flag                 | Effet                                            |
 |----------------------|--------------------------------------------------|
@@ -170,7 +170,7 @@ Le collecteur BloodHound produit un `.zip` automatiquement extrait dans `bloodho
 | `--skip-enrichment`  | Saute l'étape 3 (mapping hostname→IP)             |
 | `--skip-certipy`     | Saute l'étape 4 (énumération ADCS)               |
 
-**Cas spécial `x@x`** : Si `--start x@x` est passé (convention "network-only"), le pipeline saute la génération de graphes (Step 5) car il n'y a pas de noeud de départ valide pour le BFS.
+**Cas spécial `x@x`** : Si `--start x@x` est passé (convention "network-only"), le pipeline saute la génération de graphes (Étape 5) car il n'y a pas de noeud de départ valide pour le BFS.
 
 ---
 
@@ -286,12 +286,12 @@ Le chemin absolu du Python du venv garantit que `sudo` utilise les dépendances 
 
 | Étape            | En cas d'échec                              |
 |------------------|---------------------------------------------|
-| Network scan     | Warning + continue (AD still works)         |
+| Scan réseau      | Avertissement + continue (AD still works)   |
 | BloodHound       | **STOP** — pas de données AD = pas de graphe|
-| Mapping          | Warning + continue (pas de liens hostname)  |
-| Certipy          | Warning + continue (pas de CertTemplates)   |
-| Graph generation | Erreur finale reportée                      |
+| Mapping          | Avertissement + continue (pas de liens hostname) |
+| Certipy          | Avertissement + continue (pas de CertTemplates) |
+| Génération graphe| Erreur finale reportée                      |
 
 ### Code de retour
 
-Le pipeline retourne `0` si la génération de graphes réussit (ou est skippée intentionnellement), `1` sinon.
+Le pipeline retourne `0` si la génération de graphes réussit (ou est sautée intentionnellement), `1` sinon.
