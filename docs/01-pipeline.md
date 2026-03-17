@@ -170,7 +170,7 @@ Le collecteur BloodHound produit un `.zip` automatiquement extrait dans `bloodho
 | `--skip-enrichment`  | Saute l'étape 3 (mapping hostname→IP)             |
 | `--skip-certipy`     | Saute l'étape 4 (énumération ADCS)               |
 
-**Cas spécial `x@x`** : Si `--start x@x` est passé (convention "network-only"), le pipeline saute la génération de graphes (Étape 5) car il n'y a pas de noeud de départ valide pour le BFS.
+**Cas spécial `x@x`** : Si `--start x@x` est passé (convention "network-only"), le pipeline saute la génération de graphes (Étape 5) car il n'y a pas de noeud de départ valide pour le BFS (Breadth-First Search, Algorithme de parcours en largeur).
 
 ---
 
@@ -193,8 +193,8 @@ Le collecteur BloodHound produit un `.zip` automatiquement extrait dans `bloodho
 | Mode | Fichier            | Contenu                                          |
 |------|--------------------|--------------------------------------------------|
 | 0    | `graph_tier0.json` | **Tous** les chemins vers Tier 0 (déterministe)  |
-| 1    | `graph_tier1.json` | 30 chemins, distance BFS 1-7 hops                |
-| 2    | `graph_tier2.json` | 40 chemins, ego-graph exploration (8+ hops)      |
+| 1    | `graph_tier1.json` | 30 chemins max, distance BFS 1-7 hops            |
+| 2    | `graph_tier2.json` | 40 chemins max, ego-graph exploration (8+ hops)  |
 
 Si `--certipy-json` est disponible, il est transmis à chaque invocation pour inclure les noeuds CertTemplate dans tous les tiers.
 
