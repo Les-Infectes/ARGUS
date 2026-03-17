@@ -37,7 +37,7 @@ En situation de pentest, l'attaquant est positionné sur un segment réseau et n
   │                                                                                                           │
   │  2. Quels sous-réseaux existent AU-DELÀ de mon segment ?       → Découverte L3 (traceroute multi-méthode) │
   │                                                                                                           │
-  │  3. Quels services sont accessibles sur ces machines ?          → Scan de ports TCP                        │
+  │  3. Quels services sont accessibles sur ces machines ?          → Scan de ports TCP                       │
   │                                                                                                           │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -185,8 +185,6 @@ En accès direct, ARGUS exécute **4 phases séquentielles**. Chaque phase alime
   └───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Pourquoi ICMP et pas ARP ?** Ces sous-réseaux sont au-delà d'un routeur (L3). L'ARP est limité au segment L2 local. ICMP (ping) traverse les routeurs. En contrepartie, les hôtes qui filtrent ICMP ne seront pas détectés — c'est une limitation acceptée.
-
 **Filtre de sécurité** : Les sous-réseaux publics déduits des traceroutes sont écartés avant le scan. Seuls les /24 privés sont scannés.
 
 ### Phase 4 — Scan de ports TCP
@@ -219,7 +217,6 @@ En accès direct, ARGUS exécute **4 phases séquentielles**. Chaque phase alime
 - Personnalisé : `--port-list "22,80,88,135,389,445,636,3389,5985"`
 - Le scan est **optionnel** (`--port-scan` pour l'activer), mais **automatique** si `--port-list` est spécifié
 
-**Pourquoi `-Pn -n` ?** Les hôtes ont déjà été découverts (ARP/ICMP), pas besoin de re-vérifier leur disponibilité (`-Pn`). La résolution DNS est désactivée (`-n`) pour éviter les fuites DNS et accélérer le scan.
 
 ### Dépendances (mode direct)
 
