@@ -49,7 +49,7 @@ Le pentester conserve sa méthodologie de scan, ses options nmap préférées, s
 
 ## 3. Les trois sous-modes
 
-Le mode Import est accessible depuis le wizard (`argus.py`) comme troisième choix après Direct et Pivot :
+Le mode Import est accessible depuis l'interface web (`argus_server.py`) ou en ligne de commande :
 
 ```
   ACCESS MODE
@@ -204,7 +204,7 @@ Le pentester a déjà fait ses scans et veut générer une cartographie unifiée
      - bloodhound-python -u user -d domain -c All       (collecte BH)
 
   2. Il lance ARGUS en mode import :
-     python3 argus.py → Import → Full import
+     python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain
        nmap-xml :  scan.xml
        bh-dir :    bloodhound_data/
        start :     user@domain.local
@@ -243,7 +243,7 @@ Le pentester n'a pas fait de scan réseau (ou ne veut pas l'inclure). Il veut ju
 
 ```
   1. Il lance ARGUS en mode import AD :
-     python3 argus.py → Import → AD only
+     python3 argus_graph.py --data-dir bloodhound_data/ --start user@domain
        bh-dir : bloodhound_data/
        start :  user@domain.local
 

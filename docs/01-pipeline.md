@@ -3,7 +3,7 @@
 ## Table des matières
 
 1. [Contexte et objectifs](#1-contexte-et-objectifs)
-2. [Point d'entrée : argus.py](#2-point-dentrée--arguspy)
+2. [Points d'entrée](#2-points-dentrée)
 3. [Architecture du pipeline](#3-architecture-du-pipeline)
 4. [Exécution des scripts](#4-exécution-des-scripts)
 5. [Le générateur multi-tiers (argus_graph.py)](#5-le-générateur-multi-tiers-argus_graphpy)
@@ -19,11 +19,11 @@
 
 ARGUS est composé de plusieurs modules indépendants, chacun avec ses propres arguments CLI. Exécuter manuellement chaque module dans le bon ordre, avec les bons chemins de fichiers, est fastidieux et source d'erreurs.
 
-### Solution : orchestration à deux niveaux
+### Solution : orchestration
 
 ```
-  argus.py                              Wizard interactif (point d'entrée)
-       │                                Questions → construit la ligne de commande
+  argus_server.py                       Interface web (point d'entrée principal)
+       │                                Construit les commandes et les exécute
        ▼
   argus_pipeline.py                     Orchestrateur séquentiel — 5 étapes dans l'ordre — Gestion des erreurs + options de saut
        │
@@ -38,43 +38,12 @@ ARGUS est composé de plusieurs modules indépendants, chacun avec ses propres a
 
 ---
 
-## 2. Point d'entrée : argus.py
+## 2. Points d'entrée
 
-### Rôle
+ARGUS peut être utilisé via l'interface web ou directement en ligne de commande :
 
-`argus.py` est le wizard interactif d'ARGUS. Il pose une série de questions à l'utilisateur (mode, cibles, identifiants, options) et construit la commande `argus_pipeline.py` correspondante. L'utilisateur n'a pas besoin de connaître les flags CLI.
-
-### Fonctionnement
-
-```
-  Utilisateur
-       │
-       │  sudo .env/bin/python3 argus.py
-       ▼
-  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  1. Mode ?              → Direct / Pivot                                                                 │
-  │  2. Type de scan ?      → DC only / Network / AD+ADCS / Full / Network+mapping                           │
-  │  3. Cibles ?            → IP, CIDR, gateway...                                                           │
-  │  4. Identifiants ?      → user, password/hash                                                            │
-  │  5. Options ?           → port-scan, timeout...                                                          │
-  └──────────────────────────────────────────────────────┬───────────────────────────────────────────────────┘
-                                                         │
-                                                         ▼
-  argus_pipeline.py --ip-cidr ... --domain ... --start ...
-```
-
-Le wizard traduit chaque choix en flags CLI :
-
-| Choix utilisateur     | Flags générés                                  |
-|-----------------------|------------------------------------------------|
-| DC only               | `--single-host --skip-certipy`                 |
-| Network only          | `--skip-bloodhound --skip-certipy --start x@x` |
-| AD + ADCS             | `--skip-network`                               |
-| Full (single machine) | `--single-host --port-scan`                    |
-| Full (network)        | `--port-scan`                                  |
-| Pivot                 | `--proxychains-conf ... --dns-tcp`             |
-
-Une fois la commande construite, `argus.py` l'affiche et la lance automatiquement. Le reste de l'exécution est géré par `argus_pipeline.py`.
+- **Interface web** : `python3 argus_server.py` → `http://localhost:5000` — gère les 3 modes (Afficher, Importer, Scanner) avec une interface graphique.
+- **Ligne de commande** : les scripts backend peuvent être appelés directement. Voir [08 — CLI](08-CLI.md) pour la référence complète des commandes.
 
 ---
 
@@ -262,7 +231,7 @@ Les scans individuels peuvent être combinés en utilisant le même `--output-di
 | Mode         | Flag CLI                  | Transmis à           |
 |--------------|---------------------------|----------------------|
 | Mot de passe | `--password 'P@ss'`       | BH, certipy, DNS     |
-| Hash NTLM    | `-H 31d6cfe0d16...`      | BH, certipy          |
+| NT hash      | `-H 31d6cfe0d16...`      | BH, certipy          |
 
 Le hash est transmis au format attendu par chaque outil :
 - **bloodhound-python** : `--hashes aad3b435b51404eeaad3b435b51404ee:{NT}` (LM vide + NT hash)

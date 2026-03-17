@@ -53,6 +53,7 @@
       color: var(--navy);
       letter-spacing: 0.15em;
       text-align: center;
+      margin-bottom: 48px;
     }
     .menu-subtitle {
       font-size: 0.95rem;
@@ -515,6 +516,38 @@
       border-radius: 2px;
       padding: 0 1px;
     }
+    .ac-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .ac-filter-btn {
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .ac-filter-btn:hover {
+      border-color: var(--navy);
+      color: var(--navy);
+    }
+    .ac-filter-btn.active {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    .ac-filter-btn .ac-filter-count {
+      font-size: 0.65rem;
+      opacity: 0.7;
+      margin-left: 3px;
+    }
 
     /* ── Demo cards on display form ── */
     .demo-section { margin-top: 24px; }
@@ -554,7 +587,6 @@
     <img src="img/logo.png" alt="ARGUS" onerror="this.style.display='none'" />
   </div>
   <div class="menu-title">ARGUS</div>
-  <div class="menu-subtitle">Active Directory Infrastructure Mapper</div>
   <div class="menu-cards">
     <div class="menu-card" onclick="showScreen('display')">
       <div class="menu-card-icon">&#128065;</div>
@@ -564,7 +596,7 @@
     <div class="menu-card" onclick="showScreen('import')">
       <div class="menu-card-icon">&#128229;</div>
       <div class="menu-card-title">Importer</div>
-      <div class="menu-card-desc">Nmap XML + BloodHound &rarr; generer la cartographie</div>
+      <div class="menu-card-desc">Nmap XML + BloodHound &rarr; générer la cartographie</div>
     </div>
     <div class="menu-card" onclick="showScreen('scan')">
       <div class="menu-card-icon">&#128225;</div>
@@ -637,13 +669,14 @@
 
     <div id="imp-bh-group" class="form-group">
       <label class="form-label">Dossier BloodHound</label>
-      <div class="form-hint">Selectionnez le dossier contenant les JSON BloodHound</div>
+      <div class="form-hint">Sélectionnez le dossier contenant les JSON BloodHound</div>
       <input id="imp-bh" type="file" class="form-input" webkitdirectory multiple />
     </div>
 
     <div id="imp-start-group" class="form-group">
       <label class="form-label">Start node</label>
       <div class="form-hint">ex: user@domain.local — suggestions extraites des fichiers BloodHound</div>
+      <div id="ac-filters" class="ac-filters"></div>
       <div class="autocomplete-wrapper">
         <input id="imp-start" type="text" class="form-input" placeholder="Commencez a taper..." autocomplete="off" />
         <div id="imp-start-suggestions" class="autocomplete-list"></div>
@@ -676,7 +709,7 @@
 
     <div class="form-group">
       <label class="form-radio">
-        <input type="checkbox" id="imp-save" checked onchange="document.getElementById('imp-output-dir').disabled = !this.checked" /> Sauvegarder les resultats
+        <input type="checkbox" id="imp-save" checked onchange="document.getElementById('imp-output-dir').disabled = !this.checked" /> Sauvegarder les résultats
       </label>
       <div class="form-hint">Laissez vide pour un nom automatique (results/import_&lt;id&gt;)</div>
       <input id="imp-output-dir" type="text" class="form-input" placeholder="results/import" />
@@ -695,7 +728,7 @@
     <h2 class="form-title">Scanner</h2>
 
     <div id="scan-root-warning" class="form-warning hidden">
-      Le mode Scanner necessite que le serveur soit lance avec sudo pour executer nmap.
+      Le mode Scanner nécessite que le serveur soit lancé avec sudo pour exécuter nmap.
     </div>
 
     <div class="form-group">
@@ -841,7 +874,7 @@
 
     <div class="form-group">
       <label class="form-radio">
-        <input type="checkbox" id="scan-save" checked onchange="document.getElementById('scan-output-dir').disabled = !this.checked" /> Sauvegarder les resultats
+        <input type="checkbox" id="scan-save" checked onchange="document.getElementById('scan-output-dir').disabled = !this.checked" /> Sauvegarder les résultats
       </label>
       <div class="form-hint">Laissez vide pour un nom automatique (results/scan_&lt;id&gt;)</div>
       <input id="scan-output-dir" type="text" class="form-input" placeholder="results/scan" />
@@ -916,6 +949,9 @@ function resetAllForms() {
   });
   // Reset autocomplete state
   bhObjectNames = [];
+  acFilterType = "all";
+  const acFilters = document.getElementById("ac-filters");
+  if (acFilters) acFilters.innerHTML = "";
   const acList = document.getElementById("imp-start-suggestions");
   if (acList) { acList.innerHTML = ""; acList.classList.remove("open"); }
   // Reset dynamic form sections
@@ -985,11 +1021,11 @@ async function loadDisplay() {
   const adFiles = document.getElementById("disp-ad").files;
 
   if ((dispType === "network" || dispType === "full") && !networkFile) {
-    alert("Selectionnez un fichier réseau (network_scan.json).");
+    alert("Sélectionnez un fichier réseau (network_scan.json).");
     return;
   }
   if ((dispType === "ad" || dispType === "full") && (!adFiles || adFiles.length === 0)) {
-    alert("Selectionnez au moins un fichier AD (graph_tier*.json).");
+    alert("Sélectionnez au moins un fichier AD (graph_tier*.json).");
     return;
   }
 
@@ -1058,7 +1094,7 @@ async function loadDisplay() {
 
   // Show tier buttons immediately (don't wait for cytoscape init)
   updateTierButtons();
-  statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+  statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
 
   // Step 4: If no network, init empty cytoscape (user clicks tier to display)
   if (!networkScan && !cy) {
@@ -1151,7 +1187,7 @@ async function loadDemo(name, files) {
 
   // Show tier buttons immediately (don't wait for cytoscape init)
   updateTierButtons();
-  statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+  statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
 
   if (!networkScan && !cy) {
     await whenContainerReady();
@@ -1172,6 +1208,7 @@ async function loadDemo(name, files) {
 
 // ── BH start node autocomplete ──
 let bhObjectNames = []; // [{name, type}]
+let acFilterType = "all"; // active filter category
 let acSelectedIndex = -1;
 
 // Parse BH files when user selects the directory
@@ -1214,12 +1251,70 @@ async function parseBhFiles(event) {
 
   const input = document.getElementById("imp-start");
   if (bhObjectNames.length > 0) {
-    input.placeholder = `${bhObjectNames.length} objets trouves — tapez pour filtrer`;
+    input.placeholder = `${bhObjectNames.length} objets trouvés — tapez pour filtrer`;
   } else {
-    input.placeholder = "Aucun objet trouve dans les fichiers";
+    input.placeholder = "Aucun objet trouvé dans les fichiers";
   }
+  buildAcFilters();
 }
 document.getElementById("imp-bh").addEventListener("change", parseBhFiles);
+
+function buildAcFilters() {
+  const container = document.getElementById("ac-filters");
+  container.innerHTML = "";
+  acFilterType = "all";
+  if (bhObjectNames.length === 0) return;
+
+  // Count objects per type
+  const counts = {};
+  for (const obj of bhObjectNames) {
+    counts[obj.type] = (counts[obj.type] || 0) + 1;
+  }
+
+  // Order: user, computer, group, then rest alphabetically
+  const order = ["user", "computer", "group"];
+  const types = [...new Set(bhObjectNames.map(o => o.type))];
+  types.sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  // "Tous" button
+  const allBtn = document.createElement("button");
+  allBtn.type = "button";
+  allBtn.className = "ac-filter-btn active";
+  allBtn.innerHTML = `Tous<span class="ac-filter-count">${bhObjectNames.length}</span>`;
+  allBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("all", allBtn); });
+  container.appendChild(allBtn);
+
+  // One button per type
+  const labels = { user: "Users", computer: "Computers", group: "Groups",
+                   domain: "Domains", ou: "OUs", gpo: "GPOs", container: "Containers" };
+  for (const t of types) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ac-filter-btn";
+    btn.innerHTML = `${labels[t] || t}<span class="ac-filter-count">${counts[t]}</span>`;
+    btn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter(t, btn); });
+    container.appendChild(btn);
+  }
+}
+
+function setAcFilter(type, btn) {
+  acFilterType = type;
+  document.querySelectorAll(".ac-filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  // Update placeholder with count
+  const input = document.getElementById("imp-start");
+  const count = type === "all" ? bhObjectNames.length : bhObjectNames.filter(o => o.type === type).length;
+  input.placeholder = `${count} objets — tapez pour filtrer`;
+  input.value = "";
+  renderSuggestions("");
+  input.focus();
+}
 
 // Autocomplete input handler
 const acInput = document.getElementById("imp-start");
@@ -1237,9 +1332,10 @@ function renderSuggestions(query) {
   acSelectedIndex = -1;
   if (bhObjectNames.length === 0) { acList.classList.remove("open"); return; }
   const q = (query || "").toLowerCase();
+  let pool = acFilterType === "all" ? bhObjectNames : bhObjectNames.filter(o => o.type === acFilterType);
   const matches = q
-    ? bhObjectNames.filter(o => o.name.toLowerCase().includes(q)).slice(0, 15)
-    : bhObjectNames.slice(0, 20);
+    ? pool.filter(o => o.name.toLowerCase().includes(q)).slice(0, 20)
+    : pool.slice(0, 30);
   if (matches.length === 0) { acList.classList.remove("open"); return; }
   matches.forEach((obj, i) => {
     const item = document.createElement("div");
@@ -1274,7 +1370,9 @@ acInput.addEventListener("keydown", (e) => {
     items[acSelectedIndex].scrollIntoView({ block: "nearest" });
   } else if (e.key === "Enter" && acSelectedIndex >= 0) {
     e.preventDefault();
-    const name = bhObjectNames.filter(o => o.name.toLowerCase().includes(acInput.value.toLowerCase()))[acSelectedIndex]?.name;
+    const pool = acFilterType === "all" ? bhObjectNames : bhObjectNames.filter(o => o.type === acFilterType);
+    const q = acInput.value.toLowerCase();
+    const name = (q ? pool.filter(o => o.name.toLowerCase().includes(q)) : pool.slice(0, 30))[acSelectedIndex]?.name;
     if (name) { acInput.value = name; acList.classList.remove("open"); }
   } else if (e.key === "Escape") {
     acList.classList.remove("open");
@@ -1369,9 +1467,9 @@ function updateDirectSubmode() {
     dc_only: "Scan réseau du DC + collecte AD (BloodHound, Certipy).",
     network: "Decouverte des machines et services sur le réseau (nmap). Pas d'authentification AD.",
     ad_only: "Collecte Active Directory (BloodHound) et certificats (Certipy). Pas de scan réseau.",
-    full_single: "Scan réseau du DC + collecte AD/ADCS + mapping. Ideal quand seul le DC est accessible.",
-    full_network: "Scan de tout le sous-réseau + collecte AD/ADCS + mapping. Cartographie complete.",
-    network_map: "Scan réseau + liaison avec des donnees BloodHound deja collectees.",
+    full_single: "Scan réseau du DC + collecte AD/ADCS + mapping. Idéal quand seul le DC est accessible.",
+    full_network: "Scan de tout le sous-réseau + collecte AD/ADCS + mapping. Cartographie complète.",
+    network_map: "Scan réseau + liaison avec des données BloodHound déjà collectées.",
   };
   document.getElementById("scan-direct-desc").textContent = descs[sub] || "";
 }
@@ -1389,7 +1487,7 @@ function updatePivotSubmode() {
 
   const descs = {
     ad: "Collecte BloodHound et Certipy a travers proxychains. Pas de scan réseau.",
-    network: "Scan réseau de cibles distantes via proxychains + liaison avec des donnees BH existantes.",
+    network: "Scan réseau de cibles distantes via proxychains + liaison avec des données BH existantes.",
   };
   document.getElementById("scan-pivot-desc").textContent = descs[sub] || "";
 }
@@ -1564,7 +1662,7 @@ async function loadJobResults(jobId) {
 
     // Show tier buttons immediately
     updateTierButtons();
-    statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+    statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
 
     if (!data.network && !cy) {
       await whenContainerReady();
@@ -1639,7 +1737,7 @@ function switchToTier(tier) {
     adVisible = false;
     currentTier = null;
     updateTierButtons();
-    statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+    statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
     return;
   }
   if (adVisible) cy.elements('[isAD]').remove();
@@ -2420,6 +2518,7 @@ function layoutAdMode1(maxWidth) {
 }
 
 // ── Init ──
+resetAllForms();
 updateDirectSubmode();
 </script>
 </body>
