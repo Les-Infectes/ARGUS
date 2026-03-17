@@ -86,6 +86,8 @@ Ouvrir `cartographie.html` dans un navigateur (double-clic) et charger les fichi
 
 ## Modes d'utilisation
 
+> Toutes les commandes ci-dessous peuvent etre generees automatiquement par le wizard interactif : `python3 argus.py`
+
 ### Mode direct
 
 L'attaquant est directement connecté au réseau cible. ARGUS effectue une découverte complète : ARP, traceroute, ICMP, scan de ports TCP. La résolution des hostnames AD se fait par requêtes DNS directes au Domain Controller.
@@ -122,6 +124,18 @@ sudo .env/bin/python3 argus_pipeline.py \
     --output-dir results/corp
 ```
 
+### Mode import
+
+ARGUS peut aussi generer la cartographie a partir de fichiers existants, sans relancer de scan. Un pentester qui a deja ses fichiers nmap (`-oX`) et BloodHound peut directement les importer :
+
+```bash
+# Import complet (nmap XML + BloodHound)
+python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain.local
+
+# Avec mapping hostname (DC encore accessible)
+python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain.local --dc-ip 10.0.1.10
+```
+
 ---
 
 ## Scripts
@@ -135,6 +149,7 @@ sudo .env/bin/python3 argus_pipeline.py \
 | `argus_builder.py` | Générateur de graphes avec classification en tiers |
 | `argus_graph.py` | Exécution des 3 modes de tiers |
 | `argus_certipy.py` | Traducteur Certipy → format ARGUS |
+| `argus_import.py` | Import de scans externes (nmap XML, BloodHound) |
 
 ---
 
@@ -150,6 +165,7 @@ La documentation technique détaillée est disponible dans le dossier [docs/](do
 | [04 — Mapping](docs/04-mapping-reseau-ad.md) | Résolution hostname → IP (DNS, SMB) |
 | [05 — Collecteurs](docs/05-collecteurs.md) | BloodHound et Certipy : collecte et traduction |
 | [06 — Cartographie](docs/06-cartographie.md) | Interface de visualisation HTML |
+| [07 — Import](docs/07-import.md) | Import de scans externes et portabilite |
 
 ---
 

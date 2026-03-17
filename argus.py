@@ -67,6 +67,11 @@ HELP_TEXT = f"""
     {C.NAVY}[2]{C.RESET} Network         network discovery via proxychains (sudo)
 
   {C.DIM}Combine: same --output-dir. Order does not matter.{C.RESET}
+
+{C.NAVY}{C.BOLD}IMPORT{C.RESET}
+    {C.NAVY}[1]{C.RESET} Network only    nmap XML → network cartography
+    {C.NAVY}[2]{C.RESET} AD only         BloodHound folder → tier graphs
+    {C.NAVY}[3]{C.RESET} Full import     nmap XML + BloodHound → unified cartography
 """
 
 
@@ -216,6 +221,12 @@ def _python():
 
 def _script():
     return str(SCRIPT_DIR / "argus_pipeline.py")
+
+def _import_script():
+    return str(SCRIPT_DIR / "argus_import.py")
+
+def _graph_script():
+    return str(SCRIPT_DIR / "argus_graph.py")
 
 def _ask_auth(ctx=">"):
     auth = menu(
@@ -523,6 +534,89 @@ def build_pivot_network():
     return cmd
 
 
+# ── Import builders ───────────────────────────────────────────────────────────
+
+def build_import_network():
+    ctx = "import/net>"
+    hr()
+    header("Import — nmap XML → network cartography")
+    show_options([
+        {"name": "--nmap-xml",   "desc": "Path to nmap XML file (-oX output)"},
+        {"name": "--output-dir", "desc": "Output directory", "req": False},
+    ])
+    nmap_xml   = ask("nmap-xml",   hint="e.g. /path/to/scan.xml", ctx=ctx)
+    output_dir = _resolve_output_dir(ask("output-dir", required=False, hint="e.g. results/import", ctx=ctx))
+
+    cmd = [_python(), _import_script(), "--nmap-xml", nmap_xml]
+    if output_dir: cmd += ["--output-dir", output_dir]
+    return cmd
+
+
+def build_import_ad():
+    ctx = "import/ad>"
+    hr()
+    header("Import — BloodHound data → tier graphs")
+    show_options([
+        {"name": "--bh-dir",       "desc": "BloodHound data directory"},
+        {"name": "--start",        "desc": "Start node for path analysis"},
+        {"name": "--certipy-json", "desc": "Certipy JSON for ADCS analysis", "req": False},
+        {"name": "--output-dir",   "desc": "Output directory", "req": False},
+    ])
+    bh_dir       = ask("bh-dir",       hint="e.g. bloodhound_data/", ctx=ctx)
+    start        = ask("start",        hint="e.g. user@domain.local", ctx=ctx)
+    certipy_json = ask("certipy-json", required=False, hint="e.g. Certipy.json", ctx=ctx)
+    output_dir   = _resolve_output_dir(ask("output-dir", required=False, hint="e.g. results/import", ctx=ctx))
+
+    cmd = [_python(), _graph_script(), "--data-dir", bh_dir, "--start", start]
+    if certipy_json: cmd += ["--certipy-json", certipy_json]
+    if output_dir:   cmd += ["--output-dir", output_dir]
+    return cmd
+
+
+def build_import_full():
+    ctx = "import/full>"
+    hr()
+    header("Full import — nmap XML + BloodHound → unified cartography")
+    show_options([
+        {"name": "--nmap-xml",     "desc": "Path to nmap XML file (-oX output)"},
+        {"name": "--bh-dir",       "desc": "BloodHound data directory"},
+        {"name": "--start",        "desc": "Start node for path analysis"},
+        {"name": "--certipy-json", "desc": "Certipy JSON for ADCS analysis", "req": False},
+        {"name": "--dc-ip",        "desc": "DC IP for hostname mapping (optional)", "req": False},
+        {"name": "--output-dir",   "desc": "Output directory", "req": False},
+    ])
+    nmap_xml     = ask("nmap-xml",     hint="e.g. /path/to/scan.xml", ctx=ctx)
+    bh_dir       = ask("bh-dir",       hint="e.g. bloodhound_data/", ctx=ctx)
+    start        = ask("start",        hint="e.g. user@domain.local", ctx=ctx)
+    certipy_json = ask("certipy-json", required=False, hint="e.g. Certipy.json", ctx=ctx)
+    output_dir   = _resolve_output_dir(ask("output-dir", required=False, hint="e.g. results/import", ctx=ctx))
+
+    # Mapping — optional, requires DC access
+    do_mapping = ask_bool("Enable hostname mapping (requires DC access)?", ctx=ctx)
+
+    cmd = [_python(), _import_script(), "--nmap-xml", nmap_xml, "--bh-dir", bh_dir, "--start", start]
+    if certipy_json: cmd += ["--certipy-json", certipy_json]
+    if output_dir:   cmd += ["--output-dir", output_dir]
+
+    if do_mapping:
+        dc_ip = ask("dc-ip", hint="e.g. 10.0.1.10", ctx=ctx)
+        cmd += ["--dc-ip", dc_ip]
+
+        dns_mode = menu(
+            [
+                ("direct", "Direct   — direct DNS to DC (UDP)"),
+                ("pivot",  "Pivot    — DNS via proxychains (TCP)"),
+            ],
+            "DNS access for mapping",
+            ctx=ctx,
+        )
+        if dns_mode == "pivot":
+            proxychains = ask("proxychains-conf", hint="e.g. /etc/pivot.conf", ctx=ctx)
+            cmd += ["--dns-tcp", "--proxychains-conf", proxychains]
+
+    return cmd
+
+
 # ── Menus ─────────────────────────────────────────────────────────────────────
 
 BUILDERS = {
@@ -531,8 +625,11 @@ BUILDERS = {
     "net_map":       build_direct_network_mapping,
     "ad_only":       build_direct_ad_only,
     "full":          build_direct_full,
-    "pivot_ad":      build_pivot_ad,
-    "pivot_network": build_pivot_network,
+    "pivot_ad":       build_pivot_ad,
+    "pivot_network":  build_pivot_network,
+    "import_net":     build_import_network,
+    "import_ad":      build_import_ad,
+    "import_full":    build_import_full,
 }
 
 
@@ -550,6 +647,7 @@ def main():
         [
             ("direct",  "Direct   — Direct access to target network"),
             ("pivot",   "Pivot    — Access via SOCKS tunnel / proxychains"),
+            ("import",  "Import   — Build cartography from existing files"),
         ],
         "Access mode",
         ctx="argus>"
@@ -571,7 +669,7 @@ def main():
             ctx="direct>",
             note="Combine: use same --output-dir. Order does not matter."
         )
-    else:
+    elif mode == "pivot":
         submode = menu(
             [
                 (None,             "Individual scan"),
@@ -581,6 +679,16 @@ def main():
             "Scan type",
             ctx="pivot>",
             note="Combine: use same --output-dir. Order does not matter."
+        )
+    else:
+        submode = menu(
+            [
+                ("import_net",   "Network only   nmap XML → network cartography"),
+                ("import_ad",    "AD only        BloodHound folder → tier graphs"),
+                ("import_full",  "Full import    nmap XML + BloodHound → unified cartography"),
+            ],
+            "Import type",
+            ctx="import>",
         )
 
     cmd = BUILDERS[submode]()
