@@ -1,0 +1,2426 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARGUS — Interface Web</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #002395;
+      --navy-dark: #001a6e;
+      --ink: #1a1a1a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --surface: #f9fafb;
+      --bg: #ffffff;
+      --accent: #002395;
+      --success: #059669;
+      --error: #dc2626;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* ── Menu screen ── */
+    #screen-menu {
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .menu-logo {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .menu-logo img {
+      height: 80px;
+      object-fit: contain;
+    }
+    .menu-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: 0.15em;
+      text-align: center;
+    }
+    .menu-subtitle {
+      font-size: 0.95rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .menu-cards {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 960px;
+    }
+    .menu-card {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 36px 28px;
+      width: 280px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .menu-card:hover {
+      border-color: var(--navy);
+      box-shadow: 0 8px 24px rgba(0, 35, 149, 0.1);
+      transform: translateY(-2px);
+    }
+    .menu-card-icon {
+      font-size: 2.2rem;
+      margin-bottom: 16px;
+    }
+    .menu-card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .menu-card-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── Form screens ── */
+    .form-screen {
+      padding: 40px 20px;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .form-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+      margin-bottom: 24px;
+      transition: color 0.15s;
+    }
+    .form-back:hover { color: var(--navy); }
+    .form-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 24px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-label .optional {
+      font-weight: 400;
+      color: var(--muted);
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.75rem;
+    }
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: "JetBrains Mono", monospace;
+      color: var(--ink);
+      background: var(--bg);
+      transition: border-color 0.15s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .form-input[type="file"] {
+      padding: 8px;
+      font-family: "Inter", sans-serif;
+    }
+    .form-radio-group {
+      display: flex;
+      gap: 16px;
+      margin: 4px 0;
+    }
+    .form-radio {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .form-radio input[type="radio"],
+    .form-radio input[type="checkbox"] {
+      accent-color: var(--navy);
+    }
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: "Inter", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      cursor: pointer;
+    }
+    .form-select:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .form-section {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--navy);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+      margin: 24px 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-submit {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: background 0.15s;
+    }
+    .form-submit:hover { background: var(--navy-dark); }
+    .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .form-warning {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #92400e;
+      margin-bottom: 16px;
+    }
+    .hidden { display: none !important; }
+
+    /* ── Log screen ── */
+    #screen-logs {
+      padding: 40px 20px;
+      align-items: center;
+    }
+    .log-container {
+      max-width: 800px;
+      width: 100%;
+    }
+    .log-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 16px;
+    }
+    .log-terminal {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 20px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+      min-height: 300px;
+      max-height: 500px;
+      overflow-y: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .log-line { margin: 0; }
+    .log-line.error { color: #f87171; }
+    .log-line.success { color: #4ade80; }
+    .log-status {
+      margin-top: 16px;
+      text-align: center;
+    }
+    .log-status-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .log-btn {
+      display: inline-block;
+      padding: 10px 28px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.15s;
+    }
+    .log-btn:hover { background: var(--navy-dark); }
+
+    .log-output-info {
+      margin-top: 8px;
+      padding: 6px 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #166534;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* ── Cartographie screen ── */
+    #screen-carto { min-height: 100vh; position: relative; }
+    .carto-toolbar {
+      padding: 6px 16px;
+      background: #0f172a;
+      border-bottom: 2px solid #3b82f6;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .carto-toolbar-brand {
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .carto-sep {
+      width: 1px;
+      height: 22px;
+      background: #334155;
+    }
+    .carto-back-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .carto-back-btn:hover { background: #1e293b; }
+    .tier-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tier-btn:hover { background: #1e293b; }
+    .tier-btn.active { font-weight: 800; color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .toggle-ad-btn {
+      padding: 4px 14px;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle-ad-btn:hover { background: #1e293b; }
+    .toggle-ad-btn:disabled { opacity: 0.3; cursor: default; }
+    #carto-status {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-left: auto;
+    }
+    #cy {
+      flex: 1;
+      position: relative;
+      background: #ffffff;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Edge tooltip ── */
+    #edge-tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.92);
+      color: #f1f5f9;
+      border-radius: 8px;
+      padding: 0.55rem 0.8rem;
+      font-size: 0.78rem;
+      font-family: "JetBrains Mono", monospace;
+      line-height: 1.55;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      z-index: 9999;
+      max-width: 260px;
+      display: none;
+    }
+    #edge-tooltip .et-main { font-weight: 700; color: #93c5fd; margin-bottom: 0.3rem; }
+    #edge-tooltip .et-list { display: flex; flex-direction: column; gap: 0.15rem; }
+    #edge-tooltip .et-item { color: #cbd5e1; }
+    #edge-tooltip .et-item.et-primary { color: #fbbf24; }
+    #edge-tooltip .et-synthetic { color: #86efac; font-size: 0.72rem; margin-bottom: 0.3rem; font-style: italic; }
+    #edge-tooltip.pinned { border: 1px solid rgba(147, 197, 253, 0.4); }
+
+    /* ── Node card ── */
+    .node-card {
+      position: absolute;
+      left: 50%;
+      transform: translate(-50%, 0);
+      min-width: 240px;
+      max-width: 340px;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(15,23,42,0.15);
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--ink);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 120ms ease;
+      z-index: 3;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .node-card.show { opacity: 1; }
+    .node-card-header {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+    .node-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .node-card-body span {
+      display: block;
+      padding: 0.3rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(15,23,42,0.04);
+    }
+    .node-card-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .node-card-table th, .node-card-table td {
+      text-align: left;
+      padding: 0.2rem 0.3rem;
+      border-bottom: 1px solid rgba(15,23,42,0.08);
+      vertical-align: top;
+      word-break: break-word;
+    }
+    .node-card-table th {
+      background: rgba(15,23,42,0.05);
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* ── Autocomplete ── */
+    .autocomplete-wrapper {
+      position: relative;
+    }
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .autocomplete-item {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-family: "JetBrains Mono", monospace;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .autocomplete-item:hover,
+    .autocomplete-item.selected {
+      background: var(--surface);
+    }
+    .autocomplete-item .ac-name {
+      color: var(--ink);
+    }
+    .autocomplete-item .ac-type {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .autocomplete-item mark {
+      background: rgba(0, 35, 149, 0.12);
+      color: var(--navy);
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    /* ── Demo cards on display form ── */
+    .demo-section { margin-top: 24px; }
+    .demo-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .demo-card {
+      padding: 8px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+    .demo-card:hover {
+      border-color: var(--navy);
+      background: #fff;
+    }
+    .demo-card-name {
+      font-weight: 600;
+      color: var(--navy);
+    }
+  </style>
+  <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: MENU                                                           -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-logo">
+    <img src="img/logo.png" alt="ARGUS" onerror="this.style.display='none'" />
+  </div>
+  <div class="menu-title">ARGUS</div>
+  <div class="menu-subtitle">Active Directory Infrastructure Mapper</div>
+  <div class="menu-cards">
+    <div class="menu-card" onclick="showScreen('display')">
+      <div class="menu-card-icon">&#128065;</div>
+      <div class="menu-card-title">Afficher</div>
+      <div class="menu-card-desc">Charger des graphes existants et visualiser la cartographie</div>
+    </div>
+    <div class="menu-card" onclick="showScreen('import')">
+      <div class="menu-card-icon">&#128229;</div>
+      <div class="menu-card-title">Importer</div>
+      <div class="menu-card-desc">Nmap XML + BloodHound &rarr; generer la cartographie</div>
+    </div>
+    <div class="menu-card" onclick="showScreen('scan')">
+      <div class="menu-card-icon">&#128225;</div>
+      <div class="menu-card-title">Scanner</div>
+      <div class="menu-card-desc">Lancer un scan direct ou pivot sur le réseau cible</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: AFFICHER                                                       -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div id="screen-display" class="screen">
+  <form id="form-display" class="form-screen" onsubmit="return false;">
+    <button type="button" class="form-back" onclick="showScreen('menu')">&larr; Retour</button>
+    <h2 class="form-title">Afficher</h2>
+
+    <div class="form-group">
+      <label class="form-label">Type d'affichage</label>
+      <select id="disp-type" class="form-select" onchange="updateDisplayForm()">
+        <option value="full">Complet (Réseau + AD)</option>
+        <option value="network">Réseau uniquement</option>
+        <option value="ad">AD uniquement</option>
+      </select>
+    </div>
+
+    <div id="disp-network-group" class="form-group">
+      <label class="form-label">Réseau <span class="optional">(network_scan.json)</span></label>
+      <input id="disp-network" type="file" accept=".json" class="form-input" />
+    </div>
+    <div id="disp-mapping-group" class="form-group">
+      <label class="form-label">Mapping <span class="optional">(hostname_mapping.json — optionnel)</span></label>
+      <input id="disp-mapping" type="file" accept=".json" class="form-input" />
+    </div>
+    <div id="disp-ad-group" class="form-group">
+      <label class="form-label">Graphes AD <span class="optional">(graph_tier*.json — multiple)</span></label>
+      <input id="disp-ad" type="file" accept=".json" class="form-input" multiple />
+    </div>
+    <button class="form-submit" onclick="loadDisplay()">Visualiser</button>
+
+    <div class="demo-section" id="demo-section">
+      <div class="form-section">Demos disponibles</div>
+      <div class="demo-cards" id="demo-cards"></div>
+    </div>
+  </form>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: IMPORTER                                                       -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div id="screen-import" class="screen">
+  <form id="form-import" class="form-screen" onsubmit="return false;">
+    <button type="button" class="form-back" onclick="showScreen('menu')">&larr; Retour</button>
+    <h2 class="form-title">Importer</h2>
+
+    <div class="form-group">
+      <label class="form-label">Type d'import</label>
+      <select id="imp-type" class="form-select" onchange="updateImportForm()">
+        <option value="full">Complet (Réseau + AD)</option>
+        <option value="network">Réseau uniquement</option>
+        <option value="ad">AD uniquement</option>
+      </select>
+    </div>
+
+    <div id="imp-nmap-group" class="form-group">
+      <label class="form-label">Fichier Nmap XML</label>
+      <div class="form-hint">Fichier de sortie nmap -oX</div>
+      <input id="imp-nmap" type="file" accept=".xml" class="form-input" />
+    </div>
+
+    <div id="imp-bh-group" class="form-group">
+      <label class="form-label">Dossier BloodHound</label>
+      <div class="form-hint">Selectionnez le dossier contenant les JSON BloodHound</div>
+      <input id="imp-bh" type="file" class="form-input" webkitdirectory multiple />
+    </div>
+
+    <div id="imp-start-group" class="form-group">
+      <label class="form-label">Start node</label>
+      <div class="form-hint">ex: user@domain.local — suggestions extraites des fichiers BloodHound</div>
+      <div class="autocomplete-wrapper">
+        <input id="imp-start" type="text" class="form-input" placeholder="Commencez a taper..." autocomplete="off" />
+        <div id="imp-start-suggestions" class="autocomplete-list"></div>
+      </div>
+    </div>
+
+    <div id="imp-certipy-group" class="form-group">
+      <label class="form-label">Certipy JSON <span class="optional">(optionnel)</span></label>
+      <input id="imp-certipy" type="file" accept=".json" class="form-input" />
+    </div>
+
+    <div id="imp-mapping-section" class="form-section">Mapping (optionnel)</div>
+    <div id="imp-mapping-group">
+      <div class="form-group">
+        <label class="form-label">DC IP <span class="optional">(pour le mapping hostname)</span></label>
+        <input id="imp-dc-ip" type="text" class="form-input" placeholder="10.0.1.10" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode DNS</label>
+        <div class="form-radio-group">
+          <label class="form-radio"><input type="radio" name="imp-dns-mode" value="direct" checked /> Direct (UDP)</label>
+          <label class="form-radio"><input type="radio" name="imp-dns-mode" value="pivot" /> Pivot (TCP)</label>
+        </div>
+      </div>
+      <div id="imp-proxy-group" class="form-group hidden">
+        <label class="form-label">Proxychains config</label>
+        <input id="imp-proxy" type="text" class="form-input" placeholder="/etc/pivot.conf" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-radio">
+        <input type="checkbox" id="imp-save" checked onchange="document.getElementById('imp-output-dir').disabled = !this.checked" /> Sauvegarder les resultats
+      </label>
+      <div class="form-hint">Laissez vide pour un nom automatique (results/import_&lt;id&gt;)</div>
+      <input id="imp-output-dir" type="text" class="form-input" placeholder="results/import" />
+    </div>
+
+    <button class="form-submit" onclick="submitImport()">Importer</button>
+  </form>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: SCANNER                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div id="screen-scan" class="screen">
+  <form id="form-scan" class="form-screen" onsubmit="return false;">
+    <button type="button" class="form-back" onclick="showScreen('menu')">&larr; Retour</button>
+    <h2 class="form-title">Scanner</h2>
+
+    <div id="scan-root-warning" class="form-warning hidden">
+      Le mode Scanner necessite que le serveur soit lance avec sudo pour executer nmap.
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Mode d'acces</label>
+      <div class="form-radio-group">
+        <label class="form-radio"><input type="radio" name="scan-mode" value="direct" checked onchange="updateScanForm()" /> Direct</label>
+        <label class="form-radio"><input type="radio" name="scan-mode" value="pivot" onchange="updateScanForm()" /> Pivot</label>
+      </div>
+    </div>
+
+    <!-- Direct submodes -->
+    <div id="scan-direct-fields">
+      <div class="form-group">
+        <label class="form-label">Type de scan</label>
+        <select id="scan-direct-submode" class="form-select" onchange="updateDirectSubmode()">
+          <option value="dc_only">DC seul</option>
+          <option value="network">Réseau seul</option>
+          <option value="ad_only">AD / ADCS seul</option>
+          <option value="full_single">Complet — DC et AD</option>
+          <option value="full_network">Complet — Réseau et AD</option>
+          <option value="network_map">Réseau + mapping AD existant</option>
+        </select>
+        <div class="form-hint" id="scan-direct-desc"></div>
+      </div>
+
+      <div id="scan-net-fields" class="hidden">
+        <div class="form-group">
+          <label class="form-label">IP / CIDR</label>
+          <input id="scan-ip-cidr" type="text" class="form-input" placeholder="192.168.1.0/24" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gateway</label>
+          <input id="scan-gateway" type="text" class="form-input" placeholder="192.168.1.1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">DNS</label>
+          <input id="scan-dns" type="text" class="form-input" placeholder="192.168.1.10" />
+        </div>
+      </div>
+
+      <div id="scan-ad-fields">
+        <div class="form-group">
+          <label class="form-label">DC IP</label>
+          <input id="scan-dc-ip" type="text" class="form-input" placeholder="10.10.11.42" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Domain</label>
+          <input id="scan-domain" type="text" class="form-input" placeholder="corp.local" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Utilisateur</label>
+          <input id="scan-user" type="text" class="form-input" placeholder="Administrator" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Authentification</label>
+          <div class="form-radio-group">
+            <label class="form-radio"><input type="radio" name="scan-auth" value="password" checked onchange="updateAuthField()" /> Password</label>
+            <label class="form-radio"><input type="radio" name="scan-auth" value="hash" onchange="updateAuthField()" /> NT hash</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="scan-auth-label">Password</label>
+          <input id="scan-auth-value" type="password" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start node</label>
+          <input id="scan-start" type="text" class="form-input" placeholder="user@domain.local" />
+        </div>
+      </div>
+
+      <div id="scan-portscan-field" class="form-group">
+        <label class="form-radio">
+          <input type="checkbox" id="scan-port-scan" checked /> Port scan (top-100 TCP)
+        </label>
+      </div>
+
+      <div id="scan-bh-dir-field" class="form-group hidden">
+        <label class="form-label">BloodHound data directory</label>
+        <input id="scan-bh-dir" type="text" class="form-input" placeholder="results/scan/bloodhound_data" />
+      </div>
+    </div>
+
+    <!-- Pivot submodes -->
+    <div id="scan-pivot-fields" class="hidden">
+      <div class="form-group">
+        <label class="form-label">Type de scan</label>
+        <select id="scan-pivot-submode" class="form-select" onchange="updatePivotSubmode()">
+          <option value="ad">AD / ADCS via pivot</option>
+          <option value="network">Réseau via pivot</option>
+        </select>
+        <div class="form-hint" id="scan-pivot-desc"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Proxychains config</label>
+        <input id="scan-proxy" type="text" class="form-input" placeholder="/etc/pivot.conf" />
+      </div>
+
+      <div id="pivot-ad-fields">
+        <div class="form-group">
+          <label class="form-label">Domain</label>
+          <input id="pivot-domain" type="text" class="form-input" placeholder="dante.local" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">DC IP</label>
+          <input id="pivot-dc-ip" type="text" class="form-input" placeholder="172.16.1.20" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">DC Hostname <span class="optional">(optionnel)</span></label>
+          <input id="pivot-dc-hostname" type="text" class="form-input" placeholder="DC01.dante.local" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Utilisateur</label>
+          <input id="pivot-user" type="text" class="form-input" placeholder="xadmin" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Authentification</label>
+          <div class="form-radio-group">
+            <label class="form-radio"><input type="radio" name="pivot-auth" value="password" checked onchange="updatePivotAuthField()" /> Password</label>
+            <label class="form-radio"><input type="radio" name="pivot-auth" value="hash" onchange="updatePivotAuthField()" /> NT hash</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="pivot-auth-label">Password</label>
+          <input id="pivot-auth-value" type="password" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start node</label>
+          <input id="pivot-start" type="text" class="form-input" placeholder="user@domain.local" />
+        </div>
+      </div>
+
+      <div id="pivot-net-fields" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Targets (IPs, comma-separated)</label>
+          <input id="pivot-targets" type="text" class="form-input" placeholder="172.16.1.5,172.16.1.20" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">BloodHound data directory</label>
+          <input id="pivot-bh-dir" type="text" class="form-input" placeholder="results/dante/bloodhound_data" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-radio">
+        <input type="checkbox" id="scan-save" checked onchange="document.getElementById('scan-output-dir').disabled = !this.checked" /> Sauvegarder les resultats
+      </label>
+      <div class="form-hint">Laissez vide pour un nom automatique (results/scan_&lt;id&gt;)</div>
+      <input id="scan-output-dir" type="text" class="form-input" placeholder="results/scan" />
+    </div>
+
+    <button class="form-submit" onclick="submitScan()">Lancer le scan</button>
+  </form>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: LOGS                                                           -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div id="screen-logs" class="screen">
+  <div class="log-container">
+    <h2 class="log-title" id="log-title">Traitement en cours...</h2>
+    <div class="log-terminal" id="log-terminal"></div>
+    <div class="log-status" id="log-status">
+      <div class="log-status-text" id="log-status-text">En attente des logs...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: CARTOGRAPHIE                                                   -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div id="screen-carto" class="screen">
+  <div class="carto-toolbar">
+    <button class="carto-back-btn" onclick="showScreen('menu')">&larr; Menu</button>
+    <div class="carto-sep"></div>
+    <span class="carto-toolbar-brand">ARGUS</span>
+    <div class="carto-sep"></div>
+    <div id="tier-buttons" style="display:flex;gap:6px;"></div>
+    <span id="carto-status">Pret.</span>
+  </div>
+  <div id="cy"></div>
+  <div id="node-card" class="node-card"></div>
+  <div id="edge-tooltip"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                                             -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Screen navigation ──
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-" + name).classList.add("active");
+  if (name === "display") loadDemoList();
+  if (name === "menu") resetAllForms();
+  // When switching to carto, ensure cytoscape resizes to fit the container
+  if (name === "carto" && cy) {
+    requestAnimationFrame(() => { cy.resize(); cy.fit(undefined, 60); });
+  }
+}
+
+function resetAllForms() {
+  // Reset all 3 forms (clears selects, radios, text inputs)
+  ["form-display", "form-import", "form-scan"].forEach(id => {
+    const form = document.getElementById(id);
+    if (form) form.reset();
+  });
+  // Replace all file inputs with fresh clones (only reliable cross-browser method)
+  document.querySelectorAll('input[type="file"]').forEach(input => {
+    const fresh = input.cloneNode(true);
+    input.parentNode.replaceChild(fresh, input);
+  });
+  // Re-attach BH file parser on the new clone
+  document.getElementById("imp-bh").addEventListener("change", parseBhFiles);
+  // Clear text inputs that form.reset() may not clear
+  document.querySelectorAll('.form-input[type="text"], .form-input[type="password"]').forEach(input => {
+    input.value = "";
+  });
+  // Reset autocomplete state
+  bhObjectNames = [];
+  const acList = document.getElementById("imp-start-suggestions");
+  if (acList) { acList.innerHTML = ""; acList.classList.remove("open"); }
+  // Reset dynamic form sections
+  updateDisplayForm();
+  updateImportForm();
+  updateScanForm();
+  updateDirectSubmode();
+}
+
+// ── Cytoscape state ──
+let cy = null;
+const statusEl = { get textContent() { return ""; }, set textContent(v) {
+  const el = document.getElementById("carto-status");
+  if (el) el.textContent = v;
+}};
+const nodeCard = document.getElementById("node-card");
+let selectedNode = null;
+let subnetLayoutRunning = false;
+let adElements = [];
+let adLoaded = false;
+let hostIndex = new Map();
+let nodeDataIndex = new Map();
+let traceOrder = [];
+let adGraphState = null;
+let adGraphRaw = null;
+let hostnameMapping = null;
+let loadedTiers = {};
+let currentTier = null;
+let adVisible = false;
+// ── Palettes ──
+const typeColors = {
+  network: "#1e3a5f", subnet: "#1e3a5f", domain: "#0ea5e9",
+  router: "#f97316", firewall: "#f87171", switch: "#22d3ee",
+  dc: "#60a5fa", server: "#38bdf8", workstation: "#a78bfa", unknown: "#64748b",
+};
+const typeLabels = {
+  network: "Réseau local", subnet: "Sous-réseau", domain: "Domaine",
+  router: "Routeur", firewall: "Firewall", switch: "Switch",
+  dc: "Domain Controller", server: "Serveur", workstation: "Poste", unknown: "Inconnu",
+};
+const adTypeColors = {
+  User: "#facc15", Group: "#f472b6", Computer: "#a78bfa",
+  Domain: "#f87171", OU: "#fb923c", GPO: "#a3e635",
+  Container: "#2dd4bf", CertTemplate: "#e879f9", Unknown: "#64748b",
+};
+const tierColors = { 0: "#f87171", 1: "#fb923c", 2: "#facc15" };
+const tierBorderColors = { 0: "#ef4444", 1: "#f97316", 2: "#eab308" };
+const tierNames = { 0: "Tier 0", 1: "Tier 1", 2: "Tier 2" };
+const START_USER_COLOR = "#4ade80";
+const START_USER_BORDER = "#22c55e";
+
+// ══════════════════════════════════════════════════════════════════════════
+// DISPLAY MODE — client-side file loading
+// ══════════════════════════════════════════════════════════════════════════
+
+function updateDisplayForm() {
+  const type = document.getElementById("disp-type").value;
+  document.getElementById("disp-network-group").classList.toggle("hidden", type === "ad");
+  document.getElementById("disp-mapping-group").classList.toggle("hidden", type !== "full");
+  document.getElementById("disp-ad-group").classList.toggle("hidden", type === "network");
+}
+
+async function loadDisplay() {
+  const dispType = document.getElementById("disp-type").value;
+  const networkFile = document.getElementById("disp-network").files[0];
+  const mappingFile = document.getElementById("disp-mapping").files[0];
+  const adFiles = document.getElementById("disp-ad").files;
+
+  if ((dispType === "network" || dispType === "full") && !networkFile) {
+    alert("Selectionnez un fichier réseau (network_scan.json).");
+    return;
+  }
+  if ((dispType === "ad" || dispType === "full") && (!adFiles || adFiles.length === 0)) {
+    alert("Selectionnez au moins un fichier AD (graph_tier*.json).");
+    return;
+  }
+
+  // Reset state — destroy previous graph
+  if (cy) { cy.destroy(); cy = null; }
+  loadedTiers = {};
+  currentTier = null;
+  adVisible = false;
+  hostnameMapping = null;
+  adElements = [];
+  adLoaded = false;
+  adGraphState = null;
+  hostIndex = new Map();
+  nodeDataIndex = new Map();
+
+  // Read all file contents first (before switching screen)
+  let mappingData = null;
+  let networkScan = null;
+  const adGraphs = [];
+
+  if (mappingFile) {
+    try {
+      const raw = await mappingFile.text();
+      const data = JSON.parse(raw);
+      mappingData = data.mapping || {};
+    } catch(e) { console.error("Mapping error:", e); }
+  }
+
+  if (networkFile) {
+    try {
+      const raw = await networkFile.text();
+      networkScan = JSON.parse(raw);
+    } catch(e) { console.error("Network error:", e); }
+  }
+
+  if (adFiles && adFiles.length > 0) {
+    for (const file of adFiles) {
+      try {
+        const raw = await file.text();
+        adGraphs.push(JSON.parse(raw));
+      } catch(e) { console.error("AD file error:", e); }
+    }
+  }
+
+  // Switch to carto screen and wait for layout
+  showScreen("carto");
+  await new Promise(r => setTimeout(r, 100));
+
+  // Step 1: Load network first (fills hostIndex + nodeDataIndex)
+  if (networkScan) {
+    await renderGraph(networkScan);
+  }
+
+  // Step 2: Apply mapping (adds hostname→IP entries to hostIndex)
+  if (mappingData) {
+    hostnameMapping = mappingData;
+    applyHostnameMapping();
+  }
+
+  // Step 3: Now build AD elements (hostIndex is populated, bridges will work)
+  for (const adGraph of adGraphs) {
+    const tier = adGraph.tier !== undefined ? adGraph.tier : (adGraph.mode || 0);
+    const elements = buildAdElements(adGraph);
+    loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
+  }
+
+  // Show tier buttons immediately (don't wait for cytoscape init)
+  updateTierButtons();
+  statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+
+  // Step 4: If no network, init empty cytoscape (user clicks tier to display)
+  if (!networkScan && !cy) {
+    await whenContainerReady();
+    cy = cytoscape({
+      container: document.getElementById("cy"),
+      elements: [],
+      style: getCytoscapeStyles(),
+      layout: { name: "preset" },
+      wheelSensitivity: 0.2, pixelRatio: "auto", textureOnViewport: false,
+    });
+    setupCyEvents();
+  }
+}
+
+// ── Load demo ──
+async function loadDemoList() {
+  try {
+    const resp = await fetch("/demo/list");
+    const demos = await resp.json();
+    const container = document.getElementById("demo-cards");
+    container.innerHTML = "";
+    if (demos.length === 0) {
+      document.getElementById("demo-section").classList.add("hidden");
+      return;
+    }
+    document.getElementById("demo-section").classList.remove("hidden");
+    demos.forEach(d => {
+      const card = document.createElement("div");
+      card.className = "demo-card";
+      card.innerHTML = `<div class="demo-card-name">${d.name}</div>`;
+      card.onclick = () => loadDemo(d.name, d.files);
+      container.appendChild(card);
+    });
+  } catch(e) {
+    document.getElementById("demo-section").classList.add("hidden");
+  }
+}
+
+async function loadDemo(name, files) {
+  // Reset state — destroy previous graph
+  if (cy) { cy.destroy(); cy = null; }
+  loadedTiers = {};
+  currentTier = null;
+  adVisible = false;
+  hostnameMapping = null;
+  adElements = [];
+  adLoaded = false;
+  adGraphState = null;
+  hostIndex = new Map();
+  nodeDataIndex = new Map();
+
+  let networkScan = null;
+  let mappingData = null;
+  const adGraphs = [];
+
+  // Step 1: Fetch all files
+  for (const f of files) {
+    try {
+      const resp = await fetch(`/demo/${name}/${f}`);
+      const data = await resp.json();
+      if (f === "hostname_mapping.json") {
+        mappingData = data.mapping || {};
+      } else if (f === "network_scan.json") {
+        networkScan = data;
+      } else if (f.startsWith("graph_tier")) {
+        adGraphs.push(data);
+      }
+    } catch(e) { console.error(`Demo file error ${f}:`, e); }
+  }
+
+  showScreen("carto");
+  await new Promise(r => setTimeout(r, 100));
+
+  // Step 2: Network first (fills hostIndex)
+  if (networkScan) await renderGraph(networkScan);
+
+  // Step 3: Mapping (extends hostIndex)
+  if (mappingData) {
+    hostnameMapping = mappingData;
+    applyHostnameMapping();
+  }
+
+  // Step 4: AD elements (hostIndex is ready, bridges work)
+  for (const adGraph of adGraphs) {
+    const tier = adGraph.tier !== undefined ? adGraph.tier : 0;
+    const elements = buildAdElements(adGraph);
+    loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
+  }
+
+  // Show tier buttons immediately (don't wait for cytoscape init)
+  updateTierButtons();
+  statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+
+  if (!networkScan && !cy) {
+    await whenContainerReady();
+    cy = cytoscape({
+      container: document.getElementById("cy"),
+      elements: [],
+      style: getCytoscapeStyles(),
+      layout: { name: "preset" },
+      wheelSensitivity: 0.2, pixelRatio: "auto", textureOnViewport: false,
+    });
+    setupCyEvents();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// IMPORT MODE — form logic
+// ══════════════════════════════════════════════════════════════════════════
+
+// ── BH start node autocomplete ──
+let bhObjectNames = []; // [{name, type}]
+let acSelectedIndex = -1;
+
+// Parse BH files when user selects the directory
+async function parseBhFiles(event) {
+  bhObjectNames = [];
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+
+  const readPromises = [];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const fname = file.name || file.webkitRelativePath || "";
+    if (!fname.toLowerCase().endsWith(".json")) continue;
+    readPromises.push(
+      file.text().then(raw => {
+        const data = JSON.parse(raw);
+        const objType = (data.meta?.type || "").toLowerCase();
+        if (!objType || !data.data || !Array.isArray(data.data)) return;
+        // Map BH types to display labels
+        const typeLabels = { users: "user", computers: "computer", groups: "group",
+                             domains: "domain", ous: "ou", gpos: "gpo", containers: "container" };
+        const label = typeLabels[objType] || objType;
+        for (const entry of data.data) {
+          const name = entry.Properties?.name;
+          if (name) bhObjectNames.push({ name, type: label });
+        }
+      }).catch(() => {})
+    );
+  }
+
+  await Promise.all(readPromises);
+  // Sort: users first, then computers, then rest
+  const typePriority = { user: 0, computer: 1, group: 2 };
+  bhObjectNames.sort((a, b) => {
+    const pa = typePriority[a.type] ?? 9;
+    const pb = typePriority[b.type] ?? 9;
+    if (pa !== pb) return pa - pb;
+    return a.name.localeCompare(b.name);
+  });
+
+  const input = document.getElementById("imp-start");
+  if (bhObjectNames.length > 0) {
+    input.placeholder = `${bhObjectNames.length} objets trouves — tapez pour filtrer`;
+  } else {
+    input.placeholder = "Aucun objet trouve dans les fichiers";
+  }
+}
+document.getElementById("imp-bh").addEventListener("change", parseBhFiles);
+
+// Autocomplete input handler
+const acInput = document.getElementById("imp-start");
+const acList = document.getElementById("imp-start-suggestions");
+
+function highlightMatch(text, query) {
+  if (!query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return text.substring(0, idx) + "<mark>" + text.substring(idx, idx + query.length) + "</mark>" + text.substring(idx + query.length);
+}
+
+function renderSuggestions(query) {
+  acList.innerHTML = "";
+  acSelectedIndex = -1;
+  if (bhObjectNames.length === 0) { acList.classList.remove("open"); return; }
+  const q = (query || "").toLowerCase();
+  const matches = q
+    ? bhObjectNames.filter(o => o.name.toLowerCase().includes(q)).slice(0, 15)
+    : bhObjectNames.slice(0, 20);
+  if (matches.length === 0) { acList.classList.remove("open"); return; }
+  matches.forEach((obj, i) => {
+    const item = document.createElement("div");
+    item.className = "autocomplete-item";
+    item.dataset.index = i;
+    item.innerHTML = `<span class="ac-name">${highlightMatch(obj.name, query)}</span><span class="ac-type">${obj.type}</span>`;
+    item.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      acInput.value = obj.name;
+      acList.classList.remove("open");
+    });
+    acList.appendChild(item);
+  });
+  acList.classList.add("open");
+}
+
+acInput.addEventListener("input", () => renderSuggestions(acInput.value));
+acInput.addEventListener("focus", () => renderSuggestions(acInput.value));
+acInput.addEventListener("blur", () => { setTimeout(() => acList.classList.remove("open"), 150); });
+acInput.addEventListener("keydown", (e) => {
+  const items = acList.querySelectorAll(".autocomplete-item");
+  if (!items.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    acSelectedIndex = Math.min(acSelectedIndex + 1, items.length - 1);
+    items.forEach((it, i) => it.classList.toggle("selected", i === acSelectedIndex));
+    items[acSelectedIndex].scrollIntoView({ block: "nearest" });
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    acSelectedIndex = Math.max(acSelectedIndex - 1, 0);
+    items.forEach((it, i) => it.classList.toggle("selected", i === acSelectedIndex));
+    items[acSelectedIndex].scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter" && acSelectedIndex >= 0) {
+    e.preventDefault();
+    const name = bhObjectNames.filter(o => o.name.toLowerCase().includes(acInput.value.toLowerCase()))[acSelectedIndex]?.name;
+    if (name) { acInput.value = name; acList.classList.remove("open"); }
+  } else if (e.key === "Escape") {
+    acList.classList.remove("open");
+  }
+});
+
+function updateImportForm() {
+  const type = document.getElementById("imp-type").value;
+  const show = (id, visible) => document.getElementById(id).classList.toggle("hidden", !visible);
+  document.getElementById("imp-nmap-group").classList.toggle("hidden", type === "ad");
+  document.getElementById("imp-bh-group").classList.toggle("hidden", type === "network");
+  document.getElementById("imp-start-group").classList.toggle("hidden", type === "network");
+  document.getElementById("imp-certipy-group").classList.toggle("hidden", type === "network");
+  document.getElementById("imp-mapping-section").classList.toggle("hidden", type !== "full");
+  document.getElementById("imp-mapping-group").classList.toggle("hidden", type !== "full");
+}
+
+// DNS mode radio toggle for proxychains field
+document.querySelectorAll('input[name="imp-dns-mode"]').forEach(r => {
+  r.addEventListener("change", () => {
+    document.getElementById("imp-proxy-group").classList.toggle("hidden", r.value !== "pivot" || !r.checked);
+  });
+});
+
+async function submitImport() {
+  const type = document.getElementById("imp-type").value;
+  const form = new FormData();
+  form.append("import_type", type);
+
+  // Nmap XML
+  const nmapFile = document.getElementById("imp-nmap").files[0];
+  if (nmapFile) form.append("nmap_xml", nmapFile);
+
+  // BH files
+  const bhFiles = document.getElementById("imp-bh").files;
+  if (bhFiles) {
+    for (const f of bhFiles) form.append("bh_files", f);
+  }
+
+  // Text fields
+  form.append("start", document.getElementById("imp-start").value);
+  form.append("dc_ip", document.getElementById("imp-dc-ip").value);
+  const dnsMode = document.querySelector('input[name="imp-dns-mode"]:checked').value;
+  form.append("dns_tcp", dnsMode === "pivot" ? "true" : "false");
+  form.append("proxychains_conf", document.getElementById("imp-proxy").value);
+
+  // Certipy
+  const certipyFile = document.getElementById("imp-certipy").files[0];
+  if (certipyFile) form.append("certipy_json", certipyFile);
+
+  // Output dir (only if save switch is on)
+  if (document.getElementById("imp-save").checked) {
+    form.append("output_dir", document.getElementById("imp-output-dir").value);
+    form.append("save", "true");
+  }
+
+  try {
+    const resp = await fetch("/api/import", { method: "POST", body: form });
+    const data = await resp.json();
+    const saveDir = document.getElementById("imp-save").checked ? data.output_dir : null;
+    streamJob(data.job_id, "Import en cours...", saveDir);
+  } catch(e) {
+    alert("Erreur: " + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SCAN MODE — form logic
+// ══════════════════════════════════════════════════════════════════════════
+
+function updateScanForm() {
+  const mode = document.querySelector('input[name="scan-mode"]:checked').value;
+  document.getElementById("scan-direct-fields").classList.toggle("hidden", mode !== "direct");
+  document.getElementById("scan-pivot-fields").classList.toggle("hidden", mode !== "pivot");
+  if (mode === "direct") updateDirectSubmode();
+  if (mode === "pivot") updatePivotSubmode();
+}
+
+function updateDirectSubmode() {
+  const sub = document.getElementById("scan-direct-submode").value;
+  const needsNet = ["network", "full_network", "network_map"].includes(sub);
+  const needsAd = ["dc_only", "ad_only", "full_single", "full_network"].includes(sub);
+  const needsPort = ["dc_only", "network", "full_single", "full_network", "network_map"].includes(sub);
+  const needsBhDir = sub === "network_map";
+
+  document.getElementById("scan-net-fields").classList.toggle("hidden", !needsNet);
+  document.getElementById("scan-ad-fields").classList.toggle("hidden", !needsAd);
+  document.getElementById("scan-portscan-field").classList.toggle("hidden", !needsPort);
+  document.getElementById("scan-bh-dir-field").classList.toggle("hidden", !needsBhDir);
+
+  const descs = {
+    dc_only: "Scan réseau du DC + collecte AD (BloodHound, Certipy).",
+    network: "Decouverte des machines et services sur le réseau (nmap). Pas d'authentification AD.",
+    ad_only: "Collecte Active Directory (BloodHound) et certificats (Certipy). Pas de scan réseau.",
+    full_single: "Scan réseau du DC + collecte AD/ADCS + mapping. Ideal quand seul le DC est accessible.",
+    full_network: "Scan de tout le sous-réseau + collecte AD/ADCS + mapping. Cartographie complete.",
+    network_map: "Scan réseau + liaison avec des donnees BloodHound deja collectees.",
+  };
+  document.getElementById("scan-direct-desc").textContent = descs[sub] || "";
+}
+
+function updateAuthField() {
+  const auth = document.querySelector('input[name="scan-auth"]:checked').value;
+  document.getElementById("scan-auth-label").textContent = auth === "hash" ? "NT Hash" : "Password";
+  document.getElementById("scan-auth-value").type = auth === "hash" ? "text" : "password";
+}
+
+function updatePivotSubmode() {
+  const sub = document.getElementById("scan-pivot-submode").value;
+  document.getElementById("pivot-ad-fields").classList.toggle("hidden", sub !== "ad");
+  document.getElementById("pivot-net-fields").classList.toggle("hidden", sub !== "network");
+
+  const descs = {
+    ad: "Collecte BloodHound et Certipy a travers proxychains. Pas de scan réseau.",
+    network: "Scan réseau de cibles distantes via proxychains + liaison avec des donnees BH existantes.",
+  };
+  document.getElementById("scan-pivot-desc").textContent = descs[sub] || "";
+}
+
+function updatePivotAuthField() {
+  const auth = document.querySelector('input[name="pivot-auth"]:checked').value;
+  document.getElementById("pivot-auth-label").textContent = auth === "hash" ? "NT Hash" : "Password";
+  document.getElementById("pivot-auth-value").type = auth === "hash" ? "text" : "password";
+}
+
+async function submitScan() {
+  const mode = document.querySelector('input[name="scan-mode"]:checked').value;
+  let body = { mode };
+
+  if (mode === "direct") {
+    const sub = document.getElementById("scan-direct-submode").value;
+    const authType = document.querySelector('input[name="scan-auth"]:checked').value;
+    body.submode = sub;
+    body.dc_ip = document.getElementById("scan-dc-ip").value;
+    body.domain = document.getElementById("scan-domain").value;
+    body.user = document.getElementById("scan-user").value;
+    body.start = document.getElementById("scan-start").value;
+    body.ip_cidr = document.getElementById("scan-ip-cidr").value;
+    body.gateway = document.getElementById("scan-gateway").value;
+    body.dns = document.getElementById("scan-dns").value;
+    body.port_scan = document.getElementById("scan-port-scan").checked;
+    body.auth_type = authType;
+    body.bh_dir = document.getElementById("scan-bh-dir").value;
+    if (authType === "hash") body.hash = document.getElementById("scan-auth-value").value;
+    else body.password = document.getElementById("scan-auth-value").value;
+  } else {
+    const sub = document.getElementById("scan-pivot-submode").value;
+    const authType = document.querySelector('input[name="pivot-auth"]:checked').value;
+    body.submode = sub;
+    body.proxychains_conf = document.getElementById("scan-proxy").value;
+    body.domain = document.getElementById("pivot-domain").value;
+    body.dc_ip = document.getElementById("pivot-dc-ip").value;
+    body.dc_hostname = document.getElementById("pivot-dc-hostname").value;
+    body.user = document.getElementById("pivot-user").value;
+    body.start = document.getElementById("pivot-start").value;
+    body.targets = document.getElementById("pivot-targets").value;
+    body.bh_dir = document.getElementById("pivot-bh-dir").value;
+    body.auth_type = authType;
+    if (authType === "hash") body.hash = document.getElementById("pivot-auth-value").value;
+    else body.password = document.getElementById("pivot-auth-value").value;
+  }
+
+  // Output dir (only if save switch is on)
+  if (document.getElementById("scan-save").checked) {
+    body.output_dir = document.getElementById("scan-output-dir").value;
+    body.save = true;
+  }
+
+  try {
+    const resp = await fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    const saveDir = document.getElementById("scan-save").checked ? data.output_dir : null;
+    streamJob(data.job_id, "Scan en cours...", saveDir);
+  } catch(e) {
+    alert("Erreur: " + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// LOG STREAMING
+// ══════════════════════════════════════════════════════════════════════════
+
+function streamJob(jobId, title, outputDir) {
+  showScreen("logs");
+  document.getElementById("log-title").textContent = title;
+  const terminal = document.getElementById("log-terminal");
+  terminal.innerHTML = "";
+  const statusDiv = document.getElementById("log-status");
+  const statusText = document.getElementById("log-status-text");
+  statusText.textContent = "En cours...";
+  // Remove old buttons/info
+  statusDiv.querySelectorAll(".log-btn, .log-output-info").forEach(el => el.remove());
+
+  const source = new EventSource(`/api/logs/${jobId}`);
+  source.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === "log") {
+      const line = document.createElement("div");
+      line.className = "log-line";
+      if (msg.text.includes("ERROR") || msg.text.includes("✗")) line.className += " error";
+      if (msg.text.includes("✓") || msg.text.includes("COMPLETE")) line.className += " success";
+      line.textContent = msg.text;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    } else if (msg.type === "done") {
+      source.close();
+      if (msg.status === "success") {
+        statusText.textContent = "Termine avec succes.";
+        statusText.style.color = "var(--success)";
+        if (outputDir) {
+          const info = document.createElement("div");
+          info.className = "log-output-info";
+          info.textContent = "Resultats sauvegardes dans : " + outputDir;
+          statusDiv.appendChild(info);
+        }
+        const btn = document.createElement("button");
+        btn.className = "log-btn";
+        btn.textContent = "Voir la cartographie";
+        btn.onclick = () => loadJobResults(jobId);
+        statusDiv.appendChild(btn);
+      } else {
+        statusText.textContent = "Echec. Verifiez les logs.";
+        statusText.style.color = "var(--error)";
+        const btn = document.createElement("button");
+        btn.className = "log-btn";
+        btn.textContent = "Retour au menu";
+        btn.style.background = "#6b7280";
+        btn.onclick = () => showScreen("menu");
+        statusDiv.appendChild(btn);
+      }
+    } else if (msg.type === "error") {
+      source.close();
+      statusText.textContent = msg.text;
+      statusText.style.color = "var(--error)";
+    }
+  };
+  source.onerror = () => {
+    source.close();
+    statusText.textContent = "Connexion perdue.";
+    statusText.style.color = "var(--error)";
+  };
+}
+
+async function loadJobResults(jobId) {
+  try {
+    const resp = await fetch(`/api/results/${jobId}`);
+    const data = await resp.json();
+
+
+    // Reset state — destroy previous graph
+    if (cy) { cy.destroy(); cy = null; }
+    loadedTiers = {};
+    currentTier = null;
+    adVisible = false;
+    hostnameMapping = null;
+    adElements = [];
+    adLoaded = false;
+    adGraphState = null;
+    hostIndex = new Map();
+    nodeDataIndex = new Map();
+
+    showScreen("carto");
+    await new Promise(r => setTimeout(r, 100));
+
+    // Step 1: Network first (fills hostIndex)
+    if (data.network) await renderGraph(data.network);
+
+    // Step 2: Mapping (extends hostIndex)
+    if (data.mapping) {
+      hostnameMapping = data.mapping.mapping || {};
+      applyHostnameMapping();
+    }
+
+    // Step 3: AD tiers (hostIndex ready, bridges work)
+    for (const key of ["tier0", "tier1", "tier2"]) {
+      if (data[key]) {
+        const adGraph = data[key];
+        const tier = adGraph.tier !== undefined ? adGraph.tier : parseInt(key.replace("tier", ""));
+        const elements = buildAdElements(adGraph);
+        loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
+      }
+    }
+
+    // Show tier buttons immediately
+    updateTierButtons();
+    statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+
+    if (!data.network && !cy) {
+      await whenContainerReady();
+      cy = cytoscape({
+        container: document.getElementById("cy"),
+        elements: [],
+        style: getCytoscapeStyles(),
+        layout: { name: "preset" },
+        wheelSensitivity: 0.2, pixelRatio: "auto", textureOnViewport: false,
+      });
+      setupCyEvents();
+    }
+  } catch(e) {
+    alert("Erreur chargement resultats: " + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CARTOGRAPHIE ENGINE (from cartographie.html)
+// ══════════════════════════════════════════════════════════════════════════
+
+function applyHostnameMapping() {
+  if (!hostnameMapping) return;
+  Object.entries(hostnameMapping).forEach(([hostname, info]) => {
+    const ips = info.ips || [];
+    const normalizedHost = hostname.toLowerCase();
+    const shortHost = normalizedHost.split(".")[0];
+    ips.forEach(ip => {
+      const nodeId = `ip_${ip}`;
+      hostIndex.set(shortHost, nodeId);
+      hostIndex.set(normalizedHost, nodeId);
+      hostIndex.set(ip, nodeId);
+      const nodeData = nodeDataIndex.get(nodeId);
+      if (nodeData && !nodeData.hostname) {
+        nodeData.hostname = info.hostname || hostname;
+        nodeData.label = buildNetworkLabel(nodeData);
+      }
+      if (cy) {
+        const cyNode = cy.getElementById(nodeId);
+        if (cyNode.length && !cyNode.data("hostname")) {
+          cyNode.data("hostname", info.hostname || hostname);
+          cyNode.data("label", buildNetworkLabel({ ip, hostname: info.hostname || hostname }));
+        }
+      }
+    });
+  });
+}
+
+// ── Tier buttons ──
+const tierButtonsContainer = document.getElementById("tier-buttons");
+
+function updateTierButtons() {
+  tierButtonsContainer.innerHTML = "";
+  const tiers = Object.keys(loadedTiers).sort((a, b) => a - b);
+  tiers.forEach(tier => {
+    const btn = document.createElement("button");
+    btn.className = "tier-btn" + (currentTier == tier ? " active" : "");
+    btn.dataset.tier = tier;
+    btn.textContent = `T${tier}`;
+    btn.style.borderColor = tierBorderColors[tier] || "#6b7280";
+    if (currentTier == tier) { btn.style.background = tierColors[tier]; btn.style.color = "#0f172a"; }
+    btn.addEventListener("click", () => switchToTier(parseInt(tier)));
+    tierButtonsContainer.appendChild(btn);
+  });
+}
+
+function switchToTier(tier) {
+  if (!loadedTiers[tier] || !cy) return;
+  // Toggle: click active tier = hide
+  if (currentTier === tier && adVisible) {
+    cy.elements('[isAD]').remove();
+    adVisible = false;
+    currentTier = null;
+    updateTierButtons();
+    statusEl.textContent = "Selectionnez un tier pour afficher le graphe.";
+    return;
+  }
+  if (adVisible) cy.elements('[isAD]').remove();
+  currentTier = tier;
+  adGraphRaw = loadedTiers[tier].raw;
+  adElements = loadedTiers[tier].elements;
+  adGraphState = loadedTiers[tier].graphState;
+  adLoaded = true;
+  cy.add(adElements);
+  adVisible = true;
+  runLayouts();
+  updateTierButtons();
+  statusEl.textContent = `Tier ${tier} affiche.`;
+}
+
+// ── Cytoscape Styles ──
+function getCytoscapeStyles() {
+  return [
+    { selector: "node", style: {
+      label: "data(label)", "text-wrap": "wrap", "text-max-width": 160,
+      "background-color": "data(bg)", "border-color": "data(borderColor)", "border-width": 2,
+      color: "data(textColor)", "font-size": 13, "font-family": "JetBrains Mono, monospace",
+      "line-height": 1.4, "font-weight": "600", "text-valign": "center", "text-halign": "center",
+      shape: "round-rectangle", padding: "10px", width: "label", height: "label",
+    }},
+    { selector: "node[isGroup = 1]", style: {
+      shape: "round-rectangle", "background-opacity": 0.06, "border-style": "dashed",
+      "border-width": 1, "border-color": "#94a3b8", "text-valign": "top", "text-halign": "center",
+      "font-size": 10, color: "#475569", padding: "40px", "compound-sizing-wrt-labels": "include",
+    }},
+    { selector: "node[isZone = 1]", style: {
+      shape: "round-rectangle", "background-opacity": 0.02, "border-style": "dotted",
+      "border-width": 1.5, "border-color": "#94a3b8", "text-valign": "top", "text-halign": "right",
+      "font-size": 13, "font-weight": "700", color: "#0f172a", "text-margin-y": -8, padding: "24px",
+    }},
+    { selector: "node[?isTarget]", style: { "border-width": 2.5, "font-weight": "700" } },
+    { selector: "node[?isStart]", style: {
+      "background-color": "#4ade80", "border-width": 3, "border-color": "#22c55e",
+      "border-style": "solid", "font-weight": "700", "font-size": 13, color: "#052e16",
+    }},
+    { selector: "node[nodeType = 'router']", style: { shape: "ellipse", width: 44, height: 44, "font-size": 11 } },
+    { selector: "edge", style: {
+      width: 1.2, "line-color": "#94a3b8", "target-arrow-color": "#94a3b8",
+      "target-arrow-shape": "triangle", "curve-style": "bezier", "font-size": 9,
+      color: "#475569", "text-background-color": "#ffffff", "text-background-opacity": 0.9,
+      "text-background-padding": 2,
+    }},
+    { selector: "edge[kind = 'network']", style: { "line-color": "#94a3b8", "target-arrow-color": "#94a3b8", "target-arrow-shape": "none", width: 1 } },
+    { selector: "edge[kind = 'subnet']", style: { "line-color": "#94a3b8", "target-arrow-color": "#94a3b8", width: 1 } },
+    { selector: "edge[kind = 'ad']", style: { label: "data(label)", "line-color": "#0f172a", "target-arrow-color": "#0f172a", width: 1.2 } },
+    { selector: "edge[kind = 'ad'][isShortest = 1]", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444", width: 1.5 } },
+    { selector: "edge[kind = 'bridge']", style: { label: "data(label)", "line-color": "#0f172a", "target-arrow-color": "#0f172a", width: 1.2 } },
+    { selector: "edge[kind = 'bridge'][isShortest = 1]", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444", width: 1.5 } },
+    { selector: "edge[viaComputer = 1]", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dashed", width: 1.2 } },
+    { selector: "edge[viaComputer = 1][isShortest = 1]", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dashed", width: 1.2 } },
+  ];
+}
+
+// ── Edge tooltip ──
+const edgeTip = document.getElementById("edge-tooltip");
+let edgeTipPinned = false;
+
+function buildEdgeTipHTML(d) {
+  const primary = d.label || "";
+  const rights = (d.allRights && d.allRights.length > 0) ? d.allRights : [primary];
+  const primaryInList = rights.includes(primary);
+  const rows = rights.map(r =>
+    `<span class="et-item${r === primary ? " et-primary" : ""}">${r === primary ? "-> " : "   "}${r}</span>`
+  ).join("");
+  const syntheticNote = !primaryInList && primary ? `<div class="et-synthetic">affiche : ${primary}</div>` : "";
+  const count = rights.length > 1 ? ` (${rights.length})` : "";
+  return `<div class="et-main">Permissions${count}</div>${syntheticNote}<div class="et-list">${rows}</div>`;
+}
+
+function positionEdgeTip(pageX, pageY) {
+  edgeTip.style.left = "0px"; edgeTip.style.top = "0px"; edgeTip.style.display = "block";
+  const tipW = edgeTip.offsetWidth, tipH = edgeTip.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const x = (pageX + 16 + tipW > vw) ? pageX - tipW - 10 : pageX + 16;
+  const y = (pageY + 16 + tipH > vh) ? pageY - tipH - 10 : pageY + 16;
+  edgeTip.style.left = x + "px"; edgeTip.style.top = y + "px";
+}
+
+function edgeScreenPos(evt, edge) {
+  const oe = evt.originalEvent;
+  if (oe && typeof oe.clientX === "number") return { x: oe.clientX, y: oe.clientY };
+  try {
+    const mid = edge.renderedMidpoint();
+    const rect = cy.container().getBoundingClientRect();
+    return { x: rect.left + mid.x, y: rect.top + mid.y };
+  } catch(e) { return { x: window.innerWidth / 2, y: window.innerHeight / 2 }; }
+}
+
+function setupEdgeTooltip() {
+  edgeTipPinned = false; edgeTip.style.display = "none";
+  cy.on("mouseover", "edge", (evt) => {
+    if (edgeTipPinned) return;
+    const d = evt.target.data();
+    if (!d.label) return;
+    edgeTip.innerHTML = buildEdgeTipHTML(d);
+    const pos = edgeScreenPos(evt, evt.target);
+    positionEdgeTip(pos.x, pos.y);
+  });
+  cy.on("mousemove", "edge", (evt) => {
+    if (edgeTipPinned || edgeTip.style.display === "none") return;
+    const oe = evt.originalEvent;
+    if (oe && typeof oe.clientX === "number") positionEdgeTip(oe.clientX, oe.clientY);
+  });
+  cy.on("mouseout", "edge", () => { if (!edgeTipPinned) edgeTip.style.display = "none"; });
+  cy.on("tap", "edge", (evt) => {
+    const d = evt.target.data();
+    if (!d.label) return;
+    edgeTip.innerHTML = buildEdgeTipHTML(d);
+    const pos = edgeScreenPos(evt, evt.target);
+    positionEdgeTip(pos.x, pos.y);
+    edgeTipPinned = true;
+  });
+  cy.on("tap", (evt) => { if (evt.target === cy) { edgeTip.style.display = "none"; edgeTipPinned = false; } });
+  cy.on("tap", "node", () => { edgeTip.style.display = "none"; edgeTipPinned = false; });
+}
+
+// ── Init AD-only mode ──
+// Attach standard cytoscape events (node card, edge tooltip)
+function setupCyEvents() {
+  if (!cy) return;
+  cy.on("select", "node", (event) => { selectedNode = event.target; showNodeCard(selectedNode); });
+  cy.on("unselect", "node", () => { selectedNode = null; nodeCard.classList.remove("show"); nodeCard.innerHTML = ""; });
+  cy.on("pan zoom layoutstop", updateNodeCardPosition);
+  cy.on("render", updateNodeCardPosition);
+  setupEdgeTooltip();
+}
+
+// Wait until #cy container has real dimensions
+function whenContainerReady() {
+  return new Promise(resolve => {
+    const container = document.getElementById("cy");
+    function check() {
+      if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+        resolve();
+      } else {
+        requestAnimationFrame(check);
+      }
+    }
+    requestAnimationFrame(check);
+  });
+}
+
+async function initCytoscapeAdOnly() {
+  if (cy) cy.destroy();
+  cy = null;
+  const elements = currentTier !== null && loadedTiers[currentTier] ? loadedTiers[currentTier].elements : [];
+  await whenContainerReady();
+  cy = cytoscape({
+    container: document.getElementById("cy"),
+    elements: elements,
+    style: getCytoscapeStyles(),
+    layout: { name: "preset" },
+    wheelSensitivity: 0.2, pixelRatio: "auto", textureOnViewport: false,
+  });
+  setupCyEvents();
+  adVisible = true;
+
+  statusEl.textContent = `Graphe AD Tier ${currentTier} charge.`;
+  runLayouts();
+  cy.resize();
+  cy.fit(undefined, 60);
+}
+
+// ── Render network graph ──
+async function renderGraph(scan) {
+  const { nodes, edges } = buildElements(scan);
+  const wasAdVisible = adVisible;
+  const previousTier = currentTier;
+  if (cy) cy.destroy();
+  cy = null;
+  adElements = []; adVisible = false;
+  if (previousTier !== null && loadedTiers[previousTier]) {
+    adElements = loadedTiers[previousTier].elements;
+    adGraphRaw = loadedTiers[previousTier].raw;
+    adLoaded = true;
+  }
+  await whenContainerReady();
+  cy = cytoscape({
+    container: document.getElementById("cy"),
+    elements: [...nodes, ...edges],
+    style: getCytoscapeStyles(),
+    layout: { name: "preset" },
+    wheelSensitivity: 0.2, pixelRatio: "auto", textureOnViewport: false,
+  });
+  setupCyEvents();
+  statusEl.textContent = "Graphe réseau charge.";
+  runLayouts();
+  if (wasAdVisible && adElements.length > 0) {
+    setTimeout(() => {
+      cy.add(adElements); adVisible = true;
+
+      runLayouts();
+    }, 100);
+  }
+}
+
+// ── Role detection ──
+const ROLE_PRIORITY = ["Domain Controller", "Routeur", "Serveur", "Poste", "Inconnu"];
+const roleToType = {
+  "Domain Controller": "dc", "Routeur": "router", "Serveur": "server",
+  "Poste": "workstation", "Inconnu": "unknown", "Firewall": "firewall", "Switch": "switch",
+};
+const serverPorts = new Set([21,22,23,25,53,80,110,111,143,389,443,445,465,587,636,993,995,1433,1521,2049,3306,3389,5432,5900,6379,8080,8443,27017,5985,5986,9200]);
+const workstationPorts = new Set([135,139,445,3389,5985,5986,47001]);
+const serverServiceNames = new Set(["http","https","ssh","ftp","smtp","imap","pop3","ldap","ldaps","kerberos","kpasswd","dns","domain","mysql","mssql","postgres","mongodb","redis","smb","microsoft-ds","netbios-ssn","nfs","rdp"]);
+
+function isOpenService(service) { const s = (service.state || "").toLowerCase(); return !s || s === "open"; }
+function hasOpenPort(services, port, protocols) {
+  const allowed = new Set((protocols || ["tcp"]).map(p => p.toLowerCase()));
+  return services.some(s => Number(s.port) === port && allowed.has((s.protocol || "tcp").toLowerCase()) && isOpenService(s));
+}
+function isDomainController(services) {
+  if (!services || !services.length) return false;
+  return (hasOpenPort(services, 88, ["tcp","udp"])) && (hasOpenPort(services, 389, ["tcp"]) || hasOpenPort(services, 636, ["tcp"]));
+}
+function isServer(services) {
+  if (!services || !services.length) return false;
+  return services.some(s => { if (!isOpenService(s)) return false; return serverPorts.has(Number(s.port)) || serverServiceNames.has((s.service||s.product||"").toLowerCase()); });
+}
+function isWorkstation(services) {
+  if (!services || !services.length) return false;
+  const openPorts = services.filter(isOpenService).map(s => Number(s.port)).filter(p => Number.isFinite(p));
+  if (!openPorts.length) return false;
+  return openPorts.every(port => workstationPorts.has(port));
+}
+function deriveRole(data) {
+  const services = data.services || [];
+  if (isDomainController(services)) return "Domain Controller";
+  if (data.meta?.isRouter) return "Routeur";
+  if (data.meta?.roleHint === "Serveur") return "Serveur";
+  if (isServer(services)) return "Serveur";
+  if (isWorkstation(services) || services.length) return "Poste";
+  return "Inconnu";
+}
+
+function buildNetworkLabel(data) {
+  const ip = data.ip || "";
+  const hostname = data.hostname ? data.hostname.toUpperCase() : "";
+  if (hostname && hostname.toLowerCase() !== ip.toLowerCase()) return `${ip}\n${hostname}`;
+  return ip || data.id;
+}
+
+// ── Build network elements ──
+function buildElements(scan) {
+  const nodes = [];
+  const edges = [];
+  const nodeMap = new Map();
+  hostIndex = new Map();
+  nodeDataIndex = new Map();
+  const serviceMap = new Map(
+    (scan.service_scan?.results || []).map(entry => [entry.ip, {
+      services: entry.services || [], os: entry.os || "", hostname: entry.hostname || ""
+    }])
+  );
+  const toId = (value) => value.replace(/[^0-9A-Za-z_:\-\.]/g, "_");
+  const normalizeServices = (serviceBlock) => {
+    const services = serviceBlock?.services || [];
+    if (!services || !services.length) return [];
+    return services.map(s => ({
+      port: s.port ?? "?", protocol: (s.protocol || "tcp").toLowerCase(),
+      state: s.state || "unknown", service: s.service || s.name || "",
+      product: s.product || "", version: s.version || "", extrainfo: s.extrainfo || ""
+    }));
+  };
+  const applyRoleAndType = (data) => {
+    data.role = deriveRole(data);
+    data.roles = [data.role];
+    const type = roleToType[data.role] || "unknown";
+    data.meta.type = type; data.nodeType = type;
+    data.bg = typeColors[type] || typeColors.unknown;
+    data.textColor = "#0f172a"; data.borderColor = "#94a3b8";
+  };
+  const updateNode = (id, data) => {
+    if (!nodeMap.has(id)) { nodeMap.set(id, { data: { ...data } }); return; }
+    const existing = nodeMap.get(id).data;
+    existing.meta = { ...(existing.meta || {}), ...(data.meta || {}) };
+    existing.hostname = data.hostname || existing.hostname;
+    existing.services = data.services?.length ? data.services : existing.services;
+    applyRoleAndType(existing);
+    existing.label = buildNetworkLabel(existing);
+    nodeDataIndex.set(id, existing);
+  };
+  const addIpNode = (ip, role, meta = {}) => {
+    if (!ip) return null;
+    const id = toId(`ip_${ip}`);
+    const serviceBlock = serviceMap.get(ip) || {};
+    const services = normalizeServices(serviceBlock);
+    const data = {
+      id, ip, hostname: meta.hostname || serviceBlock.hostname || "",
+      services, context: meta.context || "",
+      meta: { os: serviceBlock.os || "", ...meta },
+    };
+    if (role) { data.meta.roleHint = role; if (role === "Routeur") data.meta.isRouter = true; }
+    applyRoleAndType(data);
+    data.label = buildNetworkLabel(data);
+    updateNode(id, data);
+    return id;
+  };
+  const addGroupNode = (id, label, type) => {
+    nodeMap.set(id, { data: {
+      id, label, bg: typeColors[type] || typeColors.unknown,
+      borderColor: "#94a3b8", textColor: "#0f172a",
+      meta: { type }, isGroup: 1
+    }});
+    return id;
+  };
+  const addZoneNode = (id, label) => {
+    nodeMap.set(id, { data: {
+      id, label, bg: "rgba(15, 23, 42, 0.02)",
+      borderColor: "#64748b", textColor: "#0f172a",
+      meta: { type: "zone" }, isGroup: 1, isZone: 1
+    }});
+    return id;
+  };
+  const addEdge = (from, to, kind = "network") => {
+    if (!from || !to) return;
+    edges.push({ data: { id: `${from}_${to}_${kind}`, source: from, target: to, label: "", kind } });
+  };
+  const config = scan.configuration || {};
+  addZoneNode("zone_network", "RESEAU");
+  const assignedToSubnet = new Set();
+  traceOrder = scan.router_discovery?.trace_discovered || [];
+  if (config.gateway) addIpNode(config.gateway, "Routeur", { isRouter: true });
+  if (config.dns && config.dns !== config.gateway) addIpNode(config.dns, "Serveur", { roleHint: "Serveur" });
+  (scan.router_discovery?.router_details || []).forEach(router => {
+    addIpNode(router.ip, "Routeur", { isRouter: true, hostname: router.hostname || "" });
+  });
+  (scan.subnet_scans || []).forEach(subnet => {
+    const network = subnet.related_router_network || subnet.target_cidr;
+    const subnetNodeId = toId(`subnet_${network}`);
+    addGroupNode(subnetNodeId, `${network}`, "subnet");
+    nodeMap.get(subnetNodeId).data.parent = "zone_network";
+    (subnet.active_hosts || []).forEach(host => {
+      const hostId = addHost(host, "host", "Host");
+      if (hostId) { nodeMap.get(hostId).data.parent = subnetNodeId; assignedToSubnet.add(hostId); }
+    });
+  });
+  (scan.vlan_scan?.active_hosts || []).forEach(host => {
+    const hostId = addHost(host, "vlan", "VLAN Host");
+    if (hostId && !assignedToSubnet.has(hostId)) nodeMap.get(hostId).data.parent = "zone_network";
+  });
+  function addHost(host, type, context) {
+    if (!host.ip) return null;
+    return addIpNode(host.ip, null, { type, context, hostname: host.hostname || "", mac: host.mac || "", status: host.status || "" });
+  }
+  nodeMap.forEach(value => {
+    if (value.data.roles instanceof Set) value.data.roles = Array.from(value.data.roles);
+    if (!value.data.label) value.data.label = value.data.id;
+    if (value.data.hostname) {
+      hostIndex.set(value.data.hostname.toLowerCase(), value.data.id);
+      const shortHost = value.data.hostname.toLowerCase().split(".")[0];
+      if (shortHost) hostIndex.set(shortHost, value.data.id);
+    }
+    if (value.data.ip) hostIndex.set(value.data.ip.toLowerCase(), value.data.id);
+    if (!value.data.parent && value.data.id !== "zone_network") value.data.parent = "zone_network";
+    nodeDataIndex.set(value.data.id, value.data);
+    nodes.push(value);
+  });
+  return { nodes, edges };
+}
+
+// ── Node detail card ──
+function showNodeCard(node) {
+  if (!node) return;
+  const data = node.data();
+  const role = data.role || (Array.isArray(data.roles) ? data.roles[0] : "") || data.meta?.type || "Inconnu";
+  const services = (data.services || []).map(service => {
+    if (typeof service === "string") return service;
+    return {
+      port: service.port ?? "?", proto: (service.protocol || "tcp").toLowerCase(),
+      svc: service.service || service.product || "",
+      version: [service.product, service.version, service.extrainfo].filter(Boolean).join(" ")
+    };
+  });
+  const bodyLines = [
+    { label: "ROLE", value: role },
+    { label: "IP", value: data.ip || "-" },
+    { label: "HOSTNAME", value: data.hostname || "-" },
+  ];
+  const serviceTable = services.length ? `
+    <table class="node-card-table">
+      <thead><tr><th>PORT</th><th>SERVICE</th><th>VERSION</th></tr></thead>
+      <tbody>${services.map(entry => {
+        if (typeof entry === "string") return `<tr><td colspan="3">${entry}</td></tr>`;
+        return `<tr><td>${entry.port}/${entry.proto}</td><td>${entry.svc||"-"}</td><td>${entry.version||"-"}</td></tr>`;
+      }).join("")}</tbody>
+    </table>` : "";
+  nodeCard.innerHTML = `
+    <div class="node-card-header">${role || data.ip || data.id}</div>
+    <div class="node-card-body">
+      ${bodyLines.map(l => `<span><strong>${l.label}:</strong> ${l.value}</span>`).join("")}
+      ${serviceTable}
+    </div>`;
+  nodeCard.classList.add("show");
+  updateNodeCardPosition();
+}
+
+function updateNodeCardPosition() {
+  if (!selectedNode || !nodeCard.classList.contains("show")) return;
+  const cyContainer = document.getElementById("cy");
+  const cyRect = cyContainer.getBoundingClientRect();
+  const screenRect = document.getElementById("screen-carto").getBoundingClientRect();
+  const offsetX = cyRect.left - screenRect.left;
+  const offsetY = cyRect.top - screenRect.top;
+  const bbox = selectedNode.renderedBoundingBox({ includeLabels: true, includeNodes: true });
+  nodeCard.style.left = `${offsetX + bbox.x1 + bbox.w / 2}px`;
+  nodeCard.style.top = `${offsetY + bbox.y2 + 12}px`;
+}
+
+// ── Layouts ──
+function runLayouts() {
+  if (subnetLayoutRunning || !cy) return;
+  subnetLayoutRunning = true;
+  layoutNetworkZone();
+  layoutIdentityZone();
+  positionIdentityBelowNetwork();
+  positionTransitNodes();
+  cy.fit(undefined, 60);
+  requestAnimationFrame(() => {
+    layoutNetworkZoneRendered();
+    positionIdentityBelowNetwork();
+    positionTransitNodes();
+    cy.fit(undefined, 60);
+  });
+  subnetLayoutRunning = false;
+}
+
+function layoutNetworkZone() {
+  if (!cy) return;
+  const zone = cy.getElementById("zone_network");
+  if (!zone.length) return;
+  const topLevel = cy.nodes().filter(n => n.data("parent") === "zone_network" && n.id() !== "zone_network");
+  if (!topLevel.length) return;
+  topLevel.filter(n => n.isParent()).forEach(parent => { stackChildren(parent, 40, false, true); });
+  const orderedClusters = [];
+  const placedIds = new Set();
+  if (traceOrder.length > 0) {
+    traceOrder.forEach(ip => {
+      topLevel.filter(n => n.isParent()).filter(s => ipInCidr(ip, s.data("label") || "")).forEach(s => {
+        if (!placedIds.has(s.id())) {
+          const members = s.descendants();
+          orderedClusters.push({ node: s, members, bb: members.boundingBox({ includeLabels: true }) });
+          placedIds.add(s.id());
+        }
+      });
+    });
+  }
+  topLevel.forEach(node => {
+    if (placedIds.has(node.id())) return;
+    const members = node.isParent() ? node.descendants() : node;
+    orderedClusters.push({ node, members, bb: members.boundingBox({ includeLabels: true }) });
+  });
+  const gapX = 60;
+  let cursorX = 0;
+  orderedClusters.forEach(cluster => {
+    const w = Math.max(120, cluster.bb.w);
+    const h = Math.max(80, cluster.bb.h);
+    const targetCx = cursorX + w / 2;
+    const curCx = cluster.bb.x1 + cluster.bb.w / 2;
+    const curCy = cluster.bb.y1 + cluster.bb.h / 2;
+    shiftCollection(cluster.members, targetCx - curCx, h / 2 - curCy);
+    cursorX += w + gapX;
+  });
+}
+
+function ipInCidr(ip, cidr) {
+  const parts = cidr.match(/^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/);
+  if (!parts) return false;
+  const toNum = s => s.split(".").reduce((a, o) => (a << 8) + parseInt(o), 0) >>> 0;
+  const ipNum = toNum(ip);
+  const netNum = toNum(parts[1]);
+  const mask = parts[2] == 0 ? 0 : (~0 << (32 - parseInt(parts[2]))) >>> 0;
+  return (ipNum & mask) === (netNum & mask);
+}
+
+function shiftCollection(collection, dx, dy) {
+  if (!collection || !collection.length) return;
+  if (typeof collection.positions === "function") {
+    collection.positions(node => ({ x: node.position("x") + dx, y: node.position("y") + dy }));
+    return;
+  }
+  collection.position({ x: collection.position("x") + dx, y: collection.position("y") + dy });
+}
+
+function stackChildren(parent, gap = 60, useRendered = false, horizontal = false) {
+  const children = parent.children();
+  if (!children.length) return;
+  const sorted = children.sort((a, b) => a.id().localeCompare(b.id()));
+  const boxes = [];
+  const zoom = useRendered ? (cy ? cy.zoom() : 1) : 1;
+  const curChildrenBb = children.boundingBox({ includeLabels: true });
+  const centerX = curChildrenBb.x1 + curChildrenBb.w / 2;
+  const centerY = curChildrenBb.y1 + curChildrenBb.h / 2;
+  sorted.forEach(node => {
+    const bb = useRendered ? node.renderedBoundingBox({ includeLabels: true }) : node.boundingBox({ includeLabels: true });
+    const w = useRendered ? (bb.w / zoom) : bb.w;
+    const h = useRendered ? (bb.h / zoom) : bb.h;
+    boxes.push({ w, h });
+  });
+  if (horizontal) {
+    const maxCols = Math.min(8, sorted.length);
+    const numRows = Math.ceil(sorted.length / maxCols);
+    const rowGap = gap * 1.2;
+    const rows = [];
+    for (let r = 0; r < numRows; r++) {
+      const start = r * maxCols;
+      const end = Math.min(start + maxCols, sorted.length);
+      const rowNodes = [];
+      let rowW = 0, rowH = 0;
+      for (let i = start; i < end; i++) {
+        rowNodes.push({ node: sorted[i], box: boxes[i] });
+        rowW += boxes[i].w; rowH = Math.max(rowH, boxes[i].h);
+      }
+      rowW += gap * (rowNodes.length - 1);
+      rows.push({ nodes: rowNodes, totalW: rowW, maxH: rowH });
+    }
+    const totalH = rows.reduce((s, r) => s + r.maxH, 0) + rowGap * (rows.length - 1);
+    let yCursor = -totalH / 2;
+    rows.forEach(row => {
+      let xCursor = -row.totalW / 2;
+      row.nodes.forEach(({ node, box }) => {
+        node.position({ x: centerX + xCursor + box.w / 2, y: centerY + yCursor + row.maxH / 2 });
+        xCursor += box.w + gap;
+      });
+      yCursor += row.maxH + rowGap;
+    });
+  } else {
+    let totalH = boxes.reduce((s, b) => s + b.h, 0) + gap * (boxes.length - 1);
+    let yCursor = -totalH / 2;
+    sorted.forEach((node, idx) => {
+      const h = boxes[idx].h;
+      node.position({ x: centerX, y: centerY + yCursor + h / 2 });
+      yCursor += h + gap;
+    });
+  }
+}
+
+function layoutNetworkZoneRendered() {
+  if (!cy) return;
+  const zone = cy.getElementById("zone_network");
+  if (!zone.length) return;
+  const topLevel = cy.nodes().filter(n => n.data("parent") === "zone_network" && n.id() !== "zone_network");
+  if (!topLevel.length) return;
+  const gapX = 60;
+  const zoom = cy.zoom() || 1;
+  topLevel.filter(n => n.isParent()).forEach(parent => { stackChildren(parent, 40, true, true); });
+  const orderedClusters = [];
+  const placedIds = new Set();
+  if (traceOrder.length > 0) {
+    traceOrder.forEach(ip => {
+      topLevel.filter(n => n.isParent()).filter(s => ipInCidr(ip, s.data("label") || "")).forEach(s => {
+        if (!placedIds.has(s.id())) {
+          const members = s.descendants();
+          const rbb = members.renderedBoundingBox({ includeLabels: true });
+          orderedClusters.push({ node: s, members, bb: { x1: rbb.x1/zoom, y1: rbb.y1/zoom, w: rbb.w/zoom, h: rbb.h/zoom } });
+          placedIds.add(s.id());
+        }
+      });
+    });
+  }
+  topLevel.forEach(node => {
+    if (placedIds.has(node.id())) return;
+    const members = node.isParent() ? node.descendants() : node;
+    const rbb = (typeof members.renderedBoundingBox === "function")
+      ? members.renderedBoundingBox({ includeLabels: true })
+      : members.boundingBox({ includeLabels: true });
+    orderedClusters.push({ node, members, bb: { x1: rbb.x1/zoom, y1: rbb.y1/zoom, w: rbb.w/zoom, h: rbb.h/zoom } });
+  });
+  let cursorX = 0;
+  orderedClusters.forEach(cluster => {
+    const w = Math.max(80, cluster.bb.w);
+    const h = Math.max(80, cluster.bb.h);
+    shiftCollection(cluster.members, cursorX + w/2 - (cluster.bb.x1 + cluster.bb.w/2), h/2 - (cluster.bb.y1 + cluster.bb.h/2));
+    cursorX += w + gapX;
+  });
+}
+
+function layoutIdentityZone() {
+  if (!adGraphState) return;
+  const zoneNetwork = cy ? cy.getElementById("zone_network") : null;
+  let maxWidth = null;
+  if (zoneNetwork && zoneNetwork.length) {
+    const netNodes = zoneNetwork.descendants();
+    if (netNodes.length) {
+      const netBox = netNodes.boundingBox();
+      maxWidth = Math.max(netBox.w * 1.5, 800);
+    }
+  }
+  layoutAdMode1(maxWidth);
+}
+
+function positionIdentityBelowNetwork() {
+  if (!cy) return;
+  const zoneNetwork = cy.getElementById("zone_network");
+  const zoneIdentity = cy.getElementById("zone_identity");
+  if (!zoneNetwork.length || !zoneIdentity.length) return;
+  const networkNodes = zoneNetwork.descendants().filter(n => n.id() !== "zone_network");
+  const identityNodes = zoneIdentity.descendants().filter(n => n.id() !== "zone_identity");
+  if (!identityNodes.length) return;
+  const networkBox = networkNodes.boundingBox();
+  const identityBox = identityNodes.boundingBox();
+  const gap = 120;
+  const networkCenterX = networkBox.x1 + networkBox.w / 2;
+  const identityCenterX = identityBox.x1 + identityBox.w / 2;
+  const dx = networkCenterX - identityCenterX;
+  const dy = (networkBox.y2 + gap) - identityBox.y1;
+  identityNodes.positions(node => ({ x: node.position("x") + dx, y: node.position("y") + dy }));
+}
+
+function positionTransitNodes() {
+  if (!cy) return;
+  const parents = cy.nodes(":parent");
+  const parentIds = new Set(parents.map(n => n.id()));
+  cy.nodes().forEach(node => {
+    if (node.parent().length) {
+      const pid = node.parent().id();
+      if (pid !== "zone_network") return;
+    }
+    const role = node.data("role");
+    if (role !== "Routeur") return;
+    const connectedParents = node.connectedEdges().connectedNodes().filter(n => parentIds.has(n.id()));
+    if (connectedParents.length < 2) return;
+    let sumX = 0, sumY = 0;
+    connectedParents.forEach(p => { sumX += p.position().x; sumY += p.position().y; });
+    node.position({ x: sumX / connectedParents.length, y: sumY / connectedParents.length });
+  });
+}
+
+// ── AD elements builder ──
+function normalizeHostname(value) {
+  if (!value) return "";
+  return value.toLowerCase().replace(/\.$/, "").split(".")[0];
+}
+
+function buildAdElements(adGraph) {
+  const nodes = adGraph.nodes || [];
+  const edgesRaw = adGraph.edges || [];
+  const idMap = new Map();
+  const elements = [];
+  const adNodeIds = new Set();
+  const mappedEdges = [];
+  const bridgeRights = new Set(["HasSession", "LoggedOn", "AdminTo", "CanRDP", "CanPSRemote"]);
+
+  elements.push({
+    data: {
+      id: "zone_identity", label: "AD",
+      bg: "rgba(15, 23, 42, 0.02)", borderColor: "#94a3b8", textColor: "#0f172a",
+      meta: { type: "zone" }, isGroup: 1, isZone: 1, isAD: 1
+    }
+  });
+
+  const startNodeId = adGraph.start_node;
+  const computerNodeIds = new Set();
+  nodes.forEach(n => { if ((n.type || "Unknown") === "Computer") computerNodeIds.add(n.id); });
+
+  nodes.forEach(node => {
+    const nodeId = node.id;
+    const type = node.type || "Unknown";
+    const label = node.display_name || node.name || node.id;
+    const isStartNode = (nodeId === startNodeId || nodeId.toString() === startNodeId);
+
+    if (type === "Computer") {
+      const hostKey = normalizeHostname(label);
+      const mapped = hostIndex.get(hostKey) || hostIndex.get(label.toLowerCase());
+      if (mapped) {
+        const physical = nodeDataIndex.get(mapped);
+        if (physical) {
+          idMap.set(nodeId, mapped);
+          physical.meta = { ...(physical.meta || {}), ad_computer: true };
+          physical.label = buildNetworkLabel(physical);
+          return;
+        }
+      }
+    }
+
+    const adId = `ad_${nodeId}`;
+    idMap.set(nodeId, adId);
+    adNodeIds.add(adId);
+
+    const tier = node.tier !== undefined ? node.tier : null;
+    const isTarget = node.is_target || false;
+    const isCertTemplate = type === "CertTemplate";
+    const isComputer = type === "Computer";
+    const bgColor = isStartNode ? START_USER_COLOR
+      : isComputer ? adTypeColors.Computer
+      : isCertTemplate ? adTypeColors.CertTemplate
+      : (tier !== null ? (tierColors[tier] || tierColors[2]) : (adTypeColors[type] || adTypeColors.Unknown));
+    const borderColor = isStartNode ? START_USER_BORDER
+      : isCertTemplate ? "#be185d"
+      : (tier !== null ? (tierBorderColors[tier] || tierBorderColors[2]) : "#9ca3af");
+
+    elements.push({
+      data: {
+        id: adId, label, type, roles: [type],
+        bg: bgColor, borderColor, textColor: "#0f172a",
+        meta: { type, tier }, isTarget, isStart: isStartNode,
+        isAD: 1, parent: "zone_identity"
+      }
+    });
+  });
+
+  let edgeCounter = 0;
+  edgesRaw.forEach(edge => {
+    const rawSrc = edge.src || edge.source;
+    const rawDst = edge.dst || edge.target;
+    const src = idMap.get(rawSrc) || idMap.get(rawSrc?.toString()) || rawSrc;
+    const dst = idMap.get(rawDst) || idMap.get(rawDst?.toString()) || rawDst;
+    const right = edge.right || edge.kind || "AD";
+    const srcIsAd = adNodeIds.has(src);
+    const dstIsAd = adNodeIds.has(dst);
+    if (srcIsAd && dstIsAd) mappedEdges.push({ source: src, target: dst });
+    const kind = (bridgeRights.has(edge.right) && (!srcIsAd || !dstIsAd)) ? "bridge" : "ad";
+    const viaComputer = computerNodeIds.has(rawSrc) ? 1 : 0;
+    elements.push({
+      data: {
+        id: `ad_e${edgeCounter++}`, source: src, target: dst,
+        label: right, kind, viaComputer,
+        severity: edge.severity || null,
+        isShortest: edge.is_shortest ? 1 : 0,
+        isAD: 1,
+        allRights: (edge.all_rights && edge.all_rights.length > 1) ? edge.all_rights : null
+      }
+    });
+  });
+
+  const startIdRaw = adGraph.start_node;
+  const startIdMapped = startIdRaw ? (idMap.get(startIdRaw) || idMap.get(startIdRaw.toString()) || startIdRaw) : null;
+  adGraphState = { startId: startIdMapped, adNodeIds, edges: mappedEdges };
+  return elements;
+}
+
+// ── AD BFS layout ──
+function layoutAdMode1(maxWidth) {
+  if (!cy || !adGraphState) return;
+  const { startId, adNodeIds, edges } = adGraphState;
+  if (!adNodeIds || !adNodeIds.size) return;
+  const rootId = startId && cy.getElementById(startId).length ? startId : Array.from(adNodeIds)[0];
+  const adjacency = new Map();
+  edges.forEach(({ source, target }) => {
+    if (!adjacency.has(source)) adjacency.set(source, []);
+    adjacency.get(source).push(target);
+  });
+  const depths = new Map();
+  const queue = [];
+  depths.set(rootId, 0);
+  queue.push(rootId);
+  while (queue.length) {
+    const cur = queue.shift();
+    (adjacency.get(cur) || []).forEach(nxt => {
+      if (!depths.has(nxt)) { depths.set(nxt, depths.get(cur) + 1); queue.push(nxt); }
+    });
+  }
+  const byDepth = new Map();
+  adNodeIds.forEach(id => {
+    const depth = depths.get(id) ?? 6;
+    if (!byDepth.has(depth)) byDepth.set(depth, []);
+    byDepth.get(depth).push(id);
+  });
+  const maxDepth = Math.max(...byDepth.keys(), 1);
+  const targetWidth = 1200;
+  let xStep = maxDepth > 0 ? Math.round(targetWidth / maxDepth) : 400;
+  xStep = Math.min(400, Math.max(250, xStep));
+  const yStep = 150;
+  byDepth.forEach((ids, depth) => {
+    ids.sort();
+    const totalHeight = (ids.length - 1) * yStep;
+    ids.forEach((id, i) => {
+      const node = cy.getElementById(id);
+      if (!node.length) return;
+      node.position({ x: depth * xStep, y: -totalHeight / 2 + i * yStep });
+    });
+  });
+}
+
+// ── Init ──
+updateDirectSubmode();
+</script>
+</body>
+</html>
