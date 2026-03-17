@@ -24,7 +24,7 @@ ARGUS produit des fichiers JSON structurés : graphes de tiers (chemins d'attaqu
 
 ### Problème
 
-Les outils existants (BloodHound GUI, Neo4j) nécessitent une installation lourde (base de données, application desktop) et ne combinent pas les couches réseau et identité. On voulait créer un outil de visualisation **simple et portable** qui fonctionne sur n'importe quelle machine.
+Les outils existants (BloodHound GUI, Neo4j) nécessitent une installation lourde (base de données, application desktop), ne sont pas intuitif et ne combinent pas les couches réseau-identité. On voulait créer un outil de visualisation **simple et portable** qui fonctionne sur n'importe quelle machine.
 
 ### Solution : un fichier HTML autonome
 
