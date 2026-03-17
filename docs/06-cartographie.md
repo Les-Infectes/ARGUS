@@ -24,7 +24,7 @@ ARGUS produit des fichiers JSON structurés : graphes de tiers (chemins d'attaqu
 
 ### Problème
 
-Les outils existants (BloodHound GUI, Neo4j) nécessitent une installation lourde (base de données, application desktop), ne sont pas intuitif et ne combinent pas les couches réseau-identité. On voulait créer un outil de visualisation **simple et portable** qui fonctionne sur n'importe quelle machine.
+Les outils existants (BloodHound GUI, Neo4j) nécessitent une installation lourde (base de données, application desktop), ne sont pas intuitif et ne combinent pas les couches réseau-identité. La volonté était de créer un outil de visualisation **simple et portable** qui fonctionne sur n'importe quelle machine.
 
 ### Solution : un fichier HTML autonome
 
@@ -58,13 +58,13 @@ En pentest, on travaille souvent sur des VMs temporaires, des machines de lab, o
 
 Pour afficher des graphes interactifs dans un navigateur, plusieurs bibliothèques existent :
 
-| Bibliothèque   | Type          | Avantage                        | Inconvénient                    |
-|-----------------|---------------|----------------------------------|---------------------------------|
-| **Cytoscape.js**| Graph dédié   | Conçu pour les graphes, layouts  | Moins de graphiques généraux    |
-|                 |               | intégrés, performant (1000+ noeuds) |                              |
-| D3.js           | Généraliste   | Très flexible, communauté large  | Bas niveau, tout à coder        |
-| vis.js          | Graph dédié   | Simple, bon rendu                | Moins performant sur gros graphs|
-| Sigma.js        | Graph dédié   | Performant (WebGL)               | API moins intuitive             |
+| Bibliothèque     | Type        | Avantage                            | Inconvénient                     |
+| ---------------- | ----------- | ----------------------------------- | -------------------------------- |
+| **Cytoscape.js** | Graph dédié | Conçu pour les graphes, layouts     | Moins de graphiques généraux     |
+|                  |             | intégrés, performant (1000+ noeuds) |                                  |
+| D3.js            | Généraliste | Très flexible, communauté large     | Bas niveau, tout à coder         |
+| vis.js           | Graph dédié | Simple, bon rendu                   | Moins performant sur gros graphs |
+| Sigma.js         | Graph dédié | Performant (WebGL)                  | API moins intuitive              |
 
 Cytoscape.js a été choisi car :
 - **Layouts intégrés** : algorithmes de positionnement (BFS, grid, force) prêts à l'emploi, essentiels pour disposer les noeuds sans chevauchement
