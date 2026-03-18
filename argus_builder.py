@@ -1256,6 +1256,34 @@ def k_shortest_loopless_paths(
     return node_paths, edge_paths
 
 
+def find_tier0_objects(data_dir: str, certipy_json: str = None) -> list:
+    """
+    Identify Tier 0 objects using the full classification pipeline.
+    Returns a list of {name, type} for Tier 0 objects.
+    """
+    by_type = load_json_files(data_dir, certipy_json)
+    nodes_by_id, key_to_ids = build_node_index(by_type)
+
+    # Full Tier 0 classification (SEED → CLOSURE → INDIRECT → MEMBERS)
+    tier0 = identify_tier0_seed(nodes_by_id, by_type)
+    tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type)
+    tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
+    tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
+
+    results = []
+    for sid in tier0:
+        node = nodes_by_id.get(sid)
+        if not node:
+            continue
+        results.append({
+            "name": node.get("name", sid),
+            "type": node.get("type", "Unknown").lower(),
+        })
+
+    results.sort(key=lambda x: (0 if x["type"] == "user" else 1, x["name"]))
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build BloodHound attack paths using Tier-based classification.")
     parser.add_argument("--data-dir", required=True, help="Path to BloodHound JSON folder")

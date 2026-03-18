@@ -163,6 +163,42 @@ def job_results(job_id):
     return jsonify(result)
 
 
+# ── Suggest start nodes with paths to Tier 0 ────────────────────────────────
+
+@app.route("/api/suggest-starts", methods=["POST"])
+def suggest_starts():
+    """Analyze BH files and return objects with attack paths to Tier 0."""
+    bh_files = request.files.getlist("bh_files")
+    if not bh_files or not bh_files[0].filename:
+        return jsonify({"error": "No BloodHound files"}), 400
+
+    # Save BH files to a temp directory
+    tmp = tempfile.mkdtemp(prefix="argus_suggest_")
+    bh_dir = os.path.join(tmp, "bh")
+    os.makedirs(bh_dir)
+    for f in bh_files:
+        fname = Path(f.filename).name
+        if fname.endswith(".json"):
+            f.save(os.path.join(bh_dir, fname))
+
+    # Save certipy JSON if provided
+    certipy_path = None
+    certipy_file = request.files.get("certipy_json")
+    if certipy_file and certipy_file.filename:
+        certipy_path = os.path.join(tmp, "certipy.json")
+        certipy_file.save(certipy_path)
+
+    try:
+        from argus_builder import find_tier0_objects
+        results = find_tier0_objects(bh_dir, certipy_path)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 # ── Import endpoint ──────────────────────────────────────────────────────────
 
 @app.route("/api/import", methods=["POST"])

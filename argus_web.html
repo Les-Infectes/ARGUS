@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,6 +18,19 @@
       --success: #059669;
       --error: #dc2626;
       --radius: 8px;
+      --card-bg: #ffffff;
+      --input-bg: #ffffff;
+    }
+    [data-theme="dark"] {
+      --navy: #4b7bff;
+      --navy-dark: #3b6bef;
+      --ink: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #334155;
+      --surface: #1e293b;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --input-bg: #1e293b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -69,7 +82,7 @@
       max-width: 960px;
     }
     .menu-card {
-      background: var(--bg);
+      background: var(--card-bg);
       border: 2px solid var(--border);
       border-radius: 12px;
       padding: 36px 28px;
@@ -80,7 +93,7 @@
     }
     .menu-card:hover {
       border-color: var(--navy);
-      box-shadow: 0 8px 24px rgba(0, 35, 149, 0.1);
+      box-shadow: 0 8px 24px rgba(0, 35, 149, 0.15);
       transform: translateY(-2px);
     }
     .menu-card-icon {
@@ -158,7 +171,7 @@
       font-size: 0.9rem;
       font-family: "JetBrains Mono", monospace;
       color: var(--ink);
-      background: var(--bg);
+      background: var(--input-bg);
       transition: border-color 0.15s;
     }
     .form-input:focus {
@@ -193,7 +206,7 @@
       font-size: 0.9rem;
       font-family: "Inter", sans-serif;
       color: var(--ink);
-      background: var(--bg);
+      background: var(--input-bg);
       cursor: pointer;
     }
     .form-select:focus {
@@ -308,7 +321,7 @@
     /* ── Cartographie screen ── */
     #screen-carto { min-height: 100vh; position: relative; }
     .carto-toolbar {
-      padding: 6px 16px;
+      padding: 6px 50px 6px 16px;
       background: #0f172a;
       border-bottom: 2px solid #3b82f6;
       display: flex;
@@ -379,7 +392,7 @@
     #cy {
       flex: 1;
       position: relative;
-      background: #ffffff;
+      background: var(--bg);
       min-height: 0;
       overflow: hidden;
     }
@@ -416,9 +429,9 @@
       max-width: 340px;
       padding: 0.9rem 1rem;
       border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+      background: var(--card-bg);
       border: 1px solid var(--border);
-      box-shadow: 0 12px 32px rgba(15,23,42,0.15);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.25);
       font-size: 0.82rem;
       line-height: 1.4;
       color: var(--ink);
@@ -437,7 +450,7 @@
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: #0f172a;
+      color: var(--ink);
     }
     .node-card-body {
       display: flex;
@@ -465,9 +478,9 @@
       word-break: break-word;
     }
     .node-card-table th {
-      background: rgba(15,23,42,0.05);
+      background: rgba(128,128,128,0.1);
       font-weight: 700;
-      color: #0f172a;
+      color: var(--ink);
     }
 
     /* ── Autocomplete ── */
@@ -479,7 +492,7 @@
       top: 100%;
       left: 0;
       right: 0;
-      background: #fff;
+      background: var(--card-bg);
       border: 1.5px solid var(--border);
       border-top: none;
       border-radius: 0 0 var(--radius) var(--radius);
@@ -528,7 +541,7 @@
       font-family: "JetBrains Mono", monospace;
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
-      background: #fff;
+      background: var(--card-bg);
       color: var(--muted);
       cursor: pointer;
       text-transform: uppercase;
@@ -547,6 +560,19 @@
       font-size: 0.65rem;
       opacity: 0.7;
       margin-left: 3px;
+    }
+    .ac-filter-tier0 {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    .ac-filter-tier0:hover {
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+    .ac-filter-tier0.active {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
     }
 
     /* ── Demo cards on display form ── */
@@ -568,16 +594,59 @@
     }
     .demo-card:hover {
       border-color: var(--navy);
-      background: #fff;
+      background: var(--card-bg);
     }
     .demo-card-name {
       font-weight: 600;
       color: var(--navy);
     }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 9999;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--card-bg);
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .theme-toggle:hover {
+      border-color: var(--navy);
+      color: var(--ink);
+    }
+    [data-theme="dark"] .form-warning {
+      background: #422006;
+      border-color: #b45309;
+      color: #fde68a;
+    }
+    [data-theme="dark"] .log-output-info {
+      background: #052e16;
+      border-color: #166534;
+      color: #86efac;
+    }
+    [data-theme="dark"] .node-card-body span {
+      background: rgba(255,255,255,0.06);
+    }
+    [data-theme="dark"] .autocomplete-item mark {
+      background: rgba(0, 35, 149, 0.3);
+      color: #93c5fd;
+    }
+    [data-theme="dark"] .menu-card:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
   </style>
   <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
 </head>
 <body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Changer le thème">&#9728;</button>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <!-- SCREEN: MENU                                                           -->
@@ -918,6 +987,25 @@
 <!-- JAVASCRIPT                                                             -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <script>
+// ── Theme toggle ──
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute("data-theme") === "dark";
+  html.setAttribute("data-theme", isDark ? "light" : "dark");
+  document.querySelector(".theme-toggle").textContent = isDark ? "\u263E" : "\u2600";
+  localStorage.setItem("argus-theme", isDark ? "light" : "dark");
+  // Re-apply cytoscape styles for edge/zone colors
+  if (cy) cy.style(getCytoscapeStyles());
+}
+// Restore saved theme (default: dark)
+(function() {
+  const saved = localStorage.getItem("argus-theme");
+  if (saved === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+    document.querySelector(".theme-toggle").textContent = "\u263E";
+  }
+})();
+
 // ── Screen navigation ──
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -949,6 +1037,8 @@ function resetAllForms() {
   });
   // Reset autocomplete state
   bhObjectNames = [];
+  tier0Starts = [];
+  bhFilesRef = null;
   acFilterType = "all";
   const acFilters = document.getElementById("ac-filters");
   if (acFilters) acFilters.innerHTML = "";
@@ -1207,13 +1297,18 @@ async function loadDemo(name, files) {
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── BH start node autocomplete ──
-let bhObjectNames = []; // [{name, type}]
+let bhObjectNames = []; // [{name, type, tier0}]
 let acFilterType = "all"; // active filter category
 let acSelectedIndex = -1;
+
+let bhFilesRef = null; // keep reference to uploaded BH files for suggest-starts
+let tier0Starts = []; // [{name, type}] objects with paths to Tier 0
 
 // Parse BH files when user selects the directory
 async function parseBhFiles(event) {
   bhObjectNames = [];
+  tier0Starts = [];
+  bhFilesRef = event.target.files;
   const files = event.target.files;
   if (!files || files.length === 0) return;
 
@@ -1227,13 +1322,12 @@ async function parseBhFiles(event) {
         const data = JSON.parse(raw);
         const objType = (data.meta?.type || "").toLowerCase();
         if (!objType || !data.data || !Array.isArray(data.data)) return;
-        // Map BH types to display labels
         const typeLabels = { users: "user", computers: "computer", groups: "group",
                              domains: "domain", ous: "ou", gpos: "gpo", containers: "container" };
         const label = typeLabels[objType] || objType;
         for (const entry of data.data) {
           const name = entry.Properties?.name;
-          if (name) bhObjectNames.push({ name, type: label });
+          if (name) bhObjectNames.push({ name, type: label, tier0: false });
         }
       }).catch(() => {})
     );
@@ -1256,6 +1350,38 @@ async function parseBhFiles(event) {
     input.placeholder = "Aucun objet trouvé dans les fichiers";
   }
   buildAcFilters();
+
+  // Async: ask server to compute paths to Tier 0
+  fetchTier0Suggestions();
+}
+
+async function fetchTier0Suggestions() {
+  if (!bhFilesRef || bhFilesRef.length === 0) return;
+  const form = new FormData();
+  for (let i = 0; i < bhFilesRef.length; i++) {
+    const file = bhFilesRef[i];
+    const fname = (file.name || file.webkitRelativePath || "").toLowerCase();
+    if (fname.endsWith(".json")) form.append("bh_files", file);
+  }
+  // Also send certipy if present
+  const certipyFile = document.getElementById("imp-certipy")?.files[0];
+  if (certipyFile) form.append("certipy_json", certipyFile);
+
+  try {
+    const resp = await fetch("/api/suggest-starts", { method: "POST", body: form });
+    if (!resp.ok) return;
+    tier0Starts = await resp.json();
+    if (Array.isArray(tier0Starts) && tier0Starts.length > 0) {
+      // Mark matching objects
+      const t0Names = new Set(tier0Starts.map(o => o.name.toUpperCase()));
+      for (const obj of bhObjectNames) {
+        obj.tier0 = t0Names.has(obj.name.toUpperCase());
+      }
+      buildAcFilters();
+    }
+  } catch(e) {
+    console.warn("Tier 0 suggestions unavailable:", e);
+  }
 }
 document.getElementById("imp-bh").addEventListener("change", parseBhFiles);
 
@@ -1267,8 +1393,10 @@ function buildAcFilters() {
 
   // Count objects per type
   const counts = {};
+  let tier0Count = 0;
   for (const obj of bhObjectNames) {
     counts[obj.type] = (counts[obj.type] || 0) + 1;
+    if (obj.tier0) tier0Count++;
   }
 
   // Order: user, computer, group, then rest alphabetically
@@ -1290,6 +1418,16 @@ function buildAcFilters() {
   allBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("all", allBtn); });
   container.appendChild(allBtn);
 
+  // "Tier 0" button (SEED detection)
+  if (tier0Count > 0) {
+    const t0Btn = document.createElement("button");
+    t0Btn.type = "button";
+    t0Btn.className = "ac-filter-btn ac-filter-tier0";
+    t0Btn.innerHTML = `Tier 0<span class="ac-filter-count">${tier0Count}</span>`;
+    t0Btn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("tier0", t0Btn); });
+    container.appendChild(t0Btn);
+  }
+
   // One button per type
   const labels = { user: "Users", computer: "Computers", group: "Groups",
                    domain: "Domains", ou: "OUs", gpo: "GPOs", container: "Containers" };
@@ -1309,7 +1447,9 @@ function setAcFilter(type, btn) {
   btn.classList.add("active");
   // Update placeholder with count
   const input = document.getElementById("imp-start");
-  const count = type === "all" ? bhObjectNames.length : bhObjectNames.filter(o => o.type === type).length;
+  const count = type === "all" ? bhObjectNames.length
+    : type === "tier0" ? bhObjectNames.filter(o => o.tier0).length
+    : bhObjectNames.filter(o => o.type === type).length;
   input.placeholder = `${count} objets — tapez pour filtrer`;
   input.value = "";
   renderSuggestions("");
@@ -1332,7 +1472,9 @@ function renderSuggestions(query) {
   acSelectedIndex = -1;
   if (bhObjectNames.length === 0) { acList.classList.remove("open"); return; }
   const q = (query || "").toLowerCase();
-  let pool = acFilterType === "all" ? bhObjectNames : bhObjectNames.filter(o => o.type === acFilterType);
+  let pool = acFilterType === "all" ? bhObjectNames
+    : acFilterType === "tier0" ? bhObjectNames.filter(o => o.tier0)
+    : bhObjectNames.filter(o => o.type === acFilterType);
   const matches = q
     ? pool.filter(o => o.name.toLowerCase().includes(q)).slice(0, 20)
     : pool.slice(0, 30);
@@ -1370,7 +1512,9 @@ acInput.addEventListener("keydown", (e) => {
     items[acSelectedIndex].scrollIntoView({ block: "nearest" });
   } else if (e.key === "Enter" && acSelectedIndex >= 0) {
     e.preventDefault();
-    const pool = acFilterType === "all" ? bhObjectNames : bhObjectNames.filter(o => o.type === acFilterType);
+    const pool = acFilterType === "all" ? bhObjectNames
+      : acFilterType === "tier0" ? bhObjectNames.filter(o => o.tier0)
+      : bhObjectNames.filter(o => o.type === acFilterType);
     const q = acInput.value.toLowerCase();
     const name = (q ? pool.filter(o => o.name.toLowerCase().includes(q)) : pool.slice(0, 30))[acSelectedIndex]?.name;
     if (name) { acInput.value = name; acList.classList.remove("open"); }
@@ -1755,6 +1899,8 @@ function switchToTier(tier) {
 
 // ── Cytoscape Styles ──
 function getCytoscapeStyles() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const edgeColor = isDark ? "#94a3b8" : "#0f172a";
   return [
     { selector: "node", style: {
       label: "data(label)", "text-wrap": "wrap", "text-max-width": 160,
@@ -1766,12 +1912,12 @@ function getCytoscapeStyles() {
     { selector: "node[isGroup = 1]", style: {
       shape: "round-rectangle", "background-opacity": 0.06, "border-style": "dashed",
       "border-width": 1, "border-color": "#94a3b8", "text-valign": "top", "text-halign": "center",
-      "font-size": 10, color: "#475569", padding: "40px", "compound-sizing-wrt-labels": "include",
+      "font-size": 10, color: isDark ? "#94a3b8" : "#475569", padding: "40px", "compound-sizing-wrt-labels": "include",
     }},
     { selector: "node[isZone = 1]", style: {
       shape: "round-rectangle", "background-opacity": 0.02, "border-style": "dotted",
       "border-width": 1.5, "border-color": "#94a3b8", "text-valign": "top", "text-halign": "right",
-      "font-size": 13, "font-weight": "700", color: "#0f172a", "text-margin-y": -8, padding: "24px",
+      "font-size": 13, "font-weight": "700", color: isDark ? "#cbd5e1" : "#0f172a", "text-margin-y": -8, padding: "24px",
     }},
     { selector: "node[?isTarget]", style: { "border-width": 2.5, "font-weight": "700" } },
     { selector: "node[?isStart]", style: {
@@ -1782,17 +1928,18 @@ function getCytoscapeStyles() {
     { selector: "edge", style: {
       width: 1.2, "line-color": "#94a3b8", "target-arrow-color": "#94a3b8",
       "target-arrow-shape": "triangle", "curve-style": "bezier", "font-size": 9,
-      color: "#475569", "text-background-color": "#ffffff", "text-background-opacity": 0.9,
+      color: isDark ? "#94a3b8" : "#475569",
+      "text-background-color": isDark ? "#1e293b" : "#ffffff", "text-background-opacity": 0.9,
       "text-background-padding": 2,
     }},
     { selector: "edge[kind = 'network']", style: { "line-color": "#94a3b8", "target-arrow-color": "#94a3b8", "target-arrow-shape": "none", width: 1 } },
     { selector: "edge[kind = 'subnet']", style: { "line-color": "#94a3b8", "target-arrow-color": "#94a3b8", width: 1 } },
-    { selector: "edge[kind = 'ad']", style: { label: "data(label)", "line-color": "#0f172a", "target-arrow-color": "#0f172a", width: 1.2 } },
+    { selector: "edge[kind = 'ad']", style: { label: "data(label)", "line-color": edgeColor, "target-arrow-color": edgeColor, width: 1.2 } },
     { selector: "edge[kind = 'ad'][isShortest = 1]", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444", width: 1.5 } },
-    { selector: "edge[kind = 'bridge']", style: { label: "data(label)", "line-color": "#0f172a", "target-arrow-color": "#0f172a", width: 1.2 } },
+    { selector: "edge[kind = 'bridge']", style: { label: "data(label)", "line-color": edgeColor, "target-arrow-color": edgeColor, width: 1.2 } },
     { selector: "edge[kind = 'bridge'][isShortest = 1]", style: { "line-color": "#ef4444", "target-arrow-color": "#ef4444", width: 1.5 } },
-    { selector: "edge[viaComputer = 1]", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dashed", width: 1.2 } },
-    { selector: "edge[viaComputer = 1][isShortest = 1]", style: { "line-color": "#0f172a", "target-arrow-color": "#0f172a", "line-style": "dashed", width: 1.2 } },
+    { selector: "edge[viaComputer = 1]", style: { "line-color": edgeColor, "target-arrow-color": edgeColor, "line-style": "dashed", width: 1.2 } },
+    { selector: "edge[viaComputer = 1][isShortest = 1]", style: { "line-color": edgeColor, "target-arrow-color": edgeColor, "line-style": "dashed", width: 1.2 } },
   ];
 }
 
