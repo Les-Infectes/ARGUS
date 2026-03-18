@@ -189,9 +189,11 @@ def suggest_starts():
         certipy_file.save(certipy_path)
 
     try:
-        from argus_builder import find_tier0_objects
-        results = find_tier0_objects(bh_dir, certipy_path)
+        from argus_builder import find_objects_with_tier0_paths
+        results = find_objects_with_tier0_paths(bh_dir, certipy_path)
         return jsonify(results)
+    except SystemExit:
+        return jsonify({"error": "Invalid BloodHound data"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

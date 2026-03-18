@@ -496,7 +496,7 @@
       border: 1.5px solid var(--border);
       border-top: none;
       border-radius: 0 0 var(--radius) var(--radius);
-      max-height: 200px;
+      max-height: 300px;
       overflow-y: auto;
       z-index: 10;
       display: none;
@@ -1037,7 +1037,6 @@ function resetAllForms() {
   });
   // Reset autocomplete state
   bhObjectNames = [];
-  tier0Starts = [];
   bhFilesRef = null;
   acFilterType = "all";
   const acFilters = document.getElementById("ac-filters");
@@ -1297,17 +1296,15 @@ async function loadDemo(name, files) {
 // ══════════════════════════════════════════════════════════════════════════
 
 // ── BH start node autocomplete ──
-let bhObjectNames = []; // [{name, type, tier0}]
+let bhObjectNames = []; // [{name, type, tier0, pathToT0}]
 let acFilterType = "all"; // active filter category
 let acSelectedIndex = -1;
 
 let bhFilesRef = null; // keep reference to uploaded BH files for suggest-starts
-let tier0Starts = []; // [{name, type}] objects with paths to Tier 0
 
 // Parse BH files when user selects the directory
 async function parseBhFiles(event) {
   bhObjectNames = [];
-  tier0Starts = [];
   bhFilesRef = event.target.files;
   const files = event.target.files;
   if (!files || files.length === 0) return;
@@ -1327,7 +1324,7 @@ async function parseBhFiles(event) {
         const label = typeLabels[objType] || objType;
         for (const entry of data.data) {
           const name = entry.Properties?.name;
-          if (name) bhObjectNames.push({ name, type: label, tier0: false });
+          if (name) bhObjectNames.push({ name, type: label, pathToT0: false });
         }
       }).catch(() => {})
     );
@@ -1370,15 +1367,13 @@ async function fetchTier0Suggestions() {
   try {
     const resp = await fetch("/api/suggest-starts", { method: "POST", body: form });
     if (!resp.ok) return;
-    tier0Starts = await resp.json();
-    if (Array.isArray(tier0Starts) && tier0Starts.length > 0) {
-      // Mark matching objects
-      const t0Names = new Set(tier0Starts.map(o => o.name.toUpperCase()));
-      for (const obj of bhObjectNames) {
-        obj.tier0 = t0Names.has(obj.name.toUpperCase());
-      }
-      buildAcFilters();
+    const data = await resp.json();
+    if (data.error || !Array.isArray(data)) return;
+    const pathNames = new Set(data.map(o => o.name.toUpperCase()));
+    for (const obj of bhObjectNames) {
+      obj.pathToT0 = pathNames.has(obj.name.toUpperCase());
     }
+    if (pathNames.size > 0) buildAcFilters();
   } catch(e) {
     console.warn("Tier 0 suggestions unavailable:", e);
   }
@@ -1393,10 +1388,10 @@ function buildAcFilters() {
 
   // Count objects per type
   const counts = {};
-  let tier0Count = 0;
+  let pathToT0Count = 0;
   for (const obj of bhObjectNames) {
     counts[obj.type] = (counts[obj.type] || 0) + 1;
-    if (obj.tier0) tier0Count++;
+    if (obj.pathToT0) pathToT0Count++;
   }
 
   // Order: user, computer, group, then rest alphabetically
@@ -1418,14 +1413,14 @@ function buildAcFilters() {
   allBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("all", allBtn); });
   container.appendChild(allBtn);
 
-  // "Tier 0" button (SEED detection)
-  if (tier0Count > 0) {
-    const t0Btn = document.createElement("button");
-    t0Btn.type = "button";
-    t0Btn.className = "ac-filter-btn ac-filter-tier0";
-    t0Btn.innerHTML = `Tier 0<span class="ac-filter-count">${tier0Count}</span>`;
-    t0Btn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("tier0", t0Btn); });
-    container.appendChild(t0Btn);
+  // "→ T0" button: objects with paths to Tier 0
+  if (pathToT0Count > 0) {
+    const ptBtn = document.createElement("button");
+    ptBtn.type = "button";
+    ptBtn.className = "ac-filter-btn ac-filter-tier0";
+    ptBtn.innerHTML = `→ T0<span class="ac-filter-count">${pathToT0Count}</span>`;
+    ptBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("pathToT0", ptBtn); });
+    container.appendChild(ptBtn);
   }
 
   // One button per type
@@ -1448,7 +1443,7 @@ function setAcFilter(type, btn) {
   // Update placeholder with count
   const input = document.getElementById("imp-start");
   const count = type === "all" ? bhObjectNames.length
-    : type === "tier0" ? bhObjectNames.filter(o => o.tier0).length
+    : type === "pathToT0" ? bhObjectNames.filter(o => o.pathToT0).length
     : bhObjectNames.filter(o => o.type === type).length;
   input.placeholder = `${count} objets — tapez pour filtrer`;
   input.value = "";
@@ -1473,7 +1468,7 @@ function renderSuggestions(query) {
   if (bhObjectNames.length === 0) { acList.classList.remove("open"); return; }
   const q = (query || "").toLowerCase();
   let pool = acFilterType === "all" ? bhObjectNames
-    : acFilterType === "tier0" ? bhObjectNames.filter(o => o.tier0)
+    : acFilterType === "pathToT0" ? bhObjectNames.filter(o => o.pathToT0)
     : bhObjectNames.filter(o => o.type === acFilterType);
   const matches = q
     ? pool.filter(o => o.name.toLowerCase().includes(q)).slice(0, 20)
@@ -1513,7 +1508,7 @@ acInput.addEventListener("keydown", (e) => {
   } else if (e.key === "Enter" && acSelectedIndex >= 0) {
     e.preventDefault();
     const pool = acFilterType === "all" ? bhObjectNames
-      : acFilterType === "tier0" ? bhObjectNames.filter(o => o.tier0)
+      : acFilterType === "pathToT0" ? bhObjectNames.filter(o => o.pathToT0)
       : bhObjectNames.filter(o => o.type === acFilterType);
     const q = acInput.value.toLowerCase();
     const name = (q ? pool.filter(o => o.name.toLowerCase().includes(q)) : pool.slice(0, 30))[acSelectedIndex]?.name;

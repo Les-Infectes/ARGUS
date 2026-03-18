@@ -1260,8 +1260,24 @@ def find_tier0_objects(data_dir: str, certipy_json: str = None) -> list:
     """
     Identify Tier 0 objects using the full classification pipeline.
     Returns a list of {name, type} for Tier 0 objects.
+    Raises ValueError if data is invalid (does NOT sys.exit).
     """
-    by_type = load_json_files(data_dir, certipy_json)
+    if not os.path.isdir(data_dir):
+        raise ValueError(f"Data directory not found: {data_dir}")
+    files = [f for f in os.listdir(data_dir) if f.endswith(".json")]
+    if not files:
+        raise ValueError(f"No JSON files in: {data_dir}")
+    by_type = {}
+    for fname in files:
+        path = os.path.join(data_dir, fname)
+        with open(path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        meta_type = content.get("meta", {}).get("type")
+        if meta_type:
+            by_type[meta_type] = content
+    if certipy_json and os.path.exists(certipy_json):
+        with open(certipy_json, "r", encoding="utf-8") as f:
+            by_type["certtemplates"] = json.load(f)
     nodes_by_id, key_to_ids = build_node_index(by_type)
 
     # Full Tier 0 classification (SEED → CLOSURE → INDIRECT → MEMBERS)
@@ -1274,6 +1290,127 @@ def find_tier0_objects(data_dir: str, certipy_json: str = None) -> list:
     for sid in tier0:
         node = nodes_by_id.get(sid)
         if not node:
+            continue
+        results.append({
+            "name": node.get("name", sid),
+            "type": node.get("type", "Unknown").lower(),
+        })
+
+    results.sort(key=lambda x: (0 if x["type"] == "user" else 1, x["name"]))
+    return results
+
+
+def find_objects_with_tier0_paths(data_dir: str, certipy_json: str = None) -> list:
+    """
+    Identify non-Tier0 objects (Users/Computers) that have at least one
+    attack path to a Tier 0 object.
+
+    Builds a global adjacency graph (all Aces + memberships + AdminTo +
+    remote access) then does a single reverse BFS from Tier 0.
+    """
+    if not os.path.isdir(data_dir):
+        raise ValueError(f"Data directory not found: {data_dir}")
+    files = [f for f in os.listdir(data_dir) if f.endswith(".json")]
+    if not files:
+        raise ValueError(f"No JSON files in: {data_dir}")
+    by_type = {}
+    for fname in files:
+        path = os.path.join(data_dir, fname)
+        with open(path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        meta_type = content.get("meta", {}).get("type")
+        if meta_type:
+            by_type[meta_type] = content
+    if certipy_json and os.path.exists(certipy_json):
+        with open(certipy_json, "r", encoding="utf-8") as f:
+            by_type["certtemplates"] = json.load(f)
+
+    nodes_by_id, _ = build_node_index(by_type)
+
+    # Full Tier 0 classification
+    tier0 = identify_tier0_seed(nodes_by_id, by_type)
+    tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type)
+    tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
+    tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
+
+    # Build global forward adjacency: src -> {dst}
+    # "src can attack/reach dst"
+    forward = defaultdict(set)
+
+    # 1. All ACE rights (PrincipalSID → ObjectIdentifier)
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            if not target_id:
+                continue
+            for ace in obj.get("Aces", []) or []:
+                principal = ace.get("PrincipalSID")
+                right = ace.get("RightName")
+                if principal and right and principal != target_id:
+                    forward[principal].add(target_id)
+
+    # 2. Group membership: member → group (member inherits group permissions)
+    for g in by_type.get("groups", {}).get("data", []):
+        gid = g.get("ObjectIdentifier")
+        if not gid:
+            continue
+        for m in g.get("Members", []) or []:
+            mid = m.get("ObjectIdentifier")
+            if mid and mid != gid:
+                forward[mid].add(gid)
+
+    # 3. AdminTo / LocalAdmins: admin → computer
+    for comp in by_type.get("computers", {}).get("data", []):
+        cid = comp.get("ObjectIdentifier")
+        if not cid:
+            continue
+        for collector_key in ("LocalAdmins", "RemoteDesktopUsers", "PSRemoteUsers", "DcomUsers"):
+            collector = comp.get(collector_key, {}) or {}
+            for r in collector.get("Results", []) or []:
+                pid = r.get("ObjectIdentifier")
+                if pid and pid != cid:
+                    forward[pid].add(cid)
+
+    # 4. Sessions: computer → user (user has session on computer)
+    for comp in by_type.get("computers", {}).get("data", []):
+        cid = comp.get("ObjectIdentifier")
+        if not cid:
+            continue
+        sessions = comp.get("Sessions", {}) or {}
+        for s in sessions.get("Results", []) or []:
+            uid = s.get("UserSID") or s.get("ObjectIdentifier")
+            if uid and uid != cid:
+                forward[cid].add(uid)
+
+    # Build reverse adjacency for BFS
+    reverse_adj = defaultdict(set)
+    for src, dsts in forward.items():
+        for dst in dsts:
+            reverse_adj[dst].add(src)
+
+    # Reverse BFS from all Tier 0 nodes
+    can_reach_t0 = set()
+    queue = deque(tier0)
+    visited = set(tier0)
+
+    while queue:
+        node = queue.popleft()
+        for predecessor in reverse_adj.get(node, set()):
+            if predecessor not in visited:
+                visited.add(predecessor)
+                can_reach_t0.add(predecessor)
+                queue.append(predecessor)
+
+    # Return only non-T0 Users and Computers with known names
+    valid_types = {"User", "Computer"}
+    results = []
+    for sid in can_reach_t0:
+        if sid in tier0:
+            continue
+        node = nodes_by_id.get(sid)
+        if not node:
+            continue
+        if node.get("type") not in valid_types:
             continue
         results.append({
             "name": node.get("name", sid),
