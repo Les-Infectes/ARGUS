@@ -15,7 +15,7 @@ from typing import Dict, List, Tuple, Optional, Set
 # TIER 0 — Contrôle DÉTERMINISTE du domaine :
 #   1. SEED (statique)     : Domain, DCs, KRBTGT, groupes critiques, DCSync, Cert Publishers
 #   2. CLOSURE (hérité)    : Droits de contrôle direct sur Tier 0 (whitelist stricte)
-#   3. INDIRECT (accès machines T0) : TOUS les accès aux machines Tier 0 (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM)
+#   3. INDIRECT (accès machines/objets T0) : TOUS les accès aux machines Tier 0 (AdminTo, LAPS, GPO, CanRDP, CanPSRemote, DCOM) + ReadGMSAPassword sur objets T0
 #   4. MEMBRES             : Membres directs des groupes Tier 0
 #   5. DISTANCE BFS        : Calcul distance depuis Tier 0 FINAL
 #
@@ -126,6 +126,13 @@ TIER0_CLOSURE_RIGHTS = {
 # - WriteProperty : attribute-aware requis
 # - ChangePassword : nécessite l'ancien mot de passe
 
+# Lecture de mot de passe d'un objet Tier 0 = contrôle garanti
+# ReadLAPSPassword sur machine T0 ou ReadGMSAPassword sur gMSA T0
+TIER0_READPASS_RIGHTS = {
+    "ReadLAPSPassword",
+    "ReadGMSAPassword",
+}
+
 # Accès admin : héritage d'identité valide (contrôle total de la machine)
 # AdminTo = admin local → peut dumper credentials → hérite de l'identité machine
 ADMIN_ACCESS_RIGHTS = {
@@ -166,6 +173,8 @@ ALL_PRIVILEGE_RIGHTS = {
     "Enroll", "AutoEnroll",
     # Account restrictions (UAC flags: AS-REPRoasting, disable account)
     "WriteAccountRestrictions",
+    # SPN manipulation (Targeted Kerberoasting — resolved by some collectors)
+    "WriteSPN",
 }
 
 WELL_KNOWN_PREFIXES = (
@@ -441,11 +450,12 @@ def expand_tier0_indirect(
     by_type: Dict[str, dict]
 ) -> Set[str]:
     """
-    PHASE 3: TIER 0 INDIRECT (accès machines Tier 0) - Déterministe
+    PHASE 3: TIER 0 INDIRECT (accès machines/objets Tier 0) - Déterministe
 
     Expand Tier 0 with ALL access methods to Tier 0 machines (DCs + others):
     - AdminTo on Tier 0 machine → Tier 0
     - ReadLAPSPassword on Tier 0 machine (or OU containing it) → Tier 0
+    - ReadGMSAPassword on Tier 0 object → Tier 0
     - WriteGPO/GenericAll on GPO linked to Tier 0 machine OU → Tier 0
     - CanRDP/CanPSRemote/DCOM on Tier 0 machine → Tier 0
     """
@@ -529,6 +539,21 @@ def expand_tier0_indirect(
                     tier0.add(pid)
                     added_remote += 1
 
+    # ReadGMSAPassword on Tier 0 object → Tier 0
+    # Doit être APRÈS Remote Access car les gMSA peuvent être promus T0 par CanPSRemote
+    added_gmsa = 0
+    for meta_type, content in by_type.items():
+        for obj in content.get("data", []):
+            target_id = obj.get("ObjectIdentifier")
+            if not target_id or target_id not in tier0:
+                continue
+            for ace in obj.get("Aces", []) or []:
+                principal = ace.get("PrincipalSID")
+                right = ace.get("RightName")
+                if right == "ReadGMSAPassword" and principal and principal not in tier0:
+                    tier0.add(principal)
+                    added_gmsa += 1
+
     if added_adminto > 0:
         print(f"  ✓ Indirect: +{added_adminto} objects with AdminTo on Tier 0 machine")
     if added_laps > 0:
@@ -537,6 +562,8 @@ def expand_tier0_indirect(
         print(f"  ✓ Indirect: +{added_gpo} objects with WriteGPO on Tier 0-linked GPO")
     if added_remote > 0:
         print(f"  ✓ Indirect: +{added_remote} objects with CanRDP/CanPSRemote/DCOM on Tier 0 machine")
+    if added_gmsa > 0:
+        print(f"  ✓ Indirect: +{added_gmsa} objects with ReadGMSAPassword on Tier 0 object")
 
     return tier0
 
@@ -1302,8 +1329,8 @@ def find_tier0_objects(data_dir: str, certipy_json: str = None) -> list:
 
 def find_objects_with_tier0_paths(data_dir: str, certipy_json: str = None) -> list:
     """
-    Identify non-Tier0 objects (Users/Computers) that have at least one
-    attack path to a Tier 0 object.
+    Identify all objects that have at least one attack path to a Tier 0
+    object (including Tier 0 objects themselves if they have edges to other T0).
 
     Builds a global adjacency graph (all Aces + memberships + AdminTo +
     remote access) then does a single reverse BFS from Tier 0.
@@ -1337,7 +1364,7 @@ def find_objects_with_tier0_paths(data_dir: str, certipy_json: str = None) -> li
     # "src can attack/reach dst"
     forward = defaultdict(set)
 
-    # 1. All ACE rights (PrincipalSID → ObjectIdentifier)
+    # 1. ACE rights filtered by ALL_PRIVILEGE_RIGHTS (same as graph builder)
     for meta_type, content in by_type.items():
         for obj in content.get("data", []):
             target_id = obj.get("ObjectIdentifier")
@@ -1346,7 +1373,7 @@ def find_objects_with_tier0_paths(data_dir: str, certipy_json: str = None) -> li
             for ace in obj.get("Aces", []) or []:
                 principal = ace.get("PrincipalSID")
                 right = ace.get("RightName")
-                if principal and right and principal != target_id:
+                if principal and right and right in ALL_PRIVILEGE_RIGHTS and principal != target_id:
                     forward[principal].add(target_id)
 
     # 2. Group membership: member → group (member inherits group permissions)
@@ -1401,16 +1428,19 @@ def find_objects_with_tier0_paths(data_dir: str, certipy_json: str = None) -> li
                 can_reach_t0.add(predecessor)
                 queue.append(predecessor)
 
-    # Return only non-T0 Users and Computers with known names
-    valid_types = {"User", "Computer"}
+    # Also include T0 objects that have at least one edge to another T0
+    # (they produce non-empty Tier 0 graphs as start nodes)
+    for sid in tier0:
+        for dst in forward.get(sid, set()):
+            if dst in tier0 and dst != sid:
+                can_reach_t0.add(sid)
+                break
+
+    # Return all objects with known names
     results = []
     for sid in can_reach_t0:
-        if sid in tier0:
-            continue
         node = nodes_by_id.get(sid)
         if not node:
-            continue
-        if node.get("type") not in valid_types:
             continue
         results.append({
             "name": node.get("name", sid),
@@ -1847,14 +1877,33 @@ def main():
         if len(tier_targets) > sample_size:
             print(f"    ... and {len(tier_targets) - sample_size} more")
 
-    # Step 5: Compute shortest paths to tier targets (using complete AD edge set)
+    # Step 5: Compute shortest paths to tier targets
+    # For Tier 0: filter edges to only use rights that correspond to T0 classification
+    # (CLOSURE rights + machine access + DCSync). This prevents non-deterministic rights
+    # like WriteSPN or GenericWrite from appearing in Tier 0 attack paths.
+    if target_tier == 0:
+        tier0_valid_rights = (
+            TIER0_CLOSURE_RIGHTS
+            | TIER0_DCSYNC_RIGHTS
+            | ADMIN_ACCESS_RIGHTS
+            | REMOTE_ACCESS_RIGHTS
+            | TIER0_READPASS_RIGHTS
+        )
+        path_edges = [
+            e for e in all_edges
+            if e.get("kind") == "memberOf"
+            or e.get("right") in tier0_valid_rights
+        ]
+    else:
+        path_edges = all_edges
+
     all_paths = []
     for goal_type, target_id, target_name in tier_targets:
         # Skip if target is the start node
         if target_id == start_id:
             continue
 
-        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_edges, k=3, max_depth=12)
+        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, path_edges, k=3, max_depth=12)
         for path in node_paths:
             all_paths.append({
                 "goal": goal_type,
@@ -1864,6 +1913,48 @@ def main():
                 "length": max(0, len(path) - 1),
                 "tier": target_tier,
             })
+
+    # For T1/T2: extend paths from tier targets to Tier 0 objects
+    # T1: start → T1 → ... → T0 (complete attack path via uncertain rights)
+    # T2: start → T2 → ... → T0 (if reachable)
+    if target_tier in (1, 2):
+        t0_targets = [
+            (ntype, nid, nname)
+            for nid, t in tier_classification.items()
+            if t == 0
+            for ntype, nname in [(nodes_by_id.get(nid, {}).get("type", "Unknown").lower(),
+                                   nodes_by_id.get(nid, {}).get("name", nid))]
+        ]
+        extension_paths = []
+        seen_extensions = set()  # (tier_target_id, t0_target_id) to avoid duplicates
+        for p in all_paths:
+            tier_target_id = p["target_id"]
+            already_visited = set(p["nodes"])
+            for _, t0_id, t0_name in t0_targets:
+                if t0_id in already_visited:
+                    continue
+                ext_key = (tier_target_id, t0_id)
+                if ext_key in seen_extensions:
+                    continue
+                # Find path from tier target to T0 object
+                ext_node_paths, _ = k_shortest_loopless_paths(
+                    tier_target_id, t0_id, path_edges, k=1, max_depth=8
+                )
+                if ext_node_paths:
+                    seen_extensions.add(ext_key)
+                    # Merge: original path + extension (skip first node of extension = tier target)
+                    merged = p["nodes"] + ext_node_paths[0][1:]
+                    extension_paths.append({
+                        "goal": goal_type,
+                        "target_id": t0_id,
+                        "target_name": t0_name,
+                        "nodes": merged,
+                        "length": max(0, len(merged) - 1),
+                        "tier": target_tier,
+                    })
+        all_paths.extend(extension_paths)
+        if extension_paths:
+            print(f"  ✓ Extended {len(extension_paths)} paths from {tier_name} targets to Tier 0")
 
     # Step 6: Select paths - simple approach:
     # - Sort by path length (shortest first)

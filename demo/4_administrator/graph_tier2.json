@@ -16,18 +16,10 @@
   },
   "nodes": [
     {
-      "id": "S-1-5-21-1088858960-373806567-254189436-572",
-      "type": "Group",
-      "name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
-      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
-      "tier": 2,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1112",
-      "type": "User",
-      "name": "EMILY@ADMINISTRATOR.HTB",
-      "display_name": "EMILY@ADMINISTRATOR.HTB",
+      "id": "S-1-5-21-1088858960-373806567-254189436-1000",
+      "type": "Computer",
+      "name": "DC.ADMINISTRATOR.HTB",
+      "display_name": "DC.ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
     },
@@ -40,20 +32,36 @@
       "is_target": false
     },
     {
-      "id": "ADMINISTRATOR.HTB-S-1-5-32-545",
+      "id": "ADMINISTRATOR.HTB-S-1-5-32-580",
       "type": "Group",
-      "name": "USERS@ADMINISTRATOR.HTB",
-      "display_name": "USERS@ADMINISTRATOR.HTB",
+      "name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
+      "display_name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
       "tier": 2,
       "is_target": true
     },
     {
-      "id": "ADMINISTRATOR.HTB-S-1-5-9",
-      "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "id": "S-1-5-21-1088858960-373806567-254189436-1112",
+      "type": "User",
+      "name": "EMILY@ADMINISTRATOR.HTB",
+      "display_name": "EMILY@ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436-1113",
+      "type": "User",
+      "name": "ETHAN@ADMINISTRATOR.HTB",
+      "display_name": "ETHAN@ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436-572",
+      "type": "Group",
+      "name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
+      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
+      "tier": 2,
+      "is_target": true
     },
     {
       "id": "ADMINISTRATOR.HTB-S-1-5-32-560",
@@ -64,18 +72,10 @@
       "is_target": true
     },
     {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1000",
-      "type": "Computer",
-      "name": "DC.ADMINISTRATOR.HTB",
-      "display_name": "DC.ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "ADMINISTRATOR.HTB-S-1-5-32-580",
+      "id": "ADMINISTRATOR.HTB-S-1-5-32-545",
       "type": "Group",
-      "name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
-      "display_name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
+      "name": "USERS@ADMINISTRATOR.HTB",
+      "display_name": "USERS@ADMINISTRATOR.HTB",
       "tier": 2,
       "is_target": true
     },
@@ -88,28 +88,20 @@
       "is_target": true
     },
     {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "type": "User",
-      "name": "ETHAN@ADMINISTRATOR.HTB",
-      "display_name": "ETHAN@ADMINISTRATOR.HTB",
+      "id": "ADMINISTRATOR.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
     }
   ],
   "nodes_observed": [
     {
-      "id": "S-1-5-21-1088858960-373806567-254189436-572",
-      "type": "Group",
-      "name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
-      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
-      "tier": 2,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1112",
-      "type": "User",
-      "name": "EMILY@ADMINISTRATOR.HTB",
-      "display_name": "EMILY@ADMINISTRATOR.HTB",
+      "id": "S-1-5-21-1088858960-373806567-254189436-1000",
+      "type": "Computer",
+      "name": "DC.ADMINISTRATOR.HTB",
+      "display_name": "DC.ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
     },
@@ -122,20 +114,36 @@
       "is_target": false
     },
     {
-      "id": "ADMINISTRATOR.HTB-S-1-5-32-545",
+      "id": "ADMINISTRATOR.HTB-S-1-5-32-580",
       "type": "Group",
-      "name": "USERS@ADMINISTRATOR.HTB",
-      "display_name": "USERS@ADMINISTRATOR.HTB",
+      "name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
+      "display_name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
       "tier": 2,
       "is_target": true
     },
     {
-      "id": "ADMINISTRATOR.HTB-S-1-5-9",
-      "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "id": "S-1-5-21-1088858960-373806567-254189436-1112",
+      "type": "User",
+      "name": "EMILY@ADMINISTRATOR.HTB",
+      "display_name": "EMILY@ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436-1113",
+      "type": "User",
+      "name": "ETHAN@ADMINISTRATOR.HTB",
+      "display_name": "ETHAN@ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436-572",
+      "type": "Group",
+      "name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
+      "display_name": "DENIED RODC PASSWORD REPLICATION GROUP@ADMINISTRATOR.HTB",
+      "tier": 2,
+      "is_target": true
     },
     {
       "id": "ADMINISTRATOR.HTB-S-1-5-32-560",
@@ -146,18 +154,10 @@
       "is_target": true
     },
     {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1000",
-      "type": "Computer",
-      "name": "DC.ADMINISTRATOR.HTB",
-      "display_name": "DC.ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "ADMINISTRATOR.HTB-S-1-5-32-580",
+      "id": "ADMINISTRATOR.HTB-S-1-5-32-545",
       "type": "Group",
-      "name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
-      "display_name": "REMOTE MANAGEMENT USERS@ADMINISTRATOR.HTB",
+      "name": "USERS@ADMINISTRATOR.HTB",
+      "display_name": "USERS@ADMINISTRATOR.HTB",
       "tier": 2,
       "is_target": true
     },
@@ -170,10 +170,10 @@
       "is_target": true
     },
     {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "type": "User",
-      "name": "ETHAN@ADMINISTRATOR.HTB",
-      "display_name": "ETHAN@ADMINISTRATOR.HTB",
+      "id": "ADMINISTRATOR.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
     }

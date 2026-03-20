@@ -1,13 +1,13 @@
 {
-  "start_node": "S-1-5-21-4078382237-1492182817-2568127209-1105",
+  "start_node": "S-1-5-21-548670397-972687484-3496335370-1114",
   "mode": "1",
   "view": "tier1",
   "tier": 1,
   "tier_name": "Tier 1",
   "tier_classification": {
-    "tier0_count": 21,
-    "tier1_count": 6,
-    "tier2_count": 61
+    "tier0_count": 19,
+    "tier1_count": 0,
+    "tier2_count": 74
   },
   "coverage": {
     "acl": true,
@@ -16,245 +16,33 @@
   },
   "nodes": [
     {
-      "id": "certtemplate-UserAuthentication",
-      "type": "CertTemplate",
-      "name": "UserAuthentication [ESC1]",
-      "display_name": "UserAuthentication [ESC1]",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-512",
-      "type": "Group",
-      "name": "DOMAIN ADMINS@SEQUEL.HTB",
-      "display_name": "DOMAIN ADMINS@SEQUEL.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-500",
+      "id": "S-1-5-21-548670397-972687484-3496335370-1114",
       "type": "User",
-      "name": "ADMINISTRATOR@SEQUEL.HTB",
-      "display_name": "ADMINISTRATOR@SEQUEL.HTB",
+      "name": "RYAN@SEQUEL.HTB",
+      "display_name": "RYAN@SEQUEL.HTB",
       "tier": 0,
       "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-1105",
-      "type": "User",
-      "name": "RYAN.COOPER@SEQUEL.HTB",
-      "display_name": "RYAN.COOPER@SEQUEL.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-519",
-      "type": "Group",
-      "name": "ENTERPRISE ADMINS@SEQUEL.HTB",
-      "display_name": "ENTERPRISE ADMINS@SEQUEL.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-513",
-      "type": "Group",
-      "name": "DOMAIN USERS@SEQUEL.HTB",
-      "display_name": "DOMAIN USERS@SEQUEL.HTB",
-      "tier": 1,
-      "is_target": true
     }
   ],
   "nodes_observed": [
     {
-      "id": "certtemplate-UserAuthentication",
-      "type": "CertTemplate",
-      "name": "UserAuthentication [ESC1]",
-      "display_name": "UserAuthentication [ESC1]",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-512",
-      "type": "Group",
-      "name": "DOMAIN ADMINS@SEQUEL.HTB",
-      "display_name": "DOMAIN ADMINS@SEQUEL.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-500",
+      "id": "S-1-5-21-548670397-972687484-3496335370-1114",
       "type": "User",
-      "name": "ADMINISTRATOR@SEQUEL.HTB",
-      "display_name": "ADMINISTRATOR@SEQUEL.HTB",
+      "name": "RYAN@SEQUEL.HTB",
+      "display_name": "RYAN@SEQUEL.HTB",
       "tier": 0,
       "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-1105",
-      "type": "User",
-      "name": "RYAN.COOPER@SEQUEL.HTB",
-      "display_name": "RYAN.COOPER@SEQUEL.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-519",
-      "type": "Group",
-      "name": "ENTERPRISE ADMINS@SEQUEL.HTB",
-      "display_name": "ENTERPRISE ADMINS@SEQUEL.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-4078382237-1492182817-2568127209-513",
-      "type": "Group",
-      "name": "DOMAIN USERS@SEQUEL.HTB",
-      "display_name": "DOMAIN USERS@SEQUEL.HTB",
-      "tier": 1,
-      "is_target": true
     }
   ],
   "nodes_derived": [],
-  "edges": [
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-1105",
-      "dst": "S-1-5-21-4078382237-1492182817-2568127209-513",
-      "kind": "memberOf",
-      "right": "MemberOf",
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "inferred_primary",
-      "is_shortest": true
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-512",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "GenericAll",
-      "all_rights": [
-        "Enroll",
-        "GenericAll",
-        "WriteDacl",
-        "WriteOwner"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-519",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "GenericAll",
-      "all_rights": [
-        "Enroll",
-        "GenericAll",
-        "WriteDacl",
-        "WriteOwner"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-513",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "Enroll",
-      "all_rights": [
-        "Enroll"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-500",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "Owns",
-      "all_rights": [
-        "Owns"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    }
-  ],
-  "edges_observed": [
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-512",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "GenericAll",
-      "all_rights": [
-        "Enroll",
-        "GenericAll",
-        "WriteDacl",
-        "WriteOwner"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-519",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "GenericAll",
-      "all_rights": [
-        "Enroll",
-        "GenericAll",
-        "WriteDacl",
-        "WriteOwner"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-513",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "Enroll",
-      "all_rights": [
-        "Enroll"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-4078382237-1492182817-2568127209-500",
-      "dst": "certtemplate-UserAuthentication",
-      "kind": "ace",
-      "right": "Owns",
-      "all_rights": [
-        "Owns"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    }
-  ],
+  "edges": [],
+  "edges_observed": [],
   "edges_derived": [],
   "summary": {
-    "groups": 3,
+    "groups": 0,
     "machines_admin": 0,
-    "objects_controlled": 4
+    "objects_controlled": 0
   },
-  "paths": [
-    {
-      "goal": "group",
-      "target_id": "S-1-5-21-4078382237-1492182817-2568127209-513",
-      "target_name": "DOMAIN USERS@SEQUEL.HTB",
-      "nodes": [
-        "S-1-5-21-4078382237-1492182817-2568127209-1105",
-        "S-1-5-21-4078382237-1492182817-2568127209-513"
-      ],
-      "length": 1,
-      "tier": 1
-    }
-  ],
+  "paths": [],
   "disclaimer": "Classification Tier v6. Tier 0 = deterministe (SEED + Cert Publishers -> CLOSURE -> INDIRECT [ALL Tier 0 machine access] -> MEMBERS -> BFS). Tier 1 = BFS distance depuis Tier 0 (1-7 hops). Tier 2 = ego-graph exploration depuis start_node (8+ hops ou unreachable). Computers = noeuds normaux traversables. ACE consolidation: permissions multiples -> single edge (right = strongest, all_rights = complete list)."
 }

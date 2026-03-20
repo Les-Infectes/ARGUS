@@ -16,6 +16,22 @@
   },
   "nodes": [
     {
+      "id": "S-1-5-21-917908876-1423158569-3159038727-513",
+      "type": "Group",
+      "name": "DOMAIN USERS@CICADA.HTB",
+      "display_name": "DOMAIN USERS@CICADA.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "CICADA.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
       "id": "CICADA.HTB-S-1-5-32-560",
       "type": "Group",
       "name": "WINDOWS AUTHORIZATION ACCESS GROUP@CICADA.HTB",
@@ -32,28 +48,12 @@
       "is_target": true
     },
     {
-      "id": "CICADA.HTB-S-1-5-32-545",
-      "type": "Group",
-      "name": "USERS@CICADA.HTB",
-      "display_name": "USERS@CICADA.HTB",
-      "tier": 2,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-917908876-1423158569-3159038727-516",
-      "type": "Group",
-      "name": "DOMAIN CONTROLLERS@CICADA.HTB",
-      "display_name": "DOMAIN CONTROLLERS@CICADA.HTB",
+      "id": "S-1-5-21-917908876-1423158569-3159038727-1601",
+      "type": "User",
+      "name": "EMILY.OSCARS@CICADA.HTB",
+      "display_name": "EMILY.OSCARS@CICADA.HTB",
       "tier": 0,
       "is_target": false
-    },
-    {
-      "id": "CICADA.HTB-S-1-5-32-580",
-      "type": "Group",
-      "name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
-      "display_name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
-      "tier": 2,
-      "is_target": true
     },
     {
       "id": "S-1-5-21-917908876-1423158569-3159038727-1000",
@@ -64,32 +64,48 @@
       "is_target": false
     },
     {
-      "id": "S-1-5-21-917908876-1423158569-3159038727-513",
+      "id": "S-1-5-21-917908876-1423158569-3159038727-516",
       "type": "Group",
-      "name": "DOMAIN USERS@CICADA.HTB",
-      "display_name": "DOMAIN USERS@CICADA.HTB",
+      "name": "DOMAIN CONTROLLERS@CICADA.HTB",
+      "display_name": "DOMAIN CONTROLLERS@CICADA.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "CICADA.HTB-S-1-5-32-545",
+      "type": "Group",
+      "name": "USERS@CICADA.HTB",
+      "display_name": "USERS@CICADA.HTB",
       "tier": 2,
       "is_target": true
     },
     {
-      "id": "S-1-5-21-917908876-1423158569-3159038727-1601",
-      "type": "User",
-      "name": "EMILY.OSCARS@CICADA.HTB",
-      "display_name": "EMILY.OSCARS@CICADA.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "CICADA.HTB-S-1-5-9",
+      "id": "CICADA.HTB-S-1-5-32-580",
       "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
-      "tier": 0,
-      "is_target": false
+      "name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
+      "display_name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
+      "tier": 2,
+      "is_target": true
     }
   ],
   "nodes_observed": [
     {
+      "id": "S-1-5-21-917908876-1423158569-3159038727-513",
+      "type": "Group",
+      "name": "DOMAIN USERS@CICADA.HTB",
+      "display_name": "DOMAIN USERS@CICADA.HTB",
+      "tier": 2,
+      "is_target": true
+    },
+    {
+      "id": "CICADA.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
       "id": "CICADA.HTB-S-1-5-32-560",
       "type": "Group",
       "name": "WINDOWS AUTHORIZATION ACCESS GROUP@CICADA.HTB",
@@ -106,28 +122,12 @@
       "is_target": true
     },
     {
-      "id": "CICADA.HTB-S-1-5-32-545",
-      "type": "Group",
-      "name": "USERS@CICADA.HTB",
-      "display_name": "USERS@CICADA.HTB",
-      "tier": 2,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-917908876-1423158569-3159038727-516",
-      "type": "Group",
-      "name": "DOMAIN CONTROLLERS@CICADA.HTB",
-      "display_name": "DOMAIN CONTROLLERS@CICADA.HTB",
+      "id": "S-1-5-21-917908876-1423158569-3159038727-1601",
+      "type": "User",
+      "name": "EMILY.OSCARS@CICADA.HTB",
+      "display_name": "EMILY.OSCARS@CICADA.HTB",
       "tier": 0,
       "is_target": false
-    },
-    {
-      "id": "CICADA.HTB-S-1-5-32-580",
-      "type": "Group",
-      "name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
-      "display_name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
-      "tier": 2,
-      "is_target": true
     },
     {
       "id": "S-1-5-21-917908876-1423158569-3159038727-1000",
@@ -138,42 +138,32 @@
       "is_target": false
     },
     {
-      "id": "S-1-5-21-917908876-1423158569-3159038727-513",
+      "id": "S-1-5-21-917908876-1423158569-3159038727-516",
       "type": "Group",
-      "name": "DOMAIN USERS@CICADA.HTB",
-      "display_name": "DOMAIN USERS@CICADA.HTB",
+      "name": "DOMAIN CONTROLLERS@CICADA.HTB",
+      "display_name": "DOMAIN CONTROLLERS@CICADA.HTB",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "CICADA.HTB-S-1-5-32-545",
+      "type": "Group",
+      "name": "USERS@CICADA.HTB",
+      "display_name": "USERS@CICADA.HTB",
       "tier": 2,
       "is_target": true
     },
     {
-      "id": "S-1-5-21-917908876-1423158569-3159038727-1601",
-      "type": "User",
-      "name": "EMILY.OSCARS@CICADA.HTB",
-      "display_name": "EMILY.OSCARS@CICADA.HTB",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "CICADA.HTB-S-1-5-9",
+      "id": "CICADA.HTB-S-1-5-32-580",
       "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@CICADA.HTB",
-      "tier": 0,
-      "is_target": false
+      "name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
+      "display_name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
+      "tier": 2,
+      "is_target": true
     }
   ],
   "nodes_derived": [],
   "edges": [
-    {
-      "src": "S-1-5-21-917908876-1423158569-3159038727-1601",
-      "dst": "CICADA.HTB-S-1-5-32-580",
-      "kind": "memberOf",
-      "right": "MemberOf",
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed",
-      "is_shortest": true
-    },
     {
       "src": "S-1-5-21-917908876-1423158569-3159038727-1601",
       "dst": "S-1-5-21-917908876-1423158569-3159038727-513",
@@ -181,7 +171,17 @@
       "right": "MemberOf",
       "inherited": false,
       "source": "bloodhound",
-      "confidence": "inferred_primary"
+      "confidence": "inferred_primary",
+      "is_shortest": true
+    },
+    {
+      "src": "S-1-5-21-917908876-1423158569-3159038727-1601",
+      "dst": "CICADA.HTB-S-1-5-32-580",
+      "kind": "memberOf",
+      "right": "MemberOf",
+      "inherited": false,
+      "source": "bloodhound",
+      "confidence": "observed"
     },
     {
       "src": "S-1-5-21-917908876-1423158569-3159038727-513",
@@ -246,8 +246,7 @@
       "right": "MemberOf",
       "inherited": false,
       "source": "bloodhound",
-      "confidence": "observed",
-      "is_shortest": true
+      "confidence": "observed"
     },
     {
       "src": "S-1-5-21-917908876-1423158569-3159038727-513",
@@ -304,22 +303,22 @@
   "paths": [
     {
       "goal": "group",
-      "target_id": "CICADA.HTB-S-1-5-32-580",
-      "target_name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
+      "target_id": "S-1-5-21-917908876-1423158569-3159038727-513",
+      "target_name": "DOMAIN USERS@CICADA.HTB",
       "nodes": [
         "S-1-5-21-917908876-1423158569-3159038727-1601",
-        "CICADA.HTB-S-1-5-32-580"
+        "S-1-5-21-917908876-1423158569-3159038727-513"
       ],
       "length": 1,
       "tier": 2
     },
     {
       "goal": "group",
-      "target_id": "S-1-5-21-917908876-1423158569-3159038727-513",
-      "target_name": "DOMAIN USERS@CICADA.HTB",
+      "target_id": "CICADA.HTB-S-1-5-32-580",
+      "target_name": "REMOTE MANAGEMENT USERS@CICADA.HTB",
       "nodes": [
         "S-1-5-21-917908876-1423158569-3159038727-1601",
-        "S-1-5-21-917908876-1423158569-3159038727-513"
+        "CICADA.HTB-S-1-5-32-580"
       ],
       "length": 1,
       "tier": 2

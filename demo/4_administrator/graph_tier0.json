@@ -16,6 +16,30 @@
   },
   "nodes": [
     {
+      "id": "ADMINISTRATOR.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436",
+      "type": "Domain",
+      "name": "ADMINISTRATOR.HTB",
+      "display_name": "ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436-516",
+      "type": "Group",
+      "name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "display_name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": true
+    },
+    {
       "id": "S-1-5-21-1088858960-373806567-254189436-1000",
       "type": "Computer",
       "name": "DC.ADMINISTRATOR.HTB",
@@ -30,42 +54,34 @@
       "display_name": "EMILY@ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436",
-      "type": "Domain",
-      "name": "ADMINISTRATOR.HTB",
-      "display_name": "ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "ADMINISTRATOR.HTB-S-1-5-9",
-      "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "type": "User",
-      "name": "ETHAN@ADMINISTRATOR.HTB",
-      "display_name": "ETHAN@ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436-516",
-      "type": "Group",
-      "name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "display_name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
     }
   ],
   "nodes_observed": [
     {
+      "id": "ADMINISTRATOR.HTB-S-1-5-9",
+      "type": "Group",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436",
+      "type": "Domain",
+      "name": "ADMINISTRATOR.HTB",
+      "display_name": "ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-1088858960-373806567-254189436-516",
+      "type": "Group",
+      "name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "display_name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
+      "tier": 0,
+      "is_target": true
+    },
+    {
       "id": "S-1-5-21-1088858960-373806567-254189436-1000",
       "type": "Computer",
       "name": "DC.ADMINISTRATOR.HTB",
@@ -80,74 +96,15 @@
       "display_name": "EMILY@ADMINISTRATOR.HTB",
       "tier": 0,
       "is_target": false
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436",
-      "type": "Domain",
-      "name": "ADMINISTRATOR.HTB",
-      "display_name": "ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "ADMINISTRATOR.HTB-S-1-5-9",
-      "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "type": "User",
-      "name": "ETHAN@ADMINISTRATOR.HTB",
-      "display_name": "ETHAN@ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-1088858960-373806567-254189436-516",
-      "type": "Group",
-      "name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "display_name": "DOMAIN CONTROLLERS@ADMINISTRATOR.HTB",
-      "tier": 0,
-      "is_target": true
     }
   ],
   "nodes_derived": [],
   "edges": [
     {
       "src": "S-1-5-21-1088858960-373806567-254189436-1112",
-      "dst": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "kind": "ace",
-      "right": "GenericWrite",
-      "all_rights": [
-        "GenericWrite"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed",
-      "is_shortest": true
-    },
-    {
-      "src": "S-1-5-21-1088858960-373806567-254189436-1112",
       "dst": "S-1-5-21-1088858960-373806567-254189436-1000",
       "kind": "psremote",
       "right": "CanPSRemote",
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "dst": "S-1-5-21-1088858960-373806567-254189436",
-      "kind": "ace",
-      "right": "DCSync",
-      "all_rights": [
-        "GetChanges",
-        "GetChangesAll",
-        "GetChangesInFilteredSet"
-      ],
       "inherited": false,
       "source": "bloodhound",
       "confidence": "observed",
@@ -169,7 +126,8 @@
       "right": "MemberOf",
       "inherited": false,
       "source": "bloodhound",
-      "confidence": "observed"
+      "confidence": "observed",
+      "is_shortest": true
     },
     {
       "src": "ADMINISTRATOR.HTB-S-1-5-9",
@@ -182,7 +140,8 @@
       ],
       "inherited": false,
       "source": "bloodhound",
-      "confidence": "observed"
+      "confidence": "observed",
+      "is_shortest": true
     },
     {
       "src": "S-1-5-21-1088858960-373806567-254189436-516",
@@ -200,36 +159,9 @@
   "edges_observed": [
     {
       "src": "S-1-5-21-1088858960-373806567-254189436-1112",
-      "dst": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "kind": "ace",
-      "right": "GenericWrite",
-      "all_rights": [
-        "GenericWrite"
-      ],
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed",
-      "is_shortest": true
-    },
-    {
-      "src": "S-1-5-21-1088858960-373806567-254189436-1112",
       "dst": "S-1-5-21-1088858960-373806567-254189436-1000",
       "kind": "psremote",
       "right": "CanPSRemote",
-      "inherited": false,
-      "source": "bloodhound",
-      "confidence": "observed"
-    },
-    {
-      "src": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "dst": "S-1-5-21-1088858960-373806567-254189436",
-      "kind": "ace",
-      "right": "DCSync",
-      "all_rights": [
-        "GetChanges",
-        "GetChangesAll",
-        "GetChangesInFilteredSet"
-      ],
       "inherited": false,
       "source": "bloodhound",
       "confidence": "observed",
@@ -242,7 +174,8 @@
       "right": "MemberOf",
       "inherited": false,
       "source": "bloodhound",
-      "confidence": "observed"
+      "confidence": "observed",
+      "is_shortest": true
     },
     {
       "src": "ADMINISTRATOR.HTB-S-1-5-9",
@@ -255,7 +188,8 @@
       ],
       "inherited": false,
       "source": "bloodhound",
-      "confidence": "observed"
+      "confidence": "observed",
+      "is_shortest": true
     },
     {
       "src": "S-1-5-21-1088858960-373806567-254189436-516",
@@ -274,20 +208,9 @@
   "summary": {
     "groups": 2,
     "machines_admin": 0,
-    "objects_controlled": 4
+    "objects_controlled": 2
   },
   "paths": [
-    {
-      "goal": "user",
-      "target_id": "S-1-5-21-1088858960-373806567-254189436-1113",
-      "target_name": "ETHAN@ADMINISTRATOR.HTB",
-      "nodes": [
-        "S-1-5-21-1088858960-373806567-254189436-1112",
-        "S-1-5-21-1088858960-373806567-254189436-1113"
-      ],
-      "length": 1,
-      "tier": 0
-    },
     {
       "goal": "computer",
       "target_id": "S-1-5-21-1088858960-373806567-254189436-1000",
@@ -297,18 +220,6 @@
         "S-1-5-21-1088858960-373806567-254189436-1000"
       ],
       "length": 1,
-      "tier": 0
-    },
-    {
-      "goal": "domain",
-      "target_id": "S-1-5-21-1088858960-373806567-254189436",
-      "target_name": "ADMINISTRATOR.HTB",
-      "nodes": [
-        "S-1-5-21-1088858960-373806567-254189436-1112",
-        "S-1-5-21-1088858960-373806567-254189436-1113",
-        "S-1-5-21-1088858960-373806567-254189436"
-      ],
-      "length": 2,
       "tier": 0
     },
     {

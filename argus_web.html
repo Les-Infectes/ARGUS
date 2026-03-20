@@ -1418,7 +1418,7 @@ function buildAcFilters() {
     const ptBtn = document.createElement("button");
     ptBtn.type = "button";
     ptBtn.className = "ac-filter-btn ac-filter-tier0";
-    ptBtn.innerHTML = `→ T0<span class="ac-filter-count">${pathToT0Count}</span>`;
+    ptBtn.innerHTML = `départ → X → T0<span class="ac-filter-count">${pathToT0Count}</span>`;
     ptBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setAcFilter("pathToT0", ptBtn); });
     container.appendChild(ptBtn);
   }
@@ -1860,7 +1860,12 @@ function updateTierButtons() {
     const btn = document.createElement("button");
     btn.className = "tier-btn" + (currentTier == tier ? " active" : "");
     btn.dataset.tier = tier;
-    btn.textContent = `T${tier}`;
+    const tierBtnLabels = {
+      0: "départ → T0 → T0",
+      1: "départ → T1 → T0",
+      2: "départ → T2 → T0",
+    };
+    btn.textContent = tierBtnLabels[tier] || `T${tier}`;
     btn.style.borderColor = tierBorderColors[tier] || "#6b7280";
     if (currentTier == tier) { btn.style.background = tierColors[tier]; btn.style.color = "#0f172a"; }
     btn.addEventListener("click", () => switchToTier(parseInt(tier)));
@@ -1889,7 +1894,12 @@ function switchToTier(tier) {
   adVisible = true;
   runLayouts();
   updateTierButtons();
-  statusEl.textContent = `Tier ${tier} affiche.`;
+  const tierLabels = {
+    0: "Tier 0 affiché — chemins déterministes vers T0",
+    1: "Tier 1 affiché — chemins incertains (1-7 hops) vers T0",
+    2: "Tier 2 affiché — chemins éloignés (8+ hops) vers T0",
+  };
+  statusEl.textContent = tierLabels[tier] || `Tier ${tier} affiché.`;
 }
 
 // ── Cytoscape Styles ──

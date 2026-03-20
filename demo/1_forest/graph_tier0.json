@@ -16,6 +16,22 @@
   },
   "nodes": [
     {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1121",
+      "type": "Group",
+      "name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
+      "display_name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1103",
+      "type": "Computer",
+      "name": "EXCH01.HTB.LOCAL",
+      "display_name": "EXCH01.HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
       "id": "S-1-5-21-3072663084-364016917-1341370565-1000",
       "type": "Computer",
       "name": "FOREST.HTB.LOCAL",
@@ -24,26 +40,58 @@
       "is_target": true
     },
     {
-      "id": "HTB.LOCAL-S-1-5-32-548",
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1104",
       "type": "Group",
-      "name": "ACCOUNT OPERATORS@HTB.LOCAL",
-      "display_name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
+      "display_name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
       "tier": 0,
       "is_target": true
     },
     {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1148",
-      "type": "Group",
-      "name": "SERVICE ACCOUNTS@HTB.LOCAL",
-      "display_name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "id": "S-1-5-21-3072663084-364016917-1341370565",
+      "type": "Domain",
+      "name": "HTB.LOCAL",
+      "display_name": "HTB.LOCAL",
       "tier": 0,
       "is_target": true
     },
     {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1121",
+      "id": "HTB.LOCAL-S-1-5-9",
       "type": "Group",
-      "name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
-      "display_name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
+      "name": "ENTERPRISE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-527",
+      "type": "Group",
+      "name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
+      "display_name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "type": "User",
+      "name": "SVC-ALFRESCO@HTB.LOCAL",
+      "display_name": "SVC-ALFRESCO@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1119",
+      "type": "Group",
+      "name": "EXCHANGE TRUSTED SUBSYSTEM@HTB.LOCAL",
+      "display_name": "EXCHANGE TRUSTED SUBSYSTEM@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-526",
+      "type": "Group",
+      "name": "KEY ADMINS@HTB.LOCAL",
+      "display_name": "KEY ADMINS@HTB.LOCAL",
       "tier": 0,
       "is_target": true
     },
@@ -64,12 +112,94 @@
       "is_target": true
     },
     {
+      "id": "HTB.LOCAL-S-1-5-32-548",
+      "type": "Group",
+      "name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "display_name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1149",
+      "type": "Group",
+      "name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
+      "display_name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1148",
+      "type": "Group",
+      "name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "display_name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    }
+  ],
+  "nodes_observed": [
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1121",
+      "type": "Group",
+      "name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
+      "display_name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1103",
+      "type": "Computer",
+      "name": "EXCH01.HTB.LOCAL",
+      "display_name": "EXCH01.HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1000",
+      "type": "Computer",
+      "name": "FOREST.HTB.LOCAL",
+      "display_name": "FOREST.HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1104",
+      "type": "Group",
+      "name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
+      "display_name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565",
+      "type": "Domain",
+      "name": "HTB.LOCAL",
+      "display_name": "HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
       "id": "HTB.LOCAL-S-1-5-9",
       "type": "Group",
       "name": "ENTERPRISE DOMAIN CONTROLLERS@HTB.LOCAL",
       "display_name": "ENTERPRISE DOMAIN CONTROLLERS@HTB.LOCAL",
       "tier": 0,
       "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-527",
+      "type": "Group",
+      "name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
+      "display_name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
+      "tier": 0,
+      "is_target": true
+    },
+    {
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1147",
+      "type": "User",
+      "name": "SVC-ALFRESCO@HTB.LOCAL",
+      "display_name": "SVC-ALFRESCO@HTB.LOCAL",
+      "tier": 0,
+      "is_target": false
     },
     {
       "id": "S-1-5-21-3072663084-364016917-1341370565-1119",
@@ -84,88 +214,6 @@
       "type": "Group",
       "name": "KEY ADMINS@HTB.LOCAL",
       "display_name": "KEY ADMINS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1149",
-      "type": "Group",
-      "name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
-      "display_name": "PRIVILEGED IT ACCOUNTS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1147",
-      "type": "User",
-      "name": "SVC-ALFRESCO@HTB.LOCAL",
-      "display_name": "SVC-ALFRESCO@HTB.LOCAL",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-527",
-      "type": "Group",
-      "name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
-      "display_name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1104",
-      "type": "Group",
-      "name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
-      "display_name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1103",
-      "type": "Computer",
-      "name": "EXCH01.HTB.LOCAL",
-      "display_name": "EXCH01.HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565",
-      "type": "Domain",
-      "name": "HTB.LOCAL",
-      "display_name": "HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    }
-  ],
-  "nodes_observed": [
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1000",
-      "type": "Computer",
-      "name": "FOREST.HTB.LOCAL",
-      "display_name": "FOREST.HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "HTB.LOCAL-S-1-5-32-548",
-      "type": "Group",
-      "name": "ACCOUNT OPERATORS@HTB.LOCAL",
-      "display_name": "ACCOUNT OPERATORS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1148",
-      "type": "Group",
-      "name": "SERVICE ACCOUNTS@HTB.LOCAL",
-      "display_name": "SERVICE ACCOUNTS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1121",
-      "type": "Group",
-      "name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
-      "display_name": "EXCHANGE WINDOWS PERMISSIONS@HTB.LOCAL",
       "tier": 0,
       "is_target": true
     },
@@ -178,26 +226,10 @@
       "is_target": true
     },
     {
-      "id": "HTB.LOCAL-S-1-5-9",
+      "id": "HTB.LOCAL-S-1-5-32-548",
       "type": "Group",
-      "name": "ENTERPRISE DOMAIN CONTROLLERS@HTB.LOCAL",
-      "display_name": "ENTERPRISE DOMAIN CONTROLLERS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1119",
-      "type": "Group",
-      "name": "EXCHANGE TRUSTED SUBSYSTEM@HTB.LOCAL",
-      "display_name": "EXCHANGE TRUSTED SUBSYSTEM@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-526",
-      "type": "Group",
-      "name": "KEY ADMINS@HTB.LOCAL",
-      "display_name": "KEY ADMINS@HTB.LOCAL",
+      "name": "ACCOUNT OPERATORS@HTB.LOCAL",
+      "display_name": "ACCOUNT OPERATORS@HTB.LOCAL",
       "tier": 0,
       "is_target": true
     },
@@ -210,42 +242,10 @@
       "is_target": true
     },
     {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1147",
-      "type": "User",
-      "name": "SVC-ALFRESCO@HTB.LOCAL",
-      "display_name": "SVC-ALFRESCO@HTB.LOCAL",
-      "tier": 0,
-      "is_target": false
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-527",
+      "id": "S-1-5-21-3072663084-364016917-1341370565-1148",
       "type": "Group",
-      "name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
-      "display_name": "ENTERPRISE KEY ADMINS@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1104",
-      "type": "Group",
-      "name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
-      "display_name": "ORGANIZATION MANAGEMENT@HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565-1103",
-      "type": "Computer",
-      "name": "EXCH01.HTB.LOCAL",
-      "display_name": "EXCH01.HTB.LOCAL",
-      "tier": 0,
-      "is_target": true
-    },
-    {
-      "id": "S-1-5-21-3072663084-364016917-1341370565",
-      "type": "Domain",
-      "name": "HTB.LOCAL",
-      "display_name": "HTB.LOCAL",
+      "name": "SERVICE ACCOUNTS@HTB.LOCAL",
+      "display_name": "SERVICE ACCOUNTS@HTB.LOCAL",
       "tier": 0,
       "is_target": true
     }

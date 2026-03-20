@@ -262,13 +262,13 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
 
 ### Phase 3 : Héritage indirect Tier 0
 
-**Objectif** : Tout objet ayant un **accès à une machine Tier 0** (DCs et toute autre machine classée Tier 0 par les phases précédentes) devient Tier 0.
+**Objectif** : Tout objet ayant un **accès à une machine Tier 0** ou pouvant **lire le mot de passe d'un objet Tier 0** devient Tier 0.
 
-**Justification** : Un accès à une machine Tier 0 (même limité comme RDP) permet d'élever ses privilèges localement et d'extraire des secrets (credentials en mémoire, NTDS.dit sur un DC, SAM). La phase s'applique à **toutes** les machines Tier 0, pas uniquement aux DCs.
+**Justification** : Un accès à une machine Tier 0 (même limité comme RDP) permet d'élever ses privilèges localement et d'extraire des secrets (credentials en mémoire, NTDS.dit sur un DC, SAM). La lecture du mot de passe d'un objet Tier 0 (LAPS, gMSA) donne un contrôle garanti sur cet objet. La phase s'applique à **toutes** les machines Tier 0, pas uniquement aux DCs.
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                  ACCÈS MACHINE TIER 0 → TIER 0                                        │
+  │                                  ACCÈS MACHINE / OBJET TIER 0 → TIER 0                                │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  1. AdminTo sur machine Tier 0                                                                        │
@@ -283,6 +283,11 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
   │  4. WriteGPO sur GPO liée à l'OU d'une machine Tier 0                                                 │
   │     → Droits vérifiés : WriteGPO, EditGPO, GenericAll, WriteDacl, WriteOwner                          │
   │     → Permet d'exécuter du code sur la machine via GPO                                                │
+  │                                                                                                       │
+  │  5. ReadGMSAPassword sur objet Tier 0                                                                 │
+  │     → Lecture du hash NT d'un compte gMSA classifié Tier 0 = contrôle garanti de ce compte.           │
+  │     → S'applique à tout objet T0 (pas uniquement les machines).                                       │
+  │     → Exécuté APRÈS le bloc Remote Access (les gMSA peuvent être promus T0 par CanPSRemote).          │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -839,6 +844,13 @@ Ces droits correspondent à des **Extended Rights** ou des **WriteProperty cibl�
                                                         un certificat pour le compte cible via PKINIT. Prise de
                                                         contrôle totale.
 
+  WriteSPN                       BFS           Ph.5     WriteProperty sur l'attribut servicePrincipalName
+                                                        (GUID f3a64788-...). Targeted Kerberoasting : ajouter un SPN
+                                                        sur un compte → demander un TGS → cracker le hash hors-ligne.
+                                                        Résolu comme edge distinct par certains collecteurs (sinon
+                                                        noyé dans GenericWrite). BFS car succès dépend de la force
+                                                        du mot de passe.
+
   WriteAccountRestrictions       BFS           Ph.5     WriteProperty sur l'attribut userAccountControl
                                                         (GUID bf967a68-...). Manipulation des flags UAC : activer
                                                         DONT_REQ_PREAUTH (AS-REPRoasting) ou désactiver un compte.
@@ -853,9 +865,10 @@ Ces droits correspondent à des **Extended Rights** ou des **WriteProperty cibl�
                                  BFS           Ph.5     une OU contenant un DC → promotion T0 (Phase 3). Sur les
                                                         autres machines → BFS uniquement.
 
-  ReadGMSAPassword               BFS           Ph.5     Lecture du hash NT du compte gMSA (Group Managed Service
-                                                        Account). Permet de s'authentifier en tant que ce service
-                                                        account.
+  ReadGMSAPassword               Phase 3 +     Ph.3     Lecture du hash NT du compte gMSA (Group Managed Service
+                                 BFS           Ph.5     Account). Sur un objet T0 → promotion T0 (Phase 3). Sur les
+                                                        autres objets → BFS uniquement. Exécuté après Remote Access
+                                                        car les gMSA peuvent être promus T0 par CanPSRemote.
 ```
 
 ### 8.3 Droits d'infrastructure (GPO, DCSync, ADCS)
@@ -917,14 +930,14 @@ ARGUS travaille avec les données que le collecteur fournit. Recoder et mainteni
   │  msDS-KeyCredentialLink   5b47d60f-...  → AddKeyCredentialLink                                        │
   │  userAccountControl       bf967a68-...  → WriteAccountRestrictions                                    │
   │  member                   bf9679c0-...  → AddMember                                                   │
+  │  servicePrincipalName     f3a64788-...  → WriteSPN (Targeted Kerberoasting)                            │
+  │    → Résolu par certains collecteurs (bloodhound-python récent). Ajouter un SPN sur un compte         │
+  │      → demander un TGS Kerberos → cracker le hash hors-ligne. BFS uniquement (succès dépend de       │
+  │      la force du mot de passe). Inclus dans ALL_PRIVILEGE_RIGHTS.                                     │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
   │  GUIDS NON RÉSOLUS → noyés dans GenericWrite                                                          │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │                                                                                                       │
-  │  servicePrincipalName     f3a64788-...     Targeted Kerberoasting                                     │
-  │    → Ajouter un SPN sur un compte → demander un ticket Kerberos (TGS) → cracker le hash hors-ligne.   │
-  │      Succès dépend de la force du mot de passe.                                                       │
   │                                                                                                       │
   │  msDS-AllowedToActOn...   3f78c3e5-...     RBCD                                                       │
   │    → Resource-Based Constrained Delegation. Configurer la cible pour accepter la délégation depuis    │
@@ -946,8 +959,9 @@ ARGUS travaille avec les données que le collecteur fournit. Recoder et mainteni
   │                                                                                                       │
   │  CONSÉQUENCE POUR ARGUS :                                                                             │
   │  GenericWrite est dans le BFS (Phase 5) mais EXCLU de la Phase 2 car on ne peut pas distinguer un     │
-  │  WriteProperty sur servicePrincipalName (critique) d'un WriteProperty sur description (inoffensif).   │
-  │  Si BloodHound CE décompose ces GUIDs à l'avenir, ils pourront être ajoutés individuellement.         │
+  │  WriteProperty critique d'un WriteProperty inoffensif (ex: description).                              │
+  │  WriteSPN est désormais traité comme un edge distinct quand le collecteur le résout (BFS, Phase 5).   │
+  │  Si BloodHound CE décompose d'autres GUIDs à l'avenir, ils pourront être ajoutés individuellement.    │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -980,9 +994,10 @@ ARGUS travaille avec les données que le collecteur fournit. Recoder et mainteni
   │ MemberOf                    │       │         │          │    ●    │   ●   │
   ├─────────────────────────────┼───────┼─────────┼──────────┼─────────┼───────┤
   │ GenericWrite                │       │         │          │         │   ●   │
+  │ WriteSPN                    │       │         │          │         │   ●   │
   │ AllExtendedRights           │       │         │          │         │   ●   │
   │ WriteAccountRestrictions    │       │         │          │         │   ●   │
-  │ ReadGMSAPassword            │       │         │          │         │   ●   │
+  │ ReadGMSAPassword            │       │         │  ● (T0)  │         │   ●   │
   │ Enroll / AutoEnroll         │       │         │          │         │   ●   │
   │ HasSession / LoggedOn       │       │         │          │         │   ●   │
   ├─────────────────────────────┼───────┼─────────┼──────────┼─────────┼───────┤
