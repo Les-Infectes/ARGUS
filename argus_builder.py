@@ -697,20 +697,24 @@ def compute_full_tier_classification(
     # TIER 0 — Contrôle déterministe du domaine
     # ====================================================================
 
-    # Phase 1: SEED
+    # Phase 1: Attribution directe
     tier0 = identify_tier0_seed(nodes_by_id, by_type)
-    print(f"  \u2713 Phase 1 SEED: {len(tier0)} Tier 0 objects")
+    print(f"  \u2713 Phase 1 attribution directe: {len(tier0)} Tier 0 objects")
 
-    # Phase 2: CLOSURE
+    # Phase 2: Héritage direct (point fixe)
     tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type, max_iterations=10)
 
-    # Phase 3: INDIRECT (accès machines Tier 0)
+    # Phase 3: Héritage indirect (accès machines/objets Tier 0)
     tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
 
-    # Phase 4: MEMBERS of Tier 0 groups
+    # Phase 2 bis: Héritage direct après Phase 3
+    # (les nouveaux T0 de Phase 3 peuvent être cibles de GenericAll, WriteDacl, etc.)
+    tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type, max_iterations=10)
+
+    # Phase 4: Membres des groupes Tier 0
     tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
 
-    print(f"  ✓ Final Tier 0: {len(tier0)} objects (SEED + CLOSURE + INDIRECT + MEMBERS)")
+    print(f"  ✓ Final Tier 0: {len(tier0)} objects")
 
     # Phase 5: DISTANCE BFS for Tier 1/2/3 (depuis Tier 0 FINAL)
     print("\n[DISTANCE BFS] Computing distances from FINAL Tier 0 (all edges)...")
@@ -1307,10 +1311,11 @@ def find_tier0_objects(data_dir: str, certipy_json: str = None) -> list:
             by_type["certtemplates"] = json.load(f)
     nodes_by_id, key_to_ids = build_node_index(by_type)
 
-    # Full Tier 0 classification (SEED → CLOSURE → INDIRECT → MEMBERS)
+    # Full Tier 0 classification
     tier0 = identify_tier0_seed(nodes_by_id, by_type)
     tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type)
     tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
+    tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type)  # 2nd pass après indirect
     tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
 
     results = []
@@ -1358,6 +1363,7 @@ def find_objects_with_tier0_paths(data_dir: str, certipy_json: str = None) -> li
     tier0 = identify_tier0_seed(nodes_by_id, by_type)
     tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type)
     tier0 = expand_tier0_indirect(tier0, nodes_by_id, by_type)
+    tier0 = expand_tier0_closure(tier0, nodes_by_id, by_type)  # 2nd pass après indirect
     tier0 = expand_tier0_members(tier0, nodes_by_id, by_type)
 
     # Build global forward adjacency: src -> {dst}
@@ -1914,6 +1920,52 @@ def main():
                 "tier": target_tier,
             })
 
+    # For T1: also find AMBIGUOUS paths to Tier 0 objects
+    # These are paths that use non-deterministic rights (GenericWrite, AllExtendedRights, etc.)
+    # which are excluded from the T0 graph (strict whitelist) but still relevant for an auditor.
+    if target_tier == 1:
+        tier0_valid_rights = (
+            TIER0_CLOSURE_RIGHTS
+            | TIER0_DCSYNC_RIGHTS
+            | ADMIN_ACCESS_RIGHTS
+            | REMOTE_ACCESS_RIGHTS
+            | TIER0_READPASS_RIGHTS
+        )
+        t0_targets_ambiguous = [
+            (nodes_by_id.get(nid, {}).get("type", "Unknown").lower(), nid,
+             nodes_by_id.get(nid, {}).get("name", nid))
+            for nid, t in tier_classification.items()
+            if t == 0 and nid != start_id
+        ]
+        ambiguous_count = 0
+        for goal_type, target_id, target_name in t0_targets_ambiguous:
+            # Find paths using ALL edges
+            node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_edges, k=3, max_depth=12)
+            for path in node_paths:
+                # Check if this path uses at least one non-whitelist right (= ambiguous)
+                path_edges_list = []
+                is_ambiguous = False
+                for i in range(len(path) - 1):
+                    for e in all_edges:
+                        if e["src"] == path[i] and e["dst"] == path[i + 1]:
+                            path_edges_list.append(e)
+                            right = e.get("right", "")
+                            if right and e.get("kind") != "memberOf" and right not in tier0_valid_rights:
+                                is_ambiguous = True
+                            break
+                if is_ambiguous:
+                    all_paths.append({
+                        "goal": goal_type,
+                        "target_id": target_id,
+                        "target_name": target_name,
+                        "nodes": path,
+                        "length": max(0, len(path) - 1),
+                        "tier": 1,
+                    })
+                    ambiguous_count += 1
+        if ambiguous_count:
+            print(f"  ✓ Found {ambiguous_count} ambiguous paths to Tier 0 (non-deterministic rights)")
+
     # For T1/T2: extend paths from tier targets to Tier 0 objects
     # T1: start → T1 → ... → T0 (complete attack path via uncertain rights)
     # T2: start → T2 → ... → T0 (if reachable)
@@ -2034,18 +2086,21 @@ def main():
     for path in selected_paths:
         target_node_ids.add(path["target_id"])
 
-    # Always include CertTemplate Tier 0 nodes + their ACE edges (even if unreachable by BFS)
-    # These templates represent critical ADCS attack surfaces that must always be visible
+    # Include CertTemplate Tier 0 nodes only if they connect to nodes already in the graph
+    # This avoids showing disconnected ACE holders that aren't part of any path from the start node
     for nid, node in nodes_by_id.items():
         if node.get("type") == "CertTemplate" and tier_classification.get(nid) == 0:
-            node_ids.add(nid)
-            target_node_ids.add(nid)
-            # Add edges where this template is src or dst
+            cert_edges = []
             for e in all_edges:
-                if e["src"] == nid or e["dst"] == nid:
-                    edges_in_paths.append(e)
-                    node_ids.add(e["src"])
-                    node_ids.add(e["dst"])
+                if e["dst"] == nid and e["src"] in node_ids:
+                    cert_edges.append(e)
+                elif e["src"] == nid and e["dst"] in node_ids:
+                    cert_edges.append(e)
+            # Only include the CertTemplate if it has at least one connected edge
+            if cert_edges:
+                node_ids.add(nid)
+                target_node_ids.add(nid)
+                edges_in_paths.extend(cert_edges)
 
     # Step 10: Deduplicate edges (AFTER CertTemplate inclusion)
     def edge_key(e):

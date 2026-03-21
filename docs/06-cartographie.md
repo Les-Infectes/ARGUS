@@ -96,25 +96,40 @@ Pas de framework (React, Vue...), pas de bundler (webpack, vite...), pas de tran
 
 ## 3. Architecture de la page
 
-### Inputs utilisateur (toolbar)
+### Modes d'accès aux données
 
-La toolbar contient 3 uploads de fichiers et des boutons de contrôle :
+L'interface propose 3 modes pour charger les données, accessibles depuis le menu principal :
 
 ```
   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  Réseau [fichier ▼]        Mapping [fichier ▼]        Graphe AD [fichier(s) ▼]                           │
   │                                                                                                          │
-  │  [T0] [T1] [T2]                    [Afficher AD]                              status message             │
+  │  Données ARGUS      Résultats du pipeline ARGUS (réseau + AD)                                            │
+  │                     Types : Complet, Réseau uniquement, AD uniquement                                    │
+  │                                                                                                          │
+  │  Données brutes     Import de données externes (nmap XML, BloodHound, Certipy)                           │
+  │                     Types : AD (BloodHound + Certipy), Réseau (nmap XML), Complet                        │
+  │                                                                                                          │
+  │  Scanner            Lancement de scans depuis l'interface (nécessite sudo)                               │
+  │                                                                                                          │
+  │  Démos              Jeux de données pré-chargés pour tester l'outil                                      │
+  │                                                                                                          │
   └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Upload       | Fichier attendu               | Rôle                           |
-|--------------|-------------------------------|--------------------------------|
-| Réseau       | `network_scan.json`           | Topologie réseau (IPs, ports)  |
-| Mapping      | `hostname_mapping.json`       | Association hostname → IP      |
-| Graphe AD    | `graph_tier{0,1,2}.json`      | Chemins d'attaque AD (multi)   |
+### Toolbar de la cartographie
 
-L'upload AD supporte le **multi-fichier** : on peut charger les 3 tiers d'un coup. Chaque tier est indexé et accessible via les boutons T0/T1/T2.
+La toolbar contient les boutons de tier, le sélecteur de noeud de départ et le statut :
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │  ← Menu   ARGUS   [départ→T0→T0] [départ→T1→T0] [départ→T2→T0]   [Noeud de depart...]    status        │
+  └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Le sélecteur de noeud de départ propose :
+- **Autocomplétion** sur tous les objets du domaine
+- **Filtres** : Tous, Chemins vers T0, Users, Computers, Groups, Domains, OUs, GPOs, Containers
+- **Changement à la volée** : les graphes sont recalculés côté serveur sans re-importer les données
 
 ### Disposition générale
 

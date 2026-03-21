@@ -28,6 +28,7 @@ from flask import Flask, request, jsonify, send_file, Response
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 RESULTS_DIR = SCRIPT_DIR / "results"
+TMP_DIR = Path(tempfile.gettempdir()) / "argus_tmp"
 
 app = Flask(__name__)
 
@@ -201,6 +202,42 @@ def suggest_starts():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+# ── Change start node ────────────────────────────────────────────────────────
+
+@app.route("/api/change-start", methods=["POST"])
+def change_start():
+    """Re-run graph generation with a different start node."""
+    data = request.get_json() or {}
+    job_id = data.get("job_id", "").strip()
+    start = data.get("start", "").strip()
+
+    if not job_id or not start:
+        return jsonify({"error": "job_id and start required"}), 400
+
+    with jobs_lock:
+        job = jobs.get(job_id)
+    if not job:
+        return jsonify({"error": "unknown job"}), 404
+
+    output_dir = Path(job["output_dir"])
+    bh_dir = output_dir / "uploads" / "bloodhound_data"
+    if not bh_dir.is_dir():
+        return jsonify({"error": "BloodHound data not found for this job"}), 400
+
+    certipy_path = output_dir / "uploads" / "certipy.json"
+    cmd = [_python(), str(SCRIPT_DIR / "argus_graph.py"),
+           "--data-dir", str(bh_dir), "--start", start,
+           "--output-dir", str(output_dir)]
+    if certipy_path.exists():
+        cmd += ["--certipy-json", str(certipy_path)]
+
+    new_job_id = _new_job(cmd, output_dir)
+    # Keep reference to original uploads dir
+    with jobs_lock:
+        jobs[new_job_id]["output_dir"] = str(output_dir)
+    return jsonify({"job_id": new_job_id})
+
+
 # ── Import endpoint ──────────────────────────────────────────────────────────
 
 @app.route("/api/import", methods=["POST"])
@@ -214,7 +251,7 @@ def import_data():
     elif save:
         output_dir = RESULTS_DIR / f"import_{job_id}"
     else:
-        output_dir = RESULTS_DIR / f"_tmp_{job_id}"
+        output_dir = TMP_DIR / f"_tmp_{job_id}"
     output_dir.mkdir(parents=True, exist_ok=True)
     uploads_dir = output_dir / "uploads"
     uploads_dir.mkdir(exist_ok=True)
@@ -252,6 +289,22 @@ def import_data():
     proxychains_conf = request.form.get("proxychains_conf", "").strip()
     import_type = request.form.get("import_type", "full")  # network, ad, full
 
+    # Auto-pick first user as default start if empty
+    if not start and bh_dir:
+        import glob, json as _json
+        for uf in sorted(glob.glob(str(bh_dir / "*users*.json"))):
+            try:
+                udata = _json.load(open(uf))
+                for obj in udata.get("data", []):
+                    name = obj.get("Properties", {}).get("name", "")
+                    if name:
+                        start = name
+                        break
+            except Exception:
+                pass
+            if start:
+                break
+
     # Build command
     if import_type == "ad" and bh_dir:
         # AD only — use argus_graph.py
@@ -286,6 +339,52 @@ def import_data():
     return jsonify({"job_id": actual_job_id, "output_dir": str(output_dir)})
 
 
+# ── Demo import endpoint ─────────────────────────────────────────────────────
+
+@app.route("/api/demo-import", methods=["POST"])
+def demo_import():
+    """Generate graphs from demo BH data with a given start node."""
+    data = request.get_json() or {}
+    demo_name = data.get("demo", "").strip()
+    start = data.get("start", "").strip()
+
+    if not demo_name or not start:
+        return jsonify({"error": "demo and start required"}), 400
+
+    demo_dir = SCRIPT_DIR / "demo" / demo_name
+    bh_dir = demo_dir / "bloodhound_data"
+    if not bh_dir.is_dir():
+        return jsonify({"error": "demo bloodhound_data not found"}), 404
+
+    # Use a temp output dir
+    job_id = uuid.uuid4().hex[:8]
+    output_dir = TMP_DIR / f"_tmp_{job_id}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Symlink BH data so change-start can find it later
+    uploads_dir = output_dir / "uploads"
+    uploads_dir.mkdir(exist_ok=True)
+    import shutil
+    shutil.copytree(str(bh_dir), str(uploads_dir / "bloodhound_data"))
+
+    certipy_path = demo_dir / "certipy_data.json"
+    if certipy_path.exists():
+        shutil.copy2(str(certipy_path), str(uploads_dir / "certipy.json"))
+        certipy_path = uploads_dir / "certipy.json"
+    else:
+        certipy_path = None
+
+    cmd = [_python(), str(SCRIPT_DIR / "argus_graph.py"),
+           "--data-dir", str(uploads_dir / "bloodhound_data"),
+           "--start", start,
+           "--output-dir", str(output_dir)]
+    if certipy_path:
+        cmd += ["--certipy-json", str(certipy_path)]
+
+    actual_job_id = _new_job(cmd, output_dir)
+    return jsonify({"job_id": actual_job_id, "output_dir": str(output_dir)})
+
+
 # ── Scan endpoint ────────────────────────────────────────────────────────────
 
 @app.route("/api/scan", methods=["POST"])
@@ -302,7 +401,7 @@ def scan():
     elif save:
         output_dir = RESULTS_DIR / f"scan_{scan_id}"
     else:
-        output_dir = RESULTS_DIR / f"_tmp_{scan_id}"
+        output_dir = TMP_DIR / f"_tmp_{scan_id}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     python = _python()
@@ -541,13 +640,25 @@ def list_demos():
     for d in sorted(demo_dir.iterdir()):
         if d.is_dir() and not d.name.startswith("."):
             files = [f.name for f in d.iterdir() if f.suffix == ".json"]
-            demos.append({"name": d.name, "files": files})
+            bh_dir = d / "bloodhound_data"
+            bh_files = []
+            if bh_dir.is_dir():
+                bh_files = [f.name for f in bh_dir.iterdir() if f.suffix == ".json"]
+            demos.append({"name": d.name, "files": files, "bh_files": bh_files})
     return jsonify(demos)
 
 
 @app.route("/demo/<name>/<filename>")
 def serve_demo_file(name, filename):
     fpath = SCRIPT_DIR / "demo" / name / filename
+    if not fpath.exists():
+        return jsonify({"error": "not found"}), 404
+    return send_file(fpath, mimetype="application/json")
+
+
+@app.route("/demo/<name>/bloodhound_data/<filename>")
+def serve_demo_bh_file(name, filename):
+    fpath = SCRIPT_DIR / "demo" / name / "bloodhound_data" / filename
     if not fpath.exists():
         return jsonify({"error": "not found"}), 404
     return send_file(fpath, mimetype="application/json")
@@ -562,6 +673,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     is_root = os.geteuid() == 0
+
+    # Cleanup leftover temporary directories from previous sessions
+    import shutil
+    for cleanup_dir in [TMP_DIR, RESULTS_DIR]:
+        tmp_dirs = sorted(cleanup_dir.glob("_tmp_*"))
+        if tmp_dirs:
+            cleaned = 0
+            for d in tmp_dirs:
+                try:
+                    shutil.rmtree(d)
+                    cleaned += 1
+                except Exception:
+                    pass
+            if cleaned:
+                print(f"[cleanup] Removed {cleaned}/{len(tmp_dirs)} temporary directories from {cleanup_dir}")
 
     print("=" * 60)
     print("  ARGUS — Web Interface")

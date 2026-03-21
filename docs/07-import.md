@@ -1,13 +1,14 @@
-# Mode Import — Intégration de scans externes
+# Données brutes — Intégration de scans externes
 
 ## Table des matières
 
 1. [Contexte et objectifs](#1-contexte-et-objectifs)
 2. [Pourquoi un mode import ?](#2-pourquoi-un-mode-import-)
 3. [Les trois sous-modes](#3-les-trois-sous-modes)
-4. [Conversion nmap XML → format ARGUS](#4-conversion-nmap-xml--format-argus)
-5. [Mapping hostname sans rescanner](#5-mapping-hostname-sans-rescanner)
-6. [Workflow pentester type](#6-workflow-pentester-type)
+4. [Sélection interactive du noeud de départ](#4-sélection-interactive-du-noeud-de-départ)
+5. [Conversion nmap XML → format ARGUS](#5-conversion-nmap-xml--format-argus)
+6. [Mapping hostname sans rescanner](#6-mapping-hostname-sans-rescanner)
+7. [Workflow pentester type](#7-workflow-pentester-type)
 
 ---
 
@@ -49,67 +50,61 @@ Le pentester conserve sa méthodologie de scan, ses options nmap préférées, s
 
 ## 3. Les trois sous-modes
 
-Le mode Import est accessible depuis l'interface web (`argus_server.py`) ou en ligne de commande :
+Le mode **Données brutes** est accessible depuis l'interface web (`argus_server.py`) ou en ligne de commande :
 
 ```
-  ACCESS MODE
-
-    [1]  Direct   — Direct access to target network
-    [2]  Pivot    — Access via SOCKS tunnel / proxychains
-    [3]  Import   — Build cartography from existing files
-
-  IMPORT TYPE
-
-    [1]  Network only    nmap XML → network cartography
-    [2]  AD only         BloodHound folder → tier graphs
-    [3]  Full import     nmap XML + BloodHound → unified cartography
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │  TYPE D'IMPORT                                                                                          │
+  │                                                                                                         │
+  │  AD (BloodHound + Certipy)     Dossier BloodHound JSON + Certipy optionnel                              │
+  │  Réseau (nmap XML)             Fichier nmap -oX → cartographie réseau                                   │
+  │  Complet (Réseau + AD)         nmap XML + BloodHound → cartographie unifiée                             │
+  └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.1 Network only
+### 3.1 AD (BloodHound + Certipy)
 
-Convertit un fichier nmap XML (`-oX`) en `network_scan.json` au format ARGUS. Le résultat est chargeable dans `cartographie.html` pour visualiser la couche réseau (IPs, ports, services, sous-réseaux).
+Génère les graphes de classification en tiers à partir d'un dossier BloodHound existant. C'est le mode le plus simple : aucun scan, aucun accès réseau requis. Le pentester fournit ses JSON BloodHound et le noeud de départ se choisit interactivement dans la cartographie.
+
+```
+  Entrée :  bloodhound_data/ + certipy_data.json (optionnel)
+  Sortie :  graph_tier0.json, graph_tier1.json, graph_tier2.json
+
+  CLI :
+    python3 argus_graph.py --data-dir bloodhound_data/ --start user@domain.local --output-dir results/
+```
+
+**Cas d'usage** : analyser les chemins d'attaque AD sans avoir besoin de la couche réseau. C'est probablement le mode le plus utile en pratique — le pentester a collecté ses données BloodHound et veut la classification en tiers d'ARGUS.
+
+### 3.2 Réseau (nmap XML)
+
+Convertit un fichier nmap XML (`-oX`) en `network_scan.json` au format ARGUS. Le résultat est affiché dans la cartographie réseau.
 
 ```
   Entrée :  scan.xml (nmap -oX)
   Sortie :  network_scan.json
 
-  Commande :
-    python3 argus_import.py --nmap-xml scan.xml --output-dir results/import
+  CLI :
+    python3 argus_import.py --nmap-xml scan.xml --output-dir results/
 ```
 
 **Cas d'usage** : visualiser rapidement un scan réseau existant dans l'interface ARGUS, sans données AD.
 
-### 3.2 AD only
-
-Génère les graphes de classification en tiers à partir d'un dossier BloodHound existant. C'est le mode le plus simple : aucun scan, aucun accès réseau requis. Le pentester fournit ses JSON BloodHound et un noeud de départ (le compte compromis).
-
-```
-  Entrée :  bloodhound_data/ + start node
-  Sortie :  graph_tier0.json, graph_tier1.json, graph_tier2.json
-
-  Commande :
-    python3 argus_graph.py --data-dir bloodhound_data/ --start user@domain.local --output-dir results/import
-```
-
-Optionnel : un fichier Certipy JSON (`--certipy-json`) pour inclure les vulnérabilités ADCS dans l'analyse.
-
-**Cas d'usage** : analyser les chemins d'attaque AD sans avoir besoin de la couche réseau. Le pentester a déjà collecté les données BloodHound et veut la classification en tiers d'ARGUS.
-
-### 3.3 Full import
+### 3.3 Complet (Réseau + AD)
 
 Combine les deux couches en une cartographie unifiée. Le pentester fournit son nmap XML et son dossier BloodHound. Si le DC est encore accessible, ARGUS peut faire le mapping hostname → IP pour créer les ponts entre les couches réseau et identité.
 
 ```
-  Entrée :  scan.xml + bloodhound_data/ + start node
+  Entrée :  scan.xml + bloodhound_data/ + certipy_data.json (optionnel)
   Sortie :  network_scan.json + graph_tier0/1/2.json + hostname_mapping.json (si DC accessible)
 
-  Commande (sans mapping) :
+  CLI (sans mapping) :
     python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain.local
 
-  Commande (avec mapping DNS direct) :
+  CLI (avec mapping DNS direct) :
     python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain.local --dc-ip 10.0.1.10
 
-  Commande (avec mapping DNS pivot) :
+  CLI (avec mapping DNS pivot) :
     python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain.local --dc-ip 10.0.1.10 --dns-tcp --proxychains-conf proxy.conf
 ```
 
@@ -129,7 +124,31 @@ Si le DC n'est plus accessible (fin de mission, tunnel fermé), les deux couches
 
 ---
 
-## 4. Conversion nmap XML → format ARGUS
+## 4. Sélection interactive du noeud de départ
+
+Le noeud de départ (le compte compromis à partir duquel on explore les chemins d'attaque) n'est plus demandé dans le formulaire d'import. Il se choisit **interactivement** dans la barre d'outils de la cartographie, après le chargement des données.
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │                                                                                                         │
+  │  1. L'utilisateur importe ses données (BH, nmap, certipy)                                               │
+  │  2. Les graphes sont générés avec un start node par défaut                                               │
+  │  3. La cartographie s'affiche avec les boutons T0/T1/T2 désactivés                                      │
+  │  4. L'utilisateur choisit son noeud de départ dans le sélecteur                                          │
+  │     → Autocomplétion + filtres (Chemins vers T0, Users, Groups, etc.)                                   │
+  │  5. Les graphes sont recalculés côté serveur pour ce nouveau start                                       │
+  │  6. Les boutons T0/T1/T2 deviennent actifs                                                              │
+  │                                                                                                         │
+  │  Le changement de noeud de départ est instantané — pas besoin de re-importer les données.                │
+  │                                                                                                         │
+  └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Le filtre **Chemins vers T0** est particulièrement utile : il identifie tous les objets qui ont au moins un chemin d'attaque vers un objet Tier 0. Sur un domaine inconnu, ce filtre permet de trouver rapidement les noeuds de départ les plus intéressants.
+
+---
+
+## 5. Conversion nmap XML → format ARGUS
 
 ### Format d'entrée
 
@@ -167,7 +186,7 @@ En pratique, peu de pentesters lancent ce script spécifiquement. Le mapping via
 
 ---
 
-## 5. Mapping hostname sans rescanner
+## 6. Mapping hostname sans rescanner
 
 Le mapping hostname → IP est le point critique de la fusion réseau/identité. Voici les options selon la situation du pentester :
 
@@ -192,60 +211,57 @@ Le mapping hostname → IP est le point critique de la fusion réseau/identité.
 
 ---
 
-## 6. Workflow pentester type
+## 7. Workflow pentester type
 
-### Scénario 1 — Pendant l'audit (DC accessible)
+### Scénario 1 — AD seul (le plus courant)
 
-Le pentester a déjà fait ses scans et veut générer une cartographie unifiée pour son rapport.
+Le pentester a collecté ses données BloodHound et veut la classification ARGUS.
+
+```
+  1. Le pentester a déjà :
+     - bloodhound-python -u user -d domain -c All       (collecte BH)
+
+  2. Dans l'interface ARGUS :
+     - Mode « Données brutes » → AD (BloodHound + Certipy)
+     - Sélectionner le dossier BloodHound
+     - Cliquer « Générer »
+
+  3. Dans la cartographie :
+     - Choisir le noeud de départ (ex: user@domain.local)
+     - Cliquer T0 pour voir les chemins d'attaque déterministes
+     - Changer de noeud de départ à tout moment
+```
+
+### Scénario 2 — Import complet (DC encore accessible)
+
+Le pentester a déjà fait ses scans et veut une cartographie unifiée réseau + AD.
 
 ```
   1. Le pentester a déjà :
      - nmap -sT -Pn -oX scan.xml 10.0.1.0/24           (son scan habituel)
      - bloodhound-python -u user -d domain -c All       (collecte BH)
 
-  2. Il lance ARGUS en mode import :
-     python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain
-       nmap-xml :  scan.xml
-       bh-dir :    bloodhound_data/
-       start :     user@domain.local
-       mapping :   oui → dc-ip : 10.0.1.10 → Direct
+  2. Dans l'interface ARGUS :
+     - Mode « Données brutes » → Complet (Réseau + AD)
+     - Fournir le nmap XML, le dossier BloodHound
+     - Optionnel : DC IP pour le mapping hostname → IP
+     - Cliquer « Générer »
 
-  3. Résultat :
-     results/import/
-       ├── network_scan.json
-       ├── hostname_mapping.json
-       ├── graph_tier0.json
-       ├── graph_tier1.json
-       └── graph_tier2.json
-
-  4. Ouvrir cartographie.html → charger les fichiers → cartographie unifiée
+  3. Dans la cartographie :
+     - Le réseau s'affiche immédiatement
+     - Choisir le noeud de départ pour afficher les chemins AD
+     - Les ponts relient les machines réseau aux objets Computer AD
 ```
 
-### Scénario 2 — Après l'audit (offline)
+### Scénario 3 — Après l'audit (offline)
 
 Le pentester analyse ses données après la mission, sans accès au réseau cible.
 
 ```
-  1. Il lance ARGUS en mode import sans mapping :
-     python3 argus_import.py --nmap-xml scan.xml --bh-dir bloodhound_data/ --start user@domain.local
-
+  1. Même procédure que le scénario 2, mais sans DC IP
   2. Résultat : deux couches indépendantes
      - Couche réseau : IPs, ports, services
      - Couche identité : chemins d'attaque AD classifiés en tiers
      - Pas de ponts entre les deux (pas de mapping)
-
-  3. Utile pour : classification des chemins d'attaque, rédaction du rapport, présentation des risques
-```
-
-### Scénario 3 — AD seul
-
-Le pentester n'a pas fait de scan réseau (ou ne veut pas l'inclure). Il veut juste la classification ARGUS sur ses données BloodHound.
-
-```
-  1. Il lance ARGUS en mode import AD :
-     python3 argus_graph.py --data-dir bloodhound_data/ --start user@domain
-       bh-dir : bloodhound_data/
-       start :  user@domain.local
-
-  2. Résultat : graph_tier0/1/2.json → chemins d'attaque classifiés
+  3. Le noeud de départ se choisit interactivement dans la cartographie
 ```

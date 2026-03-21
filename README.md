@@ -33,7 +33,7 @@ Pour ce faire, nous avons conçu :
 
 Le vrai plus d'ARGUS est sa portabilité. En pratique, peu de pentesters vont utiliser un outil tiers pour lancer leurs scans — ils ont déjà leurs habitudes. En revanche, ils peuvent faire leurs scans nmap et collecter les données LDAP avec leurs propres outils, puis les importer dans ARGUS pour générer les cartographies.
 
-Les modules sont indépendants : un red teamer peut collecter un AD avec SharpHound et utiliser uniquement ARGUS pour générer les chemins d'attaque. C'est probablement la fonctionnalité la plus utile en cas pratique, vu la simplicité et l'efficacité de la classification d'objets AD par rapport à BloodHound ou d'autres outils.
+Les modules sont indépendants : un red teamer peut collecter un AD avec SharpHound et utiliser uniquement ARGUS pour générer les chemins d'attaque. Le mode **Données brutes** permet d'importer directement des données BloodHound JSON, Certipy et nmap XML — sans aucune dépendance à notre pipeline de scan.
 
 **On collecte avec l'outil de son choix, on analyse avec ARGUS.**
 
@@ -47,17 +47,23 @@ Les modules sont indépendants : un red teamer peut collecter un AD avec SharpHo
 
 ARGUS propose 3 modes d'utilisation :
 
-**Afficher** — Visualiser des cartographies déjà générées
+**Données ARGUS** — Charger les résultats générés par le pipeline ARGUS (réseau + AD). Trois types : Complet (réseau + AD), Réseau uniquement, AD uniquement. Le noeud de départ se choisit interactivement dans la cartographie. Des **démos** sont disponibles directement pour tester l'outil avec des jeux de données réels (HTB).
 
-![Afficher](img/menuAfficher.png)
+![Données ARGUS](img/menuDonneesARGUS.png)
 
-**Importer** — Importer des données existantes (nmap, BloodHound, Certipy) et générer les cartographies
+**Données brutes** — Importer des données externes et générer les cartographies. Trois types : AD (BloodHound + Certipy), Réseau (nmap XML), Complet (Réseau + AD). Le noeud de départ se choisit interactivement dans la cartographie.
 
-![Importer](img/menuImporter.png)
+![Données brutes](img/menuDonneesBrute.png)
 
-**Scanner** — Lancer les scans, récolter les données et générer les cartographies
+**Scanner** — Lancer les scans depuis une machine compromise, récolter les données et générer les cartographies.
 
 ![Scanner](img/menuScanner.png)
+
+### Sélection interactive du noeud de départ
+
+Le noeud de départ se choisit directement dans la barre d'outils de la cartographie, avec un système de filtres (Tous, Chemins vers T0, Users, Computers, Groups, etc.) et de l'autocomplétion. Le changement de noeud de départ est instantané — les graphes sont recalculés sans re-importer les données.
+
+![Sélection du noeud de départ](img/menuNoeudDepart.png)
 
 ### Affichage des tiers
 
@@ -75,9 +81,13 @@ ARGUS produit une visualisation interactive à deux couches. La partie supérieu
 
 ![Cartographie Tier 1 — Administrator](img/exempleCarto2.png)
 
-**Tier 0 — AD seul** : chemins d'attaque AD sans couche réseau, uniquement la classification des objets et leurs relations.
+**Tier 0 — Escape (HTB)** : chemins d'attaque AD avec intégration ADCS — le template vulnérable ESC1 apparaît directement dans le graphe.
 
-![Cartographie AD pure](img/exempleCartoADpur.png)
+![Cartographie AD + ADCS — T0](img/cartoADpurT0.png)
+
+**Tier 1 — Escape (HTB)** : chemins ambigus vers Tier 0 — droits non déterministes (GenericWrite, AllExtendedRights) que l'auditeur doit vérifier.
+
+![Cartographie AD + ADCS — T1](img/cartoADpurT1.png)
 
 ---
 
@@ -120,11 +130,12 @@ La documentation technique détaillée est disponible dans le dossier [docs/](do
 |----------|---------|
 | [01 — Pipeline](docs/01-pipeline.md) | Architecture et enchaînement des étapes |
 | [02 — Réseau](docs/02-network.md) | Algorithmes de découverte réseau (direct et pivot) |
-| [03 — Classification](docs/03-classification.md) | Algorithme de classification en tiers (attribution, héritage, BFS) |
-| [04 — Mapping](docs/04-mapping-reseau-ad.md) | Résolution hostname → IP (DNS, SMB) |
+| [03 — Classification](docs/03-classification-object.md) | Algorithme de classification en tiers (attribution, héritage, BFS) |
+| [04a — Affichage tiers](docs/04-affichage-tiers.md) | Affichage des chemins d'attaque par tier (T0, T1, T2) |
+| [04b — Mapping](docs/04-mapping-reseau-ad.md) | Résolution hostname → IP (DNS, SMB) |
 | [05 — Collecteurs](docs/05-collecteurs.md) | BloodHound et Certipy : collecte et traduction |
-| [06 — Cartographie](docs/06-cartographie.md) | Interface de visualisation HTML |
-| [07 — Import](docs/07-import.md) | Import de scans externes et portabilité |
+| [06 — Cartographie](docs/06-cartographie.md) | Interface de visualisation (modes, toolbar, graphes) |
+| [07 — Données brutes](docs/07-import.md) | Import de scans externes et portabilité |
 | [08 — CLI](docs/08-CLI.md) | Commandes en ligne de commande (sans interface graphique) |
 
 ---

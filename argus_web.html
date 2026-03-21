@@ -321,7 +321,7 @@
     /* ── Cartographie screen ── */
     #screen-carto { min-height: 100vh; position: relative; }
     .carto-toolbar {
-      padding: 6px 50px 6px 16px;
+      padding: 8px 50px 8px 16px;
       background: #0f172a;
       border-bottom: 2px solid #3b82f6;
       display: flex;
@@ -339,16 +339,16 @@
     }
     .carto-sep {
       width: 1px;
-      height: 22px;
+      height: 24px;
       background: #334155;
     }
     .carto-back-btn {
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 6px;
       border: 2px solid #475569;
       background: transparent;
       color: #cbd5e1;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
@@ -356,26 +356,27 @@
     }
     .carto-back-btn:hover { background: #1e293b; }
     .tier-btn {
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 6px;
       border: 2px solid #475569;
       background: transparent;
       color: #cbd5e1;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .tier-btn:hover { background: #1e293b; }
+    .tier-btn:hover:not(:disabled) { background: #1e293b; }
+    .tier-btn:disabled { opacity: 0.5; cursor: not-allowed; border-style: dashed; }
     .tier-btn.active { font-weight: 800; color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     .toggle-ad-btn {
-      padding: 4px 14px;
+      padding: 5px 14px;
       border-radius: 6px;
       border: 2px solid #475569;
       background: transparent;
       color: #cbd5e1;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
@@ -383,6 +384,84 @@
     }
     .toggle-ad-btn:hover { background: #1e293b; }
     .toggle-ad-btn:disabled { opacity: 0.3; cursor: default; }
+    .start-input {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      background: #1e293b;
+      color: #e2e8f0;
+      font-size: 0.8rem;
+      font-family: inherit;
+      font-weight: 500;
+      width: 280px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .start-input:focus { border-color: #3b82f6; }
+    .start-input::placeholder { color: #64748b; }
+    .start-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 380px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      margin-top: 4px;
+      z-index: 9999;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .start-dropdown.open { display: block; }
+    .start-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 6px 8px;
+      border-bottom: 1px solid #334155;
+    }
+    .start-filter-btn {
+      padding: 2px 8px;
+      font-size: 0.65rem;
+      font-family: "JetBrains Mono", monospace;
+      border: 1.5px solid #475569;
+      border-radius: 4px;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .start-filter-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+    .start-filter-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .start-filter-btn .sf-count {
+      font-size: 0.6rem;
+      opacity: 0.7;
+      margin-left: 2px;
+    }
+    .start-filter-t0 { border-color: #ef4444; color: #ef4444; }
+    .start-filter-t0:hover { border-color: #dc2626; color: #dc2626; }
+    .start-filter-t0.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .start-suggestions-list {
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    .start-sug-item {
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .start-sug-item:hover, .start-sug-item.active { background: #334155; }
+    .start-sug-item .sug-type {
+      font-size: 0.65rem;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
     #carto-status {
       font-size: 0.7rem;
       font-weight: 500;
@@ -659,12 +738,12 @@
   <div class="menu-cards">
     <div class="menu-card" onclick="showScreen('display')">
       <div class="menu-card-icon">&#128065;</div>
-      <div class="menu-card-title">Afficher</div>
-      <div class="menu-card-desc">Charger des graphes existants et visualiser la cartographie</div>
+      <div class="menu-card-title">Données ARGUS</div>
+      <div class="menu-card-desc">Charger des résultats ARGUS (réseau, mapping, graphes AD)</div>
     </div>
     <div class="menu-card" onclick="showScreen('import')">
       <div class="menu-card-icon">&#128229;</div>
-      <div class="menu-card-title">Importer</div>
+      <div class="menu-card-title">Données brutes</div>
       <div class="menu-card-desc">Nmap XML + BloodHound &rarr; générer la cartographie</div>
     </div>
     <div class="menu-card" onclick="showScreen('scan')">
@@ -681,14 +760,17 @@
 <div id="screen-display" class="screen">
   <form id="form-display" class="form-screen" onsubmit="return false;">
     <button type="button" class="form-back" onclick="showScreen('menu')">&larr; Retour</button>
-    <h2 class="form-title">Afficher</h2>
+    <h2 class="form-title">Données ARGUS</h2>
+    <div style="margin-bottom:16px;padding:8px 14px;border-radius:6px;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:0.85rem;text-align:center;">
+      Résultats générés par le pipeline ARGUS
+    </div>
 
     <div class="form-group">
-      <label class="form-label">Type d'affichage</label>
+      <label class="form-label">Type de données</label>
       <select id="disp-type" class="form-select" onchange="updateDisplayForm()">
         <option value="full">Complet (Réseau + AD)</option>
         <option value="network">Réseau uniquement</option>
-        <option value="ad">AD uniquement</option>
+        <option value="ad">AD uniquement (BloodHound + Certipy)</option>
       </select>
     </div>
 
@@ -700,9 +782,14 @@
       <label class="form-label">Mapping <span class="optional">(hostname_mapping.json — optionnel)</span></label>
       <input id="disp-mapping" type="file" accept=".json" class="form-input" />
     </div>
-    <div id="disp-ad-group" class="form-group">
-      <label class="form-label">Graphes AD <span class="optional">(graph_tier*.json — multiple)</span></label>
-      <input id="disp-ad" type="file" accept=".json" class="form-input" multiple />
+    <div id="disp-bh-group" class="form-group">
+      <label class="form-label">Dossier BloodHound</label>
+      <div class="form-hint">Sélectionnez le dossier contenant les JSON BloodHound — le noeud de départ se choisit dans la cartographie</div>
+      <input id="disp-bh" type="file" class="form-input" webkitdirectory multiple />
+    </div>
+    <div id="disp-certipy-group" class="form-group">
+      <label class="form-label">Certipy JSON <span class="optional">(optionnel)</span></label>
+      <input id="disp-certipy" type="file" accept=".json" class="form-input" />
     </div>
     <button class="form-submit" onclick="loadDisplay()">Visualiser</button>
 
@@ -719,14 +806,14 @@
 <div id="screen-import" class="screen">
   <form id="form-import" class="form-screen" onsubmit="return false;">
     <button type="button" class="form-back" onclick="showScreen('menu')">&larr; Retour</button>
-    <h2 class="form-title">Importer</h2>
+    <h2 class="form-title">Données brutes</h2>
 
     <div class="form-group">
       <label class="form-label">Type d'import</label>
       <select id="imp-type" class="form-select" onchange="updateImportForm()">
+        <option value="ad">AD (BloodHound + Certipy)</option>
+        <option value="network">Réseau (nmap XML)</option>
         <option value="full">Complet (Réseau + AD)</option>
-        <option value="network">Réseau uniquement</option>
-        <option value="ad">AD uniquement</option>
       </select>
     </div>
 
@@ -742,12 +829,10 @@
       <input id="imp-bh" type="file" class="form-input" webkitdirectory multiple />
     </div>
 
-    <div id="imp-start-group" class="form-group">
-      <label class="form-label">Start node</label>
-      <div class="form-hint">ex: user@domain.local — suggestions extraites des fichiers BloodHound</div>
+    <div id="imp-start-group" class="form-group" style="display:none;">
       <div id="ac-filters" class="ac-filters"></div>
       <div class="autocomplete-wrapper">
-        <input id="imp-start" type="text" class="form-input" placeholder="Commencez a taper..." autocomplete="off" />
+        <input id="imp-start" type="text" class="form-input" autocomplete="off" />
         <div id="imp-start-suggestions" class="autocomplete-list"></div>
       </div>
     </div>
@@ -778,13 +863,13 @@
 
     <div class="form-group">
       <label class="form-radio">
-        <input type="checkbox" id="imp-save" checked onchange="document.getElementById('imp-output-dir').disabled = !this.checked" /> Sauvegarder les résultats
+        <input type="checkbox" id="imp-save" onchange="document.getElementById('imp-output-dir').disabled = !this.checked" /> Sauvegarder les résultats
       </label>
       <div class="form-hint">Laissez vide pour un nom automatique (results/import_&lt;id&gt;)</div>
-      <input id="imp-output-dir" type="text" class="form-input" placeholder="results/import" />
+      <input id="imp-output-dir" type="text" class="form-input" placeholder="results/import" disabled />
     </div>
 
-    <button class="form-submit" onclick="submitImport()">Importer</button>
+    <button class="form-submit" onclick="submitImport()">Générer</button>
   </form>
 </div>
 
@@ -976,9 +1061,21 @@
     <span class="carto-toolbar-brand">ARGUS</span>
     <div class="carto-sep"></div>
     <div id="tier-buttons" style="display:flex;gap:6px;"></div>
+    <div class="carto-sep" id="start-sep" style="display:none;"></div>
+    <div id="start-selector" style="display:none;position:relative;">
+      <input type="text" id="start-input" class="start-input" placeholder="Noeud de depart..." />
+      <div id="start-dropdown" class="start-dropdown">
+        <div id="start-filters" class="start-filters"></div>
+        <div id="start-suggestions" class="start-suggestions-list"></div>
+      </div>
+    </div>
     <span id="carto-status">Pret.</span>
   </div>
   <div id="cy"></div>
+  <div id="cy-placeholder" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#64748b;font-size:1rem;pointer-events:none;">
+    <div style="font-size:2rem;margin-bottom:8px;">&#8593;</div>
+    <div>Sélectionnez un noeud de départ pour afficher les chemins d'attaque</div>
+  </div>
   <div id="node-card" class="node-card"></div>
   <div id="edge-tooltip"></div>
 </div>
@@ -1098,31 +1195,32 @@ const START_USER_BORDER = "#22c55e";
 
 function updateDisplayForm() {
   const type = document.getElementById("disp-type").value;
+  document.getElementById("disp-bh-group").classList.toggle("hidden", type === "network");
+  document.getElementById("disp-certipy-group").classList.toggle("hidden", type === "network");
   document.getElementById("disp-network-group").classList.toggle("hidden", type === "ad");
   document.getElementById("disp-mapping-group").classList.toggle("hidden", type !== "full");
-  document.getElementById("disp-ad-group").classList.toggle("hidden", type === "network");
 }
 
 async function loadDisplay() {
   const dispType = document.getElementById("disp-type").value;
-  const networkFile = document.getElementById("disp-network").files[0];
-  const mappingFile = document.getElementById("disp-mapping").files[0];
-  const adFiles = document.getElementById("disp-ad").files;
 
-  if ((dispType === "network" || dispType === "full") && !networkFile) {
+  if (dispType === "ad" || dispType === "full") {
+    return loadDisplayBhRaw();
+  }
+
+  // Network only
+  const networkFile = document.getElementById("disp-network").files[0];
+  if (!networkFile) {
     alert("Sélectionnez un fichier réseau (network_scan.json).");
     return;
   }
-  if ((dispType === "ad" || dispType === "full") && (!adFiles || adFiles.length === 0)) {
-    alert("Sélectionnez au moins un fichier AD (graph_tier*.json).");
-    return;
-  }
 
-  // Reset state — destroy previous graph
   if (cy) { cy.destroy(); cy = null; }
   loadedTiers = {};
   currentTier = null;
   adVisible = false;
+  currentJobId = null;
+  showStartSelector(false);
   hostnameMapping = null;
   adElements = [];
   adLoaded = false;
@@ -1130,72 +1228,120 @@ async function loadDisplay() {
   hostIndex = new Map();
   nodeDataIndex = new Map();
 
-  // Read all file contents first (before switching screen)
-  let mappingData = null;
   let networkScan = null;
-  const adGraphs = [];
+  try {
+    const raw = await networkFile.text();
+    networkScan = JSON.parse(raw);
+  } catch(e) { console.error("Network error:", e); }
 
-  if (mappingFile) {
-    try {
-      const raw = await mappingFile.text();
-      const data = JSON.parse(raw);
-      mappingData = data.mapping || {};
-    } catch(e) { console.error("Mapping error:", e); }
-  }
-
-  if (networkFile) {
-    try {
-      const raw = await networkFile.text();
-      networkScan = JSON.parse(raw);
-    } catch(e) { console.error("Network error:", e); }
-  }
-
-  if (adFiles && adFiles.length > 0) {
-    for (const file of adFiles) {
-      try {
-        const raw = await file.text();
-        adGraphs.push(JSON.parse(raw));
-      } catch(e) { console.error("AD file error:", e); }
-    }
-  }
-
-  // Switch to carto screen and wait for layout
   showScreen("carto");
   await new Promise(r => setTimeout(r, 100));
 
-  // Step 1: Load network first (fills hostIndex + nodeDataIndex)
-  if (networkScan) {
-    await renderGraph(networkScan);
-  }
+  if (networkScan) await renderGraph(networkScan);
 
-  // Step 2: Apply mapping (adds hostname→IP entries to hostIndex)
-  if (mappingData) {
-    hostnameMapping = mappingData;
-    applyHostnameMapping();
-  }
-
-  // Step 3: Now build AD elements (hostIndex is populated, bridges will work)
-  for (const adGraph of adGraphs) {
-    const tier = adGraph.tier !== undefined ? adGraph.tier : (adGraph.mode || 0);
-    const elements = buildAdElements(adGraph);
-    loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
-  }
-
-  // Show tier buttons immediately (don't wait for cytoscape init)
   updateTierButtons();
-  statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
+  statusEl.textContent = "Réseau chargé.";
+}
 
-  // Step 4: If no network, init empty cytoscape (user clicks tier to display)
-  if (!networkScan && !cy) {
-    await whenContainerReady();
-    cy = cytoscape({
-      container: document.getElementById("cy"),
-      elements: [],
-      style: getCytoscapeStyles(),
-      layout: { name: "preset" },
-      wheelSensitivity: 0.2, pixelRatio: "auto", textureOnViewport: false,
-    });
-    setupCyEvents();
+async function loadDisplayBhRaw() {
+  const dispType = document.getElementById("disp-type").value;
+  const bhFiles = document.getElementById("disp-bh").files;
+  if (!bhFiles || bhFiles.length === 0) {
+    alert("Sélectionnez le dossier BloodHound.");
+    return;
+  }
+
+  const networkFile = (dispType === "full") ? document.getElementById("disp-network").files[0] : null;
+  const mappingFile = (dispType === "full") ? document.getElementById("disp-mapping").files[0] : null;
+  if (dispType === "full" && !networkFile) {
+    alert("Sélectionnez un fichier réseau (network_scan.json).");
+    return;
+  }
+
+  // Parse BH files client-side for bhObjectNames
+  bhObjectNames = [];
+  const readPromises = [];
+  for (let i = 0; i < bhFiles.length; i++) {
+    const file = bhFiles[i];
+    const fname = file.name || file.webkitRelativePath || "";
+    if (!fname.toLowerCase().endsWith(".json")) continue;
+    readPromises.push(
+      file.text().then(raw => {
+        const data = JSON.parse(raw);
+        const objType = (data.meta?.type || "").toLowerCase();
+        if (!objType || !data.data || !Array.isArray(data.data)) return;
+        const typeLabels = { users: "user", computers: "computer", groups: "group",
+                             domains: "domain", ous: "ou", gpos: "gpo", containers: "container" };
+        const label = typeLabels[objType] || objType;
+        for (const entry of data.data) {
+          const name = entry.Properties?.name;
+          if (name) bhObjectNames.push({ name, type: label, pathToT0: false });
+        }
+      }).catch(() => {})
+    );
+  }
+  await Promise.all(readPromises);
+  const typePriority = { user: 0, computer: 1, group: 2 };
+  bhObjectNames.sort((a, b) => {
+    const pa = typePriority[a.type] ?? 9;
+    const pb = typePriority[b.type] ?? 9;
+    if (pa !== pb) return pa - pb;
+    return a.name.localeCompare(b.name);
+  });
+
+  if (bhObjectNames.length === 0) {
+    alert("Aucun objet trouvé dans les fichiers BloodHound.");
+    return;
+  }
+
+  // Pick first user as default start (or first object)
+  const defaultStart = (bhObjectNames.find(o => o.type === "user") || bhObjectNames[0]).name;
+
+  // Fetch pathToT0 suggestions
+  const sugForm = new FormData();
+  for (const f of bhFiles) sugForm.append("bh_files", f);
+  const certipyFile = document.getElementById("disp-certipy").files[0];
+  if (certipyFile) sugForm.append("certipy_json", certipyFile);
+  try {
+    const sugResp = await fetch("/api/suggest-starts", { method: "POST", body: sugForm });
+    const sugData = await sugResp.json();
+    if (Array.isArray(sugData)) {
+      const pathNames = new Set(sugData.map(o => o.name.toUpperCase()));
+      for (const obj of bhObjectNames) {
+        obj.pathToT0 = pathNames.has(obj.name.toUpperCase());
+      }
+    }
+  } catch(e) { console.warn("Suggest-starts unavailable:", e); }
+
+  // Submit import with default start
+  const form = new FormData();
+  form.append("import_type", "ad");
+  form.append("start", defaultStart);
+  for (const f of bhFiles) form.append("bh_files", f);
+  if (certipyFile) form.append("certipy_json", certipyFile);
+
+  // Full mode: pre-load network + mapping to render after job completes
+  if (networkFile) {
+    // Store network/mapping data for loadJobResults to use
+    try {
+      const raw = await networkFile.text();
+      window._pendingNetwork = JSON.parse(raw);
+    } catch(e) { window._pendingNetwork = null; }
+    if (mappingFile) {
+      try {
+        const raw = await mappingFile.text();
+        const data = JSON.parse(raw);
+        window._pendingMapping = data.mapping || {};
+      } catch(e) { window._pendingMapping = null; }
+    }
+  }
+
+  try {
+    const resp = await fetch("/api/import", { method: "POST", body: form });
+    const data = await resp.json();
+    streamJob(data.job_id, "Génération des graphes...", null);
+  } catch(e) {
+    alert("Erreur: " + e.message);
   }
 }
 
@@ -1215,7 +1361,7 @@ async function loadDemoList() {
       const card = document.createElement("div");
       card.className = "demo-card";
       card.innerHTML = `<div class="demo-card-name">${d.name}</div>`;
-      card.onclick = () => loadDemo(d.name, d.files);
+      card.onclick = () => loadDemo(d.name, d.files, d.bh_files);
       container.appendChild(card);
     });
   } catch(e) {
@@ -1223,8 +1369,90 @@ async function loadDemoList() {
   }
 }
 
-async function loadDemo(name, files) {
-  // Reset state — destroy previous graph
+async function loadDemo(name, files, bhFileNames) {
+  // Parse BH files from demo to populate bhObjectNames
+  bhObjectNames = [];
+  if (bhFileNames && bhFileNames.length > 0) {
+    const readPromises = bhFileNames.map(fname =>
+      fetch(`/demo/${name}/bloodhound_data/${fname}`)
+        .then(r => r.json())
+        .then(data => {
+          const objType = (data.meta?.type || "").toLowerCase();
+          if (!objType || !data.data || !Array.isArray(data.data)) return;
+          const typeLabels = { users: "user", computers: "computer", groups: "group",
+                               domains: "domain", ous: "ou", gpos: "gpo", containers: "container" };
+          const label = typeLabels[objType] || objType;
+          for (const entry of data.data) {
+            const entryName = entry.Properties?.name;
+            if (entryName) bhObjectNames.push({ name: entryName, type: label, pathToT0: false });
+          }
+        })
+        .catch(() => {})
+    );
+    await Promise.all(readPromises);
+    const typePriority = { user: 0, computer: 1, group: 2 };
+    bhObjectNames.sort((a, b) => {
+      const pa = typePriority[a.type] ?? 9;
+      const pb = typePriority[b.type] ?? 9;
+      if (pa !== pb) return pa - pb;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (bhObjectNames.length === 0) {
+    alert("Aucun objet trouvé dans la démo.");
+    return;
+  }
+
+  // Fetch pathToT0 suggestions via suggest-starts
+  const sugForm = new FormData();
+  for (const fname of bhFileNames) {
+    try {
+      const resp = await fetch(`/demo/${name}/bloodhound_data/${fname}`);
+      const blob = await resp.blob();
+      sugForm.append("bh_files", blob, fname);
+    } catch(e) {}
+  }
+  if (files.includes("certipy_data.json")) {
+    try {
+      const resp = await fetch(`/demo/${name}/certipy_data.json`);
+      const blob = await resp.blob();
+      sugForm.append("certipy_json", blob, "certipy_data.json");
+    } catch(e) {}
+  }
+  try {
+    const sugResp = await fetch("/api/suggest-starts", { method: "POST", body: sugForm });
+    const sugData = await sugResp.json();
+    if (Array.isArray(sugData)) {
+      const pathNames = new Set(sugData.map(o => o.name.toUpperCase()));
+      for (const obj of bhObjectNames) {
+        obj.pathToT0 = pathNames.has(obj.name.toUpperCase());
+      }
+    }
+  } catch(e) { console.warn("Suggest-starts unavailable:", e); }
+
+  // Pre-load network + mapping for full demos
+  window._pendingNetwork = null;
+  window._pendingMapping = null;
+  if (files.includes("network_scan.json")) {
+    try {
+      const resp = await fetch(`/demo/${name}/network_scan.json`);
+      window._pendingNetwork = await resp.json();
+    } catch(e) {}
+  }
+  if (files.includes("hostname_mapping.json")) {
+    try {
+      const resp = await fetch(`/demo/${name}/hostname_mapping.json`);
+      const data = await resp.json();
+      window._pendingMapping = data.mapping || {};
+    } catch(e) {}
+  }
+
+  // Store demo name — AD graphs will be generated when user picks a start node
+  currentDemoName = name;
+  currentJobId = null;
+
+  // Reset and show carto
   if (cy) { cy.destroy(); cy = null; }
   loadedTiers = {};
   currentTier = null;
@@ -1236,49 +1464,24 @@ async function loadDemo(name, files) {
   hostIndex = new Map();
   nodeDataIndex = new Map();
 
-  let networkScan = null;
-  let mappingData = null;
-  const adGraphs = [];
-
-  // Step 1: Fetch all files
-  for (const f of files) {
-    try {
-      const resp = await fetch(`/demo/${name}/${f}`);
-      const data = await resp.json();
-      if (f === "hostname_mapping.json") {
-        mappingData = data.mapping || {};
-      } else if (f === "network_scan.json") {
-        networkScan = data;
-      } else if (f.startsWith("graph_tier")) {
-        adGraphs.push(data);
-      }
-    } catch(e) { console.error(`Demo file error ${f}:`, e); }
-  }
-
   showScreen("carto");
   await new Promise(r => setTimeout(r, 100));
 
-  // Step 2: Network first (fills hostIndex)
-  if (networkScan) await renderGraph(networkScan);
-
-  // Step 3: Mapping (extends hostIndex)
-  if (mappingData) {
-    hostnameMapping = mappingData;
+  // Render network immediately if available
+  window._hadNetwork = false;
+  if (window._pendingNetwork) {
+    await renderGraph(window._pendingNetwork);
+    window._pendingNetwork = null;
+    window._hadNetwork = true;
+  }
+  if (window._pendingMapping) {
+    hostnameMapping = window._pendingMapping;
     applyHostnameMapping();
+    window._pendingMapping = null;
   }
 
-  // Step 4: AD elements (hostIndex is ready, bridges work)
-  for (const adGraph of adGraphs) {
-    const tier = adGraph.tier !== undefined ? adGraph.tier : 0;
-    const elements = buildAdElements(adGraph);
-    loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
-  }
-
-  // Show tier buttons immediately (don't wait for cytoscape init)
-  updateTierButtons();
-  statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
-
-  if (!networkScan && !cy) {
+  // Init cytoscape if no network created it
+  if (!cy) {
     await whenContainerReady();
     cy = cytoscape({
       container: document.getElementById("cy"),
@@ -1289,6 +1492,22 @@ async function loadDemo(name, files) {
     });
     setupCyEvents();
   }
+
+  // Show start selector with filters, input empty
+  showStartSelector(true);
+  document.getElementById("start-input").value = "";
+  buildStartFilters();
+
+  // Show tier buttons (empty for now, will populate after start selection)
+  loadedTiers = {0: null, 1: null, 2: null};
+  updateTierButtons();
+  document.querySelectorAll(".tier-btn").forEach(b => b.disabled = true);
+
+  // Show placeholder hint if no network was rendered
+  const placeholder = document.getElementById("cy-placeholder");
+  if (placeholder) placeholder.style.display = window._hadNetwork ? "none" : "block";
+
+  statusEl.textContent = "Sélectionnez un noeud de départ.";
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1523,7 +1742,6 @@ function updateImportForm() {
   const show = (id, visible) => document.getElementById(id).classList.toggle("hidden", !visible);
   document.getElementById("imp-nmap-group").classList.toggle("hidden", type === "ad");
   document.getElementById("imp-bh-group").classList.toggle("hidden", type === "network");
-  document.getElementById("imp-start-group").classList.toggle("hidden", type === "network");
   document.getElementById("imp-certipy-group").classList.toggle("hidden", type === "network");
   document.getElementById("imp-mapping-section").classList.toggle("hidden", type !== "full");
   document.getElementById("imp-mapping-group").classList.toggle("hidden", type !== "full");
@@ -1551,8 +1769,12 @@ async function submitImport() {
     for (const f of bhFiles) form.append("bh_files", f);
   }
 
-  // Text fields
-  form.append("start", document.getElementById("imp-start").value);
+  // Auto-pick first user as start node (selection happens interactively in carto)
+  let start = document.getElementById("imp-start").value;
+  if (!start && bhObjectNames.length > 0) {
+    start = (bhObjectNames.find(o => o.type === "user") || bhObjectNames[0]).name;
+  }
+  form.append("start", start);
   form.append("dc_ip", document.getElementById("imp-dc-ip").value);
   const dnsMode = document.querySelector('input[name="imp-dns-mode"]:checked').value;
   form.append("dns_tcp", dnsMode === "pivot" ? "true" : "false");
@@ -1764,6 +1986,8 @@ async function loadJobResults(jobId) {
     const resp = await fetch(`/api/results/${jobId}`);
     const data = await resp.json();
 
+    // Store job ID for start node changes
+    currentJobId = jobId;
 
     // Reset state — destroy previous graph
     if (cy) { cy.destroy(); cy = null; }
@@ -1781,13 +2005,18 @@ async function loadJobResults(jobId) {
     await new Promise(r => setTimeout(r, 100));
 
     // Step 1: Network first (fills hostIndex)
-    if (data.network) await renderGraph(data.network);
+    // Use pending network from display mode, or from job results
+    const networkData = window._pendingNetwork || data.network;
+    if (networkData) await renderGraph(networkData);
+    window._pendingNetwork = null;
 
     // Step 2: Mapping (extends hostIndex)
-    if (data.mapping) {
-      hostnameMapping = data.mapping.mapping || {};
+    const mappingData = window._pendingMapping || (data.mapping && data.mapping.mapping);
+    if (mappingData) {
+      hostnameMapping = mappingData;
       applyHostnameMapping();
     }
+    window._pendingMapping = null;
 
     // Step 3: AD tiers (hostIndex ready, bridges work)
     for (const key of ["tier0", "tier1", "tier2"]) {
@@ -1801,7 +2030,18 @@ async function loadJobResults(jobId) {
 
     // Show tier buttons immediately
     updateTierButtons();
-    statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
+
+    // Show start node selector if BH data available (import mode)
+    if (data.tier0 || data.tier1 || data.tier2) {
+      showStartSelector(true);
+      document.getElementById("start-input").value = "";
+      buildStartFilters();
+      // Disable buttons until user picks a start node
+      document.querySelectorAll(".tier-btn").forEach(b => b.disabled = true);
+      statusEl.textContent = "Sélectionnez un noeud de départ.";
+    } else {
+      statusEl.textContent = "Sélectionnez un tier pour afficher le graphe.";
+    }
 
     if (!data.network && !cy) {
       await whenContainerReady();
@@ -1900,6 +2140,247 @@ function switchToTier(tier) {
     2: "Tier 2 affiché — chemins éloignés (8+ hops) vers T0",
   };
   statusEl.textContent = tierLabels[tier] || `Tier ${tier} affiché.`;
+}
+
+// ── Start node selector ──
+let currentJobId = null;  // job ID for change-start API
+let currentDemoName = null;  // demo name for first import (no job yet)
+let startFilterType = "all";
+
+function showStartSelector(visible) {
+  document.getElementById("start-selector").style.display = visible ? "block" : "none";
+  document.getElementById("start-sep").style.display = visible ? "block" : "none";
+}
+
+function buildStartFilters() {
+  const container = document.getElementById("start-filters");
+  container.innerHTML = "";
+  startFilterType = "all";
+  if (bhObjectNames.length === 0) return;
+
+  const counts = {};
+  let pathToT0Count = 0;
+  for (const obj of bhObjectNames) {
+    counts[obj.type] = (counts[obj.type] || 0) + 1;
+    if (obj.pathToT0) pathToT0Count++;
+  }
+
+  const order = ["user", "computer", "group"];
+  const types = [...new Set(bhObjectNames.map(o => o.type))];
+  types.sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  // "Tous" button
+  const allBtn = document.createElement("button");
+  allBtn.type = "button";
+  allBtn.className = "start-filter-btn active";
+  allBtn.innerHTML = `Tous<span class="sf-count">${bhObjectNames.length}</span>`;
+  allBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setStartFilter("all", allBtn); });
+  container.appendChild(allBtn);
+
+  // "→ T0" button
+  if (pathToT0Count > 0) {
+    const ptBtn = document.createElement("button");
+    ptBtn.type = "button";
+    ptBtn.className = "start-filter-btn start-filter-t0";
+    ptBtn.innerHTML = `→ T0<span class="sf-count">${pathToT0Count}</span>`;
+    ptBtn.addEventListener("mousedown", (e) => { e.preventDefault(); setStartFilter("pathToT0", ptBtn); });
+    container.appendChild(ptBtn);
+  }
+
+  // Per-type buttons
+  const labels = { user: "Users", computer: "Computers", group: "Groups",
+                   domain: "Domains", ou: "OUs", gpo: "GPOs", container: "Containers" };
+  for (const t of types) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "start-filter-btn";
+    btn.innerHTML = `${labels[t] || t}<span class="sf-count">${counts[t]}</span>`;
+    btn.addEventListener("mousedown", (e) => { e.preventDefault(); setStartFilter(t, btn); });
+    container.appendChild(btn);
+  }
+}
+
+function setStartFilter(type, btn) {
+  startFilterType = type;
+  document.querySelectorAll("#start-filters .start-filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderStartSuggestions(document.getElementById("start-input").value);
+}
+
+function getStartPool() {
+  if (startFilterType === "all") return bhObjectNames;
+  if (startFilterType === "pathToT0") return bhObjectNames.filter(o => o.pathToT0);
+  return bhObjectNames.filter(o => o.type === startFilterType);
+}
+
+(function initStartSelector() {
+  const input = document.getElementById("start-input");
+  const dropdown = document.getElementById("start-dropdown");
+  const sugList = document.getElementById("start-suggestions");
+  let sugIndex = -1;
+
+  window.renderStartSuggestions = function(query) {
+    sugList.innerHTML = "";
+    if (bhObjectNames.length === 0) { dropdown.classList.remove("open"); return; }
+    const q = (query || "").toLowerCase();
+    const pool = getStartPool();
+    const filtered = q ? pool.filter(o => o.name.toLowerCase().includes(q)) : pool;
+    const items = filtered.slice(0, 30);
+    if (items.length === 0 && !document.querySelectorAll("#start-filters .start-filter-btn").length) {
+      dropdown.classList.remove("open"); return;
+    }
+    items.forEach((obj, i) => {
+      const div = document.createElement("div");
+      div.className = "start-sug-item";
+      div.innerHTML = `<span>${obj.name}</span><span class="sug-type">${obj.type}</span>`;
+      div.addEventListener("click", () => selectNewStart(obj.name));
+      div.addEventListener("mouseenter", () => {
+        sugList.querySelectorAll(".active").forEach(el => el.classList.remove("active"));
+        div.classList.add("active");
+        sugIndex = i;
+      });
+      sugList.appendChild(div);
+    });
+    sugIndex = -1;
+    dropdown.classList.add("open");
+  };
+
+  input.addEventListener("input", () => renderStartSuggestions(input.value));
+  input.addEventListener("focus", () => renderStartSuggestions(input.value));
+  input.addEventListener("keydown", (e) => {
+    const items = sugList.querySelectorAll(".start-sug-item");
+    if (!items.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      sugIndex = Math.min(sugIndex + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle("active", i === sugIndex));
+      items[sugIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      sugIndex = Math.max(sugIndex - 1, 0);
+      items.forEach((el, i) => el.classList.toggle("active", i === sugIndex));
+      items[sugIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (sugIndex >= 0 && items[sugIndex]) {
+        const name = items[sugIndex].querySelector("span").textContent;
+        selectNewStart(name);
+      }
+    } else if (e.key === "Escape") {
+      dropdown.classList.remove("open");
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#start-selector")) dropdown.classList.remove("open");
+  });
+})();
+
+async function selectNewStart(name) {
+  const dropdown = document.getElementById("start-dropdown");
+  const input = document.getElementById("start-input");
+  dropdown.classList.remove("open");
+  input.value = name;
+
+  // First selection on a demo (no job yet) — call demo-import
+  if (!currentJobId && currentDemoName) {
+    statusEl.textContent = "Génération des chemins...";
+    document.querySelectorAll(".tier-btn").forEach(b => b.disabled = true);
+    try {
+      const resp = await fetch("/api/demo-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demo: currentDemoName, start: name }),
+      });
+      const data = await resp.json();
+      if (data.error) { statusEl.textContent = "Erreur: " + data.error; return; }
+      currentJobId = data.job_id;
+      await waitForJob(currentJobId);
+
+      const resResp = await fetch(`/api/results/${currentJobId}`);
+      const resData = await resResp.json();
+
+      loadedTiers = {};
+      for (const key of ["tier0", "tier1", "tier2"]) {
+        if (resData[key]) {
+          const adGraph = resData[key];
+          const tier = adGraph.tier !== undefined ? adGraph.tier : parseInt(key.replace("tier", ""));
+          const elements = buildAdElements(adGraph);
+          loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
+        }
+      }
+      updateTierButtons();
+      document.querySelectorAll(".tier-btn").forEach(b => b.disabled = false);
+      const ph = document.getElementById("cy-placeholder");
+      if (ph) ph.style.display = "none";
+      statusEl.textContent = "Noeud de depart: " + name;
+    } catch(e) {
+      statusEl.textContent = "Erreur: " + e.message;
+    } finally {
+      document.querySelectorAll(".tier-btn").forEach(b => b.disabled = false);
+    }
+    return;
+  }
+
+  if (!currentJobId) return;
+
+  statusEl.textContent = "Recalcul des chemins...";
+  document.querySelectorAll(".tier-btn").forEach(b => b.disabled = true);
+
+  try {
+    const resp = await fetch("/api/change-start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: currentJobId, start: name }),
+    });
+    const data = await resp.json();
+    if (data.error) { statusEl.textContent = "Erreur: " + data.error; return; }
+
+    const rebuildJobId = data.job_id;
+    await waitForJob(rebuildJobId);
+
+    const resResp = await fetch(`/api/results/${rebuildJobId}`);
+    const resData = await resResp.json();
+
+    if (cy && adVisible) cy.elements('[isAD]').remove();
+    loadedTiers = {};
+    currentTier = null;
+    adVisible = false;
+
+    for (const key of ["tier0", "tier1", "tier2"]) {
+      if (resData[key]) {
+        const adGraph = resData[key];
+        const tier = adGraph.tier !== undefined ? adGraph.tier : parseInt(key.replace("tier", ""));
+        const elements = buildAdElements(adGraph);
+        loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
+      }
+    }
+
+    updateTierButtons();
+    const ph = document.getElementById("cy-placeholder");
+    if (ph) ph.style.display = "none";
+    statusEl.textContent = "Noeud de depart: " + name;
+  } catch (e) {
+    statusEl.textContent = "Erreur: " + e.message;
+  } finally {
+    document.querySelectorAll(".tier-btn").forEach(b => b.disabled = false);
+  }
+}
+
+async function waitForJob(jobId) {
+  while (true) {
+    const resp = await fetch(`/api/status/${jobId}`);
+    const data = await resp.json();
+    if (data.status === "success") return;
+    if (data.status === "failed") throw new Error("Graph generation failed");
+    await new Promise(r => setTimeout(r, 500));
+  }
 }
 
 // ── Cytoscape Styles ──

@@ -74,12 +74,21 @@ L'algorithme classe les objets AD en tiers de criticité via **5 phases séquent
   │  │ contrôle est CERTAIN  │───────▶│ sur un objet déjà     │───────▶│ aux machines Tier 0 ? │          │
   │  │ par nature            │        │ Tier 0 ?              │        │ (admin, RDP, LAPS,    │          │
   │  └───────────────────────┘        └───────────────────────┘        │  GPO, PSRemote, DCOM) │          │
-  │   Domain Admins                    GenericAll sur DA               └───────────────────────┘          │
-  │   Enterprise Admins                WriteDacl sur DC                                                   │
+  │   Domain Admins                    GenericAll sur DA               └──────────┬────────────┘          │
+  │   Enterprise Admins                WriteDacl sur DC                           │                       │
   │   KRBTGT, DCs                      WriteOwner sur EA                AdminTo sur T0                    │
   │   DCSync holders                   Owns sur KRBTGT                  ReadLAPS sur T0                   │
   │   CertTemplates ESC                ...itère jusqu'à stabilisation   GPO liée à T0                     │
   │                                    (point fixe)                     CanPSRemote / CanRDP / DCOM T0    │
+  │                                                                                                       │
+  │                                    Phase 2 bis                                                        │
+  │                                    HÉRITAGE DIRECT (2nd passage)                                      │
+  │                          ┌─────────────────────────────────────┐                                      │
+  │                          │ Re-exécution de l'héritage direct   │◀─────────────┘                       │
+  │                          │ sur les nouveaux T0 de Phase 3      │                                      │
+  │                          │ (ex: GenericAll sur un objet promu  │                                      │
+  │                          │  T0 par CanPSRemote)                │                                      │
+  │                          └─────────────────────────────────────┘                                      │
   │                                                                                                       │
   │  Phase 4                                                                                              │
   │  MEMBRES DES GROUPES T0                                                                               │
@@ -121,8 +130,11 @@ Chaque phase dépend du résultat de la précédente. Inverser deux phases produ
                  aux machines Tier 0. Sinon, sa machine ne serait pas encore T0 et on raterait les accès
                  indirects dessus.
 
-  Phase 3 → 4    Un admin local du DC doit être Tier 0 AVANT qu'on déplie les membres des groupes. Sinon,
-                 un groupe contenant cet admin ne serait pas correctement classé.
+  Phase 3 → 2b   Phase 3 ajoute de nouveaux T0 (ex: CanPSRemote sur DC). Un objet ayant GenericAll sur
+                 un de ces nouveaux T0 doit être promu — il faut donc re-exécuter l'héritage direct.
+
+  Phase 2b → 4   L'héritage direct est complet (incluant les cibles promues en Phase 3). On peut
+                 maintenant déplier les membres des groupes T0.
 
   Phase 4 → 5    Les membres des groupes Tier 0 SONT Tier 0 (pas "à 1 hop"). Le BFS doit partir du Tier 0
                  COMPLET pour calculer des distances correctes.
@@ -392,6 +404,7 @@ Notre algorithme de classification (Phases 1-4) est conçu pour être **exhausti
 - Phase 1 : objets nativement critiques (Domain Admins, DC, etc.)
 - Phase 2 : objets qui contrôlent un objet T0 via des ACE forts (WriteDacl, GenericAll, etc.)
 - Phase 3 : accès directs aux machines T0 (AdminTo, LAPS, GPO, accès distants)
+- Phase 2 bis : re-exécution de l'héritage direct sur les nouveaux T0 de Phase 3
 - Phase 4 : membres des groupes promus T0
 
 Résultat : tout ce qui **peut avec certitude** atteindre le Tier 0 est **déjà dans le Tier 0**. Le BFS ne trouve donc que des chemins **incertains** — c'est ce qui distingue notre approche d'un simple comptage de hops.

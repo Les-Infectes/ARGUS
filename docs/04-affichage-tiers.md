@@ -88,7 +88,11 @@ Chaque intermédiaire a été promu T0 par la classification :
 
 **Bouton** : `départ → T1 → T0`
 
-**Principe** : affiche les chemins depuis le nœud de départ vers les objets classifiés Tier 1 (distance 1-7 hops), puis prolonge ces chemins jusqu'aux objets Tier 0 qu'ils atteignent.
+**Principe** : affiche deux types de chemins d'attaque non déterministes :
+
+1. **Chemins via objets Tier 1** : chemins depuis le nœud de départ vers les objets classifiés Tier 1 (distance 1-7 hops depuis Tier 0), prolongés jusqu'aux objets Tier 0 qu'ils atteignent.
+
+2. **Chemins ambigus vers Tier 0** : chemins depuis le nœud de départ vers des objets Tier 0 qui utilisent au moins un droit non déterministe (GenericWrite, AllExtendedRights, etc.). Ces chemins existent mais ne sont pas affichés en T0 car les droits utilisés ne garantissent pas un contrôle certain.
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -100,27 +104,46 @@ Chaque intermédiaire a été promu T0 par la classification :
   │    GenericWrite, WriteSPN, AllExtendedRights, WriteAccountRestrictions,                                │
   │    Enroll, AutoEnroll, HasSession, LoggedOn                                                           │
   │                                                                                                       │
+  │  DROITS AMBIGUS (exclus du T0, visibles en T1) :                                                      │
+  │    GenericWrite      — dépend de l'attribut modifié                                                   │
+  │    AllExtendedRights — inclut plusieurs droits, faux positifs possibles                                │
+  │    WriteProperty     — attribute-aware requis                                                          │
+  │    WriteSPN          — Targeted Kerberoasting, dépend du crackage                                     │
+  │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Les nœuds affichés** peuvent être de n'importe quel tier (T0, T1, T2) car les droits incertains ne provoquent pas de promotion T0.
 
-**Construction du chemin** :
+**Construction des chemins** :
 
 ```
-  Étape 1 : Trouver les chemins  départ → objet T1
-  Étape 2 : Pour chaque objet T1 atteint, prolonger vers un objet T0
+  Type 1 — Via objets Tier 1 :
+    Étape 1 : Trouver les chemins  départ → objet T1
+    Étape 2 : Pour chaque objet T1 atteint, prolonger vers un objet T0
+    Résultat : départ → ... → objet T1 → ... → objet T0
 
-  Résultat : départ → ... → objet T1 → ... → objet T0
+  Type 2 — Chemins ambigus vers T0 :
+    Étape 1 : Trouver les chemins  départ → objet T0  (en utilisant tous les droits)
+    Étape 2 : Ne garder que les chemins utilisant au moins un droit hors whitelist T0
+    Résultat : départ → ... → objet T0  (via droit ambigu)
 ```
 
-**Exemple** :
+**Exemple — chemin via objet T1** :
 
 ```
   A.WHITE_ADM (T1) ──MemberOf──▶ IT (T1) ──WriteSPN──▶ DC01 (T0) ──MemberOf──▶ DOMAIN CONTROLLERS (T0)
 ```
 
 WriteSPN est un droit incertain (Targeted Kerberoasting — dépend du crackage du hash), donc IT reste T1. Le chemin complet montre comment un attaquant pourrait potentiellement atteindre T0 via des droits non déterministes.
+
+**Exemple — chemin ambigu vers T0** :
+
+```
+  EMILY (T0) ──GenericWrite──▶ ETHAN (T0) ──DCSync──▶ ADMINISTRATOR.HTB (T0)
+```
+
+Emily a GenericWrite sur Ethan (droit ambigu — dépend de l'attribut modifié). Ce chemin n'apparaît pas en T0 car GenericWrite n'est pas dans la whitelist déterministe, mais il représente une voie d'attaque potentielle que l'auditeur doit vérifier.
 
 ---
 
@@ -215,3 +238,5 @@ Les constantes correspondantes dans `argus_builder.py` :
 3. Il sera automatiquement inclus dans `tier0_valid_rights` via l'union des constantes
 
 **Droits T1/T2 uniquement** : les droits comme GenericWrite, WriteSPN, Enroll, HasSession ne sont dans aucune constante T0. Ils n'apparaissent que dans `ALL_PRIVILEGE_RIGHTS` et donc uniquement dans les graphes T1/T2.
+
+**Chemins ambigus vers T0 en mode T1** : lorsqu'un chemin vers un objet T0 utilise un droit hors whitelist (ex: GenericWrite), ce chemin est exclu du graphe T0 (pas déterministe) et affiché dans le graphe T1 (à vérifier par l'auditeur). L'objet cible reste classifié T0, mais le chemin emprunté est ambigu.
