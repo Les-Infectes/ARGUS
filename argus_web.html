@@ -2033,6 +2033,36 @@ async function loadJobResults(jobId) {
 
     // Show start node selector if BH data available (import mode)
     if (data.tier0 || data.tier1 || data.tier2) {
+      // Rebuild bhObjectNames from loaded tier data (replaces stale form data)
+      const seen = new Set();
+      bhObjectNames = [];
+      for (const key of ["tier0", "tier1", "tier2"]) {
+        const g = data[key];
+        if (!g) continue;
+        for (const n of [...(g.nodes_targets || []), ...(g.nodes_observed || [])]) {
+          if (n.name && !seen.has(n.name)) {
+            seen.add(n.name);
+            bhObjectNames.push({ name: n.name, type: (n.type || "unknown").toLowerCase(), pathToT0: n.tier === 0 || (n.is_target && key === "tier0") });
+          }
+        }
+      }
+      // Also try to load full node list from BH data via API
+      if (data.bh_objects && Array.isArray(data.bh_objects)) {
+        for (const obj of data.bh_objects) {
+          if (obj.name && !seen.has(obj.name)) {
+            seen.add(obj.name);
+            bhObjectNames.push({ name: obj.name, type: obj.type || "unknown", pathToT0: false });
+          }
+        }
+      }
+      const typePriority = { user: 0, computer: 1, group: 2 };
+      bhObjectNames.sort((a, b) => {
+        const pa = typePriority[a.type] ?? 9;
+        const pb = typePriority[b.type] ?? 9;
+        if (pa !== pb) return pa - pb;
+        return a.name.localeCompare(b.name);
+      });
+
       showStartSelector(true);
       document.getElementById("start-input").value = "";
       buildStartFilters();

@@ -161,6 +161,28 @@ def job_results(job_id):
             except Exception:
                 pass
 
+    # Include all BH objects for start node selection
+    bh_dir = output_dir / "uploads" / "bloodhound_data"
+    if bh_dir.is_dir():
+        bh_objects = []
+        type_labels = {"users": "user", "computers": "computer", "groups": "group",
+                       "domains": "domain", "ous": "ou", "gpos": "gpo", "containers": "container"}
+        for fpath in sorted(bh_dir.glob("*.json")):
+            try:
+                data = json.loads(fpath.read_text(encoding="utf-8"))
+                obj_type = (data.get("meta", {}).get("type") or "").lower()
+                label = type_labels.get(obj_type, obj_type)
+                if not label or not isinstance(data.get("data"), list):
+                    continue
+                for entry in data["data"]:
+                    name = (entry.get("Properties") or {}).get("name", "")
+                    if name:
+                        bh_objects.append({"name": name, "type": label})
+            except Exception:
+                pass
+        if bh_objects:
+            result["bh_objects"] = bh_objects
+
     return jsonify(result)
 
 
