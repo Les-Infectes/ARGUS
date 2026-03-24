@@ -334,7 +334,7 @@ def run_certipy_enumeration(args, output_dir, bh_dir):
         return None
 
 
-def run_graph_generation(args, output_dir, bh_dir, certipy_data=None):
+def run_graph_generation(args, output_dir, bh_dir, certipy_data=None, all_starts=False):
     """Run graph generation for all tiers."""
     script = SCRIPT_DIR / "argus_graph.py"
 
@@ -347,6 +347,8 @@ def run_graph_generation(args, output_dir, bh_dir, certipy_data=None):
     ]
     if certipy_data:
         cmd.extend(["--certipy-json", certipy_data])
+    if all_starts:
+        cmd.append("--all-starts")
 
     try:
         result = subprocess.run(cmd, check=True)
@@ -433,6 +435,7 @@ Examples:
     ad_group.add_argument("--dc-hostname", default=None, help="DC FQDN for bloodhound-python -dc flag (e.g., dc01.DANTE.local)")
     ad_group.add_argument("--skip-bloodhound", action="store_true", help="Skip BloodHound collection (use existing data)")
     ad_group.add_argument("--bh-dir", help="Existing BloodHound data directory (with --skip-bloodhound)")
+    ad_group.add_argument("--all-starts", action="store_true", help="Include a global graph with paths from ALL possible entry points to Tier 0")
 
     # ADCS arguments
     adcs_group = parser.add_argument_group('ADCS options')
@@ -561,7 +564,7 @@ Examples:
     if network_only_pass:
         print_step(current_step, total_steps, "Graph generation (SKIPPED - network-only pass)")
         results["graphs"] = "skipped"
-    elif run_graph_generation(args, output_dir, bh_dir, certipy_data):
+    elif run_graph_generation(args, output_dir, bh_dir, certipy_data, all_starts=args.all_starts):
         results["graphs"] = "success"
     else:
         results["graphs"] = "failed"

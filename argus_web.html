@@ -750,6 +750,11 @@
         <input id="imp-start" type="text" class="form-input" placeholder="Commencez a taper..." autocomplete="off" />
         <div id="imp-start-suggestions" class="autocomplete-list"></div>
       </div>
+      <div class="form-group" style="margin-top: 10px;">
+        <label class="form-radio">
+          <input type="checkbox" id="imp-all-starts" onchange="document.getElementById('imp-start').disabled = this.checked" /> Regrouper tous les points d'entrée
+        </label>
+      </div>
     </div>
 
     <div id="imp-certipy-group" class="form-group">
@@ -789,7 +794,7 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- SCREEN: SCANNER                                                        -->
+<!-- SCREEN: SCANNER                                                          -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <div id="screen-scan" class="screen">
   <form id="form-scan" class="form-screen" onsubmit="return false;">
@@ -865,6 +870,11 @@
         <div class="form-group">
           <label class="form-label">Start node</label>
           <input id="scan-start" type="text" class="form-input" placeholder="user@domain.local" />
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="form-radio">
+              <input type="checkbox" id="scan-all-starts" onchange="document.getElementById('scan-start').disabled = this.checked" /> Regrouper tous les points d'entrée
+            </label>
+          </div>
         </div>
       </div>
 
@@ -926,6 +936,11 @@
         <div class="form-group">
           <label class="form-label">Start node</label>
           <input id="pivot-start" type="text" class="form-input" placeholder="user@domain.local" />
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="form-radio">
+              <input type="checkbox" id="pivot-all-starts" onchange="document.getElementById('pivot-start').disabled = this.checked" /> Regrouper tous les points d'entrée
+            </label>
+          </div>
         </div>
       </div>
 
@@ -1086,9 +1101,9 @@ const adTypeColors = {
   Domain: "#f87171", OU: "#fb923c", GPO: "#a3e635",
   Container: "#2dd4bf", CertTemplate: "#e879f9", Unknown: "#64748b",
 };
-const tierColors = { 0: "#f87171", 1: "#fb923c", 2: "#facc15" };
-const tierBorderColors = { 0: "#ef4444", 1: "#f97316", 2: "#eab308" };
-const tierNames = { 0: "Tier 0", 1: "Tier 1", 2: "Tier 2" };
+const tierColors = { 0: "#f87171", 1: "#fb923c", 2: "#facc15", 4: "#4b7bff" };
+const tierBorderColors = { 0: "#ef4444", 1: "#f97316", 2: "#eab308", 4: "#3b82f6" };
+const tierNames = { 0: "Tier 0", 1: "Tier 1", 2: "Tier 2", 4: "Global" };
 const START_USER_COLOR = "#4ade80";
 const START_USER_BORDER = "#22c55e";
 
@@ -1553,6 +1568,7 @@ async function submitImport() {
 
   // Text fields
   form.append("start", document.getElementById("imp-start").value);
+  form.append("all_starts", document.getElementById("imp-all-starts").checked ? "true" : "false");
   form.append("dc_ip", document.getElementById("imp-dc-ip").value);
   const dnsMode = document.querySelector('input[name="imp-dns-mode"]:checked').value;
   form.append("dns_tcp", dnsMode === "pivot" ? "true" : "false");
@@ -1649,6 +1665,7 @@ async function submitScan() {
     body.domain = document.getElementById("scan-domain").value;
     body.user = document.getElementById("scan-user").value;
     body.start = document.getElementById("scan-start").value;
+    body.all_starts = document.getElementById("scan-all-starts").checked;
     body.ip_cidr = document.getElementById("scan-ip-cidr").value;
     body.gateway = document.getElementById("scan-gateway").value;
     body.dns = document.getElementById("scan-dns").value;
@@ -1667,6 +1684,7 @@ async function submitScan() {
     body.dc_hostname = document.getElementById("pivot-dc-hostname").value;
     body.user = document.getElementById("pivot-user").value;
     body.start = document.getElementById("pivot-start").value;
+    body.all_starts = document.getElementById("pivot-all-starts").checked;
     body.targets = document.getElementById("pivot-targets").value;
     body.bh_dir = document.getElementById("pivot-bh-dir").value;
     body.auth_type = authType;
@@ -1790,10 +1808,10 @@ async function loadJobResults(jobId) {
     }
 
     // Step 3: AD tiers (hostIndex ready, bridges work)
-    for (const key of ["tier0", "tier1", "tier2"]) {
+    for (const key of ["tier0", "tier1", "tier2", "global"]) {
       if (data[key]) {
         const adGraph = data[key];
-        const tier = adGraph.tier !== undefined ? adGraph.tier : parseInt(key.replace("tier", ""));
+        const tier = adGraph.tier !== undefined ? adGraph.tier : (key === "global" ? 4 : parseInt(key.replace("tier", "")));
         const elements = buildAdElements(adGraph);
         loadedTiers[tier] = { raw: adGraph, elements, graphState: adGraphState };
       }
@@ -1860,7 +1878,7 @@ function updateTierButtons() {
     const btn = document.createElement("button");
     btn.className = "tier-btn" + (currentTier == tier ? " active" : "");
     btn.dataset.tier = tier;
-    btn.textContent = `T${tier}`;
+    btn.textContent = tier == 4 ? "Global" : `T${tier}`;
     btn.style.borderColor = tierBorderColors[tier] || "#6b7280";
     if (currentTier == tier) { btn.style.background = tierColors[tier]; btn.style.color = "#0f172a"; }
     btn.addEventListener("click", () => switchToTier(parseInt(tier)));

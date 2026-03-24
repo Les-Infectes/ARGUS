@@ -152,6 +152,7 @@ def job_results(job_id):
         ("tier0", "graph_tier0.json"),
         ("tier1", "graph_tier1.json"),
         ("tier2", "graph_tier2.json"),
+        ("global", "graph_global.json"),
     ]:
         fpath = output_dir / filename
         if fpath.exists():
@@ -247,6 +248,7 @@ def import_data():
 
     # Form fields
     start = request.form.get("start", "").strip()
+    all_starts = request.form.get("all_starts") == "true"
     dc_ip = request.form.get("dc_ip", "").strip()
     dns_tcp = request.form.get("dns_tcp") == "true"
     proxychains_conf = request.form.get("proxychains_conf", "").strip()
@@ -260,6 +262,8 @@ def import_data():
                "--output-dir", str(output_dir)]
         if certipy_path:
             cmd += ["--certipy-json", str(certipy_path)]
+        if all_starts:
+            cmd.append("--all-starts")
     elif import_type == "network" and nmap_path:
         # Network only
         cmd = [_python(), str(SCRIPT_DIR / "argus_import.py"),
@@ -273,6 +277,8 @@ def import_data():
             cmd += ["--bh-dir", str(bh_dir)]
         if start:
             cmd += ["--start", start]
+        if all_starts:
+            cmd.append("--all-starts")
         if certipy_path:
             cmd += ["--certipy-json", str(certipy_path)]
         if dc_ip:
@@ -343,6 +349,8 @@ def _build_direct_cmd(data, python, pipeline, output_dir):
                "--ip-cidr", dc_ip, "--gateway", dc_ip, "--dns", dc_ip,
                "--domain", domain, "--dc-ip", dc_ip,
                "--user", user, "--start", start] + auth_args
+        if data.get("all_starts"):
+            cmd.append("--all-starts")
         if port_scan:
             cmd.append("--port-scan")
         cmd += ["--output-dir", output_dir]
@@ -362,6 +370,8 @@ def _build_direct_cmd(data, python, pipeline, output_dir):
                "--skip-network",
                "--domain", domain, "--dc-ip", dc_ip,
                "--user", user, "--start", start] + auth_args
+        if data.get("all_starts"):
+            cmd.append("--all-starts")
         cmd += ["--output-dir", output_dir]
 
     elif submode == "full_single":
@@ -370,6 +380,8 @@ def _build_direct_cmd(data, python, pipeline, output_dir):
                "--ip-cidr", dc_ip, "--gateway", dc_ip, "--dns", dc_ip,
                "--domain", domain, "--dc-ip", dc_ip,
                "--user", user, "--start", start] + auth_args
+        if data.get("all_starts"):
+            cmd.append("--all-starts")
         if port_scan:
             cmd.append("--port-scan")
         cmd += ["--output-dir", output_dir]
@@ -379,6 +391,8 @@ def _build_direct_cmd(data, python, pipeline, output_dir):
                "--ip-cidr", ip_cidr, "--gateway", gateway, "--dns", dns,
                "--domain", domain, "--dc-ip", dc_ip,
                "--user", user, "--start", start] + auth_args
+        if data.get("all_starts"):
+            cmd.append("--all-starts")
         if port_scan:
             cmd.append("--port-scan")
         cmd += ["--output-dir", output_dir]
@@ -424,6 +438,8 @@ def _build_pivot_cmd(data, python, pipeline, output_dir):
                "--skip-network",
                "--domain", domain, "--dc-ip", dc_ip,
                "--user", user, "--start", start, "--dns-tcp"] + auth_args
+        if data.get("all_starts"):
+            cmd.append("--all-starts")
         if dc_hostname:
             cmd += ["--dc-hostname", dc_hostname]
         cmd += ["--output-dir", output_dir]
@@ -467,6 +483,7 @@ def list_result_files(job_id):
         "graph_tier0.json": "Graphe Tier 0",
         "graph_tier1.json": "Graphe Tier 1",
         "graph_tier2.json": "Graphe Tier 2",
+        "graph_global.json": "Graphe Global (Tous points d'entrée)",
         "certipy_data.json": "Donnees Certipy (ADCS)",
     }
     files = []

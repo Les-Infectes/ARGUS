@@ -587,9 +587,8 @@ def classify_objects_by_tier(
 
     Classification rules:
     - Tier 0: Objects in tier0_nodes (already computed)
-    - Tier 1: Distance 1-2 hops from Tier 0 (high privilege, close to domain control)
-    - Tier 2: Distance 3-5 hops from Tier 0 (standard servers, workstations)
-    - Tier 3: Distance 6+ hops or unreachable (isolated/standard users)
+    - Tier 1: Distance 1-7 hops from Tier 0 (high privilege, close to domain control)
+    - Tier 2: Distance 8+ hops from Tier 0 (standard servers, workstations)
 
     Note: tier = min(tier, new_tier) to avoid promotion loops.
 
@@ -913,7 +912,9 @@ def build_node_index(by_type: Dict[str, dict]) -> Tuple[Dict[str, dict], Dict[st
     return nodes_by_id, key_to_ids_out
 
 
-def resolve_start_node(identifier: str, key_to_ids: Dict[str, List[str]]) -> str:
+def resolve_start_node(identifier: str, key_to_ids: Dict[str, List[str]]) -> Optional[str]:
+    if not identifier:
+        return None
     key = identifier.lower()
     if key in key_to_ids:
         ids = key_to_ids[key]
@@ -935,19 +936,20 @@ def resolve_start_node(identifier: str, key_to_ids: Dict[str, List[str]]) -> str
 
 
 def compute_effective_principals(
-    start_id: str,
+    start_ids: List[str],
     member_to_groups: Dict[str, List[str]],
     include_well_known: bool,
 ) -> List[str]:
     effective = []
     seen = set()
-    queue = deque([start_id])
+    queue = deque(start_ids)
     while queue:
         cur = queue.popleft()
         if cur in seen:
             continue
         seen.add(cur)
-        if (cur != start_id) and (not include_well_known) and is_well_known_sid(cur):
+        # Skip well-known SIDs if not explicitly requested, unless it's one of our start nodes
+        if (cur not in start_ids) and (not include_well_known) and is_well_known_sid(cur):
             continue
         effective.append(cur)
         for grp in member_to_groups.get(cur, []):
@@ -975,7 +977,7 @@ def build_observed_edges(
     member_to_groups,
     by_type,
     include_sessions,
-    start_id: str,
+    start_ids: Set[str],
     right_whitelist: Optional[Set[str]],
 ):
     edges = []
@@ -995,7 +997,7 @@ def build_observed_edges(
             target_id = obj.get("ObjectIdentifier")
             # We don't care about "who has rights over the start object" for the ego-graph:
             # the goal is escalation paths *from* start, not a full inbound ACL view.
-            if target_id == start_id:
+            if target_id in start_ids:
                 continue
             for ace in obj.get("Aces", []) or []:
                 principal = ace.get("PrincipalSID")
@@ -1429,7 +1431,7 @@ def main():
     parser.add_argument("--certipy-json", default=None, help="Path to certipy_data.json (ADCS templates)")
     parser.add_argument(
         "--mode",
-        choices=["0", "1", "2", "3"],
+        choices=["0", "1", "2", "3", "4"],
         default="0",
         help=(
             "Tier-based analysis mode:\n"
@@ -1437,6 +1439,7 @@ def main():
             "  1 = 30 shortest paths to Tier 1 (1-2 hops from Tier 0)\n"
             "  2 = 30 shortest paths to Tier 2 (3-7 hops from Tier 0)\n"
             "  3 = 40 paths exploring ALL relations from start_node (excluding Tier 0/1/2)\n"
+            "  4 = Global view: paths from ALL possible entry points to Tier 0\n"
             "\nClassification v5: Tier 0 (SEED→CLOSURE→INDIRECT→MEMBERS→BFS) + Tier 1/2 (BFS distance) + Tier 3 (ego-graph exploration)."
         ),
     )
@@ -1459,6 +1462,12 @@ def main():
     acl_rights = None
 
     start_id = resolve_start_node(args.start, key_to_ids)
+    
+    # Identify all potential entry points (Users and Computers)
+    all_entry_points = [nid for nid, node in nodes_by_id.items() if node.get("type") in ("User", "Computer")]
+    
+    # If no start node specified, use all entry points
+    initial_starts = [start_id] if start_id else all_entry_points
 
     # Build member -> groups index
     member_to_groups = defaultdict(list)
@@ -1473,14 +1482,14 @@ def main():
                 group_to_members[gid].append(mid)
 
     effective_principals = compute_effective_principals(
-        start_id, member_to_groups, include_well_known
+        initial_starts, member_to_groups, include_well_known
     )
     edges = build_observed_edges(
         set(effective_principals),
         member_to_groups,
         by_type,
         include_sessions,
-        start_id,
+        set(initial_starts),
         acl_rights,
     )
 
@@ -1574,7 +1583,7 @@ def main():
         member_to_groups,
         by_type,
         include_sessions,
-        start_id,
+        set(initial_starts),
         acl_rights,
     )
     edges = edges_observed + derived_edges
@@ -1816,25 +1825,55 @@ def main():
         tier_counts[tier] += 1
 
     # Step 4: Get targets for the requested mode
-    target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2
-    tier_name = ["Tier 0", "Tier 1", "Tier 2"][target_tier]
+    if args.mode == "4":
+        # Global view: paths from ANY entry point to Tier 0
+        target_tier = 0
+        tier_name = "Global"
+        max_paths = 1000  # High limit for global view
 
-    # Progressive path limits:
-    # - Tier 0: ALL paths (no limit) - critical targets must all be visible
-    # - Tier 1: 30 paths (1-7 hops from Tier 0)
-    # - Tier 2: 40 paths (ego-graph exploration: all relations from start_node not in Tier 0/1)
-    max_paths_by_tier = {
-        0: 9999,  # Tier 0: ALL paths (no artificial limit)
-        1: 30,    # Tier 1: 1-7 hops from Tier 0
-        2: 40,    # Tier 2: ego-graph exploration from start_node
-    }
-    max_paths = max_paths_by_tier[target_tier]
+        # Find all entry points (Users/Computers that can reach Tier 0)
+        reverse_adj = defaultdict(set)
+        for e in all_edges:
+            reverse_adj[e.get("dst")].add(e.get("src"))
 
-    # For Mode 2: pass start_id and all_edges to enable ego-graph exploration
-    if target_tier == 2:
-        tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id, start_id, all_edges)
+        can_reach_t0 = set()
+        queue = deque(tier0_nodes)
+        visited = set(tier0_nodes)
+        while queue:
+            node = queue.popleft()
+            for predecessor in reverse_adj.get(node, set()):
+                if predecessor not in visited:
+                    visited.add(predecessor)
+                    can_reach_t0.add(predecessor)
+                    queue.append(predecessor)
+
+        path_start_ids = [sid for sid in can_reach_t0 if nodes_by_id.get(sid, {}).get("type") in ("User", "Computer")]
+        path_start_ids.sort()
+        tier_targets = get_tier_targets(0, tier_classification, nodes_by_id)
     else:
-        tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
+        target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2
+        tier_name = ["Tier 0", "Tier 1", "Tier 2", "Tier 3"][target_tier]
+        
+        # If no start node specified, use all users/computers as entry points
+        path_start_ids = [start_id] if start_id else all_entry_points
+
+        # Progressive path limits:
+        # - Tier 0: ALL paths (no limit) - critical targets must all be visible
+        # - Tier 1: 30 paths (1-7 hops from Tier 0)
+        # - Tier 2: 40 paths (ego-graph exploration: all relations from start_node not in Tier 0/1)
+        max_paths_by_tier = {
+            0: 9999,  # Tier 0: ALL paths (no artificial limit)
+            1: 30,    # Tier 1: 1-7 hops from Tier 0
+            2: 40,    # Tier 2: ego-graph exploration from start_node
+            3: 40,
+        }
+        max_paths = max_paths_by_tier.get(target_tier, 40)
+
+        # For Mode 2: pass start_id and all_edges to enable ego-graph exploration
+        if target_tier == 2:
+            tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id, start_id, all_edges)
+        else:
+            tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
 
     print(f"\n[MODE {args.mode}] Finding paths to {tier_name} targets...")
     print(f"  ✓ Found {len(tier_targets)} {tier_name} targets")
@@ -1849,21 +1888,23 @@ def main():
 
     # Step 5: Compute shortest paths to tier targets (using complete AD edge set)
     all_paths = []
-    for goal_type, target_id, target_name in tier_targets:
-        # Skip if target is the start node
-        if target_id == start_id:
-            continue
+    k_val = 1 if args.mode == "4" else 3
+    for sid in path_start_ids:
+        for goal_type, target_id, target_name in tier_targets:
+            # Skip if target is the start node
+            if target_id == sid:
+                continue
 
-        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_edges, k=3, max_depth=12)
-        for path in node_paths:
-            all_paths.append({
-                "goal": goal_type,
-                "target_id": target_id,
-                "target_name": target_name,
-                "nodes": path,
-                "length": max(0, len(path) - 1),
-                "tier": target_tier,
-            })
+            node_paths, _ = k_shortest_loopless_paths(sid, target_id, all_edges, k=k_val, max_depth=12)
+            for path in node_paths:
+                all_paths.append({
+                    "goal": goal_type,
+                    "target_id": target_id,
+                    "target_name": target_name,
+                    "nodes": path,
+                    "length": max(0, len(path) - 1),
+                    "tier": target_tier,
+                })
 
     # Step 6: Select paths - simple approach:
     # - Sort by path length (shortest first)
@@ -1909,7 +1950,7 @@ def main():
         return out
 
     # Step 8: Extract nodes and edges for selected paths
-    nodes_in_paths = {start_id}
+    nodes_in_paths = set(path_start_ids) if start_id else set()
     edges_in_paths = []
     domain_edge_paths = []
 
@@ -1986,6 +2027,7 @@ def main():
         # Add tier classification for color coding
         node_tier = tier_classification.get(n["id"], 3)  # Default to Tier 3 if not found
         is_target = n["id"] in target_node_ids  # Mark target nodes to highlight them
+        is_start = n["id"] in set(path_start_ids)  # Mark start nodes to highlight them in green
 
         nodes.append(
             {
@@ -1995,6 +2037,7 @@ def main():
                 "display_name": display_name,
                 "tier": node_tier,
                 "is_target": is_target,
+                "is_start": is_start,
             }
         )
 
@@ -2054,7 +2097,7 @@ def main():
     view = tier_names.get(args.mode, "tier0")
 
     output = {
-        "start_node": start_id,
+        "start_node": start_id if start_id else "Multiple (Users/Computers)",
         "mode": args.mode,
         "view": view,
         "tier": target_tier,

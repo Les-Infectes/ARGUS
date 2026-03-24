@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Run all BloodHound Tier-based analysis modes automatically.
-Generates 4 JSON files for Tier 0, Tier 1, Tier 2, and Tier 3 attack paths.
+Generates JSON files for Tier 0, Tier 1, Tier 2 attack paths, and optionally a Global graph.
 """
 import argparse
 import subprocess
@@ -64,6 +64,11 @@ def main():
         default=None,
         help="Path to certipy_data.json (ADCS certificate templates)"
     )
+    parser.add_argument(
+        "--all-starts",
+        action="store_true",
+        help="Include a global graph with paths from ALL possible entry points to Tier 0"
+    )
 
     args = parser.parse_args()
 
@@ -77,6 +82,8 @@ def main():
         1: output_dir / "graph_tier1.json",
         2: output_dir / "graph_tier2.json",
     }
+    if args.all_starts:
+        outputs[4] = output_dir / "graph_global.json"
 
     print("="*70)
     print("CartoAD - Tier-Based Attack Path Analysis")
@@ -84,7 +91,7 @@ def main():
     print(f"Data directory: {args.data_dir}")
     print(f"Start node: {args.start}")
     print(f"Output directory: {output_dir}")
-    print(f"\nGenerating 3 tier-based reports...")
+    print(f"\nGenerating tier-based reports...")
 
     # Run all modes
     results = {}
@@ -101,6 +108,7 @@ def main():
         0: "Mode 0 - Tier 0 (ALL paths to Domain/DCs/DA/Cert Publishers - Critical)",
         1: "Mode 1 - Tier 1 (30 paths, 1-7 hops from Tier 0)",
         2: "Mode 2 - Tier 2 (40 paths, ego-graph exploration)",
+        4: "Mode 4 - Global (Paths from ALL entry points to Tier 0)",
     }
 
     for mode, success in results.items():
@@ -118,6 +126,8 @@ def main():
         print("  - graph_tier0.json  (Tier 0: Domain control - ALL paths)")
         print("  - graph_tier1.json  (Tier 1: 1-7 hops - 30 paths)")
         print("  - graph_tier2.json  (Tier 2: ego-graph exploration - 40 paths)")
+        if args.all_starts:
+            print("  - graph_global.json (Global view: all entry points)")
         print("\nYou can now load these files in the UI (cartographie.html)")
         print("\nClassification v6:")
         print("  Tier 0: deterministic (SEED + CLOSURE + INDIRECT + MEMBERS)")
