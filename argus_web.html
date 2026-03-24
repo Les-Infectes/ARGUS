@@ -2131,9 +2131,9 @@ function updateTierButtons() {
     btn.className = "tier-btn" + (currentTier == tier ? " active" : "");
     btn.dataset.tier = tier;
     const tierBtnLabels = {
-      0: "Déterministe → T0",
-      1: "Non-déterministe → T0",
-      2: "Éloigné → T0",
+      0: "Départ → Déterministe → T0",
+      1: "Départ → Non-déterministe → T0",
+      2: "Départ → Éloigné → T0",
     };
     btn.textContent = tierBtnLabels[tier] || `T${tier}`;
     btn.style.borderColor = tierBorderColors[tier] || "#6b7280";
