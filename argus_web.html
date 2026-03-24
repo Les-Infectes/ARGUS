@@ -2132,7 +2132,7 @@ function updateTierButtons() {
     btn.dataset.tier = tier;
     const tierBtnLabels = {
       0: "Déterministe → T0",
-      1: "Ambigu → T0",
+      1: "Non-déterministe → T0",
       2: "Éloigné → T0",
     };
     btn.textContent = tierBtnLabels[tier] || `T${tier}`;

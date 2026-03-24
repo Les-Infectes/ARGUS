@@ -4,7 +4,7 @@
 
 1. [Classification vs Affichage](#1-classification-vs-affichage)
 2. [Déterministe → T0](#2-déterministe--t0)
-3. [Ambigu → T0](#3-ambigu--t0)
+3. [Non-déterministe → T0](#3-non-déterministe--t0)
 4. [Éloigné → T0](#4-éloigné--t0)
 5. [Filtre de nœuds de départ → T0](#5-filtre-de-nœuds-de-départ--t0)
 6. [Cohérence classification / affichage](#6-cohérence-classification--affichage)
@@ -34,7 +34,7 @@ ARGUS distingue deux concepts indépendants :
   │                                                                                                       │
   │  Les 3 modes d'affichage :                                                                           │
   │    Déterministe → T0  : chemins utilisant uniquement des droits certains (whitelist)                  │
-  │    Ambigu → T0        : chemins utilisant au moins un droit incertain                                │
+  │    Non-déterministe → T0        : chemins utilisant au moins un droit incertain                                │
   │    Éloigné → T0       : chemins depuis des objets distants (8+ hops)                                 │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -89,9 +89,9 @@ Chaque intermédiaire a été promu T0 par la classification :
 
 ---
 
-## 3. Ambigu → T0
+## 3. Non-déterministe → T0
 
-**Bouton** : `Ambigu → T0`
+**Bouton** : `Non-déterministe → T0`
 
 **Principe** : affiche les chemins depuis le nœud de départ vers les objets Tier 0 qui utilisent **au moins un droit non déterministe**. Ces chemins existent mais ne sont pas affichés en mode déterministe car les droits utilisés ne garantissent pas un contrôle certain — ils nécessitent une vérification manuelle par l'auditeur.
 
@@ -119,10 +119,10 @@ Chaque intermédiaire a été promu T0 par la classification :
 ```
   Étape 1 : Trouver tous les chemins  départ → objet T0  (tous les droits, max 7 hops)
   Étape 2 : Ne garder que les chemins utilisant au moins un droit hors whitelist déterministe
-  Résultat : départ → ... → objet T0  (via au moins un droit ambigu)
+  Résultat : départ → ... → objet T0  (via au moins un droit non déterministe)
 ```
 
-**Les nœuds affichés** peuvent être de n'importe quel tier (T0, T1, T2). Un chemin ambigu peut passer par un objet T0 qui a lui-même un droit non déterministe vers un autre T0. Le critère est la **nature du droit**, pas le **tier de l'objet**.
+**Les nœuds affichés** peuvent être de n'importe quel tier (T0, T1, T2). Un chemin non déterministe peut passer par un objet T0 qui a lui-même un droit non déterministe vers un autre T0. Le critère est la **nature du droit**, pas le **tier de l'objet**.
 
 **Exemple** :
 
@@ -152,7 +152,7 @@ Emily a GenericWrite sur Ethan — ce droit dépend de l'attribut modifié. Ce c
              départ → ... → objet T2                    (si aucun chemin vers T0)
 ```
 
-**Différence avec Ambigu** : le mode Éloigné cible les objets classifiés Tier 2 (distance ≥ 8 hops). Ces objets peuvent ne pas avoir de chemin vers T0 du tout. Ce mode montre l'environnement éloigné du nœud de départ.
+**Différence avec Non-déterministe** : le mode Éloigné cible les objets classifiés Tier 2 (distance ≥ 8 hops). Ces objets peuvent ne pas avoir de chemin vers T0 du tout. Ce mode montre l'environnement éloigné du nœud de départ.
 
 ---
 
@@ -198,7 +198,7 @@ La règle fondamentale qui garantit la cohérence entre classification et affich
   │  Le mode Déterministe n'utilise que des droits de la classification T0.                               │
   │  Sinon, des intermédiaires non-T0 apparaîtraient dans le graphe — incohérent.                        │
   │                                                                                                       │
-  │  Le mode Ambigu utilise tous les droits, mais ne garde que les chemins                                │
+  │  Le mode Non-déterministe utilise tous les droits, mais ne garde que les chemins                                │
   │  contenant au moins un droit hors whitelist. Ces chemins sont le complément                           │
   │  exact du mode Déterministe : même cibles (T0), droits différents.                                   │
   │                                                                                                       │
@@ -222,4 +222,4 @@ Les constantes correspondantes dans `argus_builder.py` :
 2. La phase de classification correspondante (Phase 2, 3, etc.)
 3. Il sera automatiquement inclus dans `tier0_valid_rights` via l'union des constantes
 
-**Droits ambigus** : les droits comme GenericWrite, WriteSPN, Enroll, HasSession ne sont dans aucune constante T0. Ils n'apparaissent que dans `ALL_PRIVILEGE_RIGHTS` et donc uniquement dans les modes Ambigu et Éloigné.
+**Droits non déterministes** : les droits comme GenericWrite, WriteSPN, Enroll, HasSession ne sont dans aucune constante T0. Ils n'apparaissent que dans `ALL_PRIVILEGE_RIGHTS` et donc uniquement dans les modes Non-déterministe et Éloigné.

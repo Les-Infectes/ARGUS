@@ -1857,7 +1857,7 @@ def main():
     #   Mode 1 = Ambiguous paths to T0 (non-deterministic rights)
     #   Mode 2 = Distant paths (T2 objects, extended to T0 if possible)
     target_tier = int(args.mode)
-    mode_names = ["Déterministe → T0", "Ambigu → T0", "Éloigné → T0"]
+    mode_names = ["Déterministe → T0", "Non-déterministe → T0", "Éloigné → T0"]
     tier_name = mode_names[target_tier]
 
     # Progressive path limits
