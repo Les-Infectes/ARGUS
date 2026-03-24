@@ -1852,28 +1852,33 @@ def main():
         tier_counts[tier] += 1
 
     # Step 4: Get targets for the requested mode
-    target_tier = int(args.mode)  # Mode 0 -> Tier 0, Mode 1 -> Tier 1, Mode 2 -> Tier 2
-    tier_name = ["Tier 0", "Tier 1", "Tier 2"][target_tier]
+    # Display modes (distinct from classification):
+    #   Mode 0 = Deterministic paths to T0 (whitelist rights only)
+    #   Mode 1 = Ambiguous paths to T0 (non-deterministic rights)
+    #   Mode 2 = Distant paths (T2 objects, extended to T0 if possible)
+    target_tier = int(args.mode)
+    mode_names = ["Déterministe → T0", "Ambigu → T0", "Éloigné → T0"]
+    tier_name = mode_names[target_tier]
 
-    # Progressive path limits:
-    # - Tier 0: ALL paths (no limit) - critical targets must all be visible
-    # - Tier 1: 30 paths (1-7 hops from Tier 0)
-    # - Tier 2: 40 paths (ego-graph exploration: all relations from start_node not in Tier 0/1)
+    # Progressive path limits
     max_paths_by_tier = {
-        0: 9999,  # Tier 0: ALL paths (no artificial limit)
-        1: 30,    # Tier 1: 1-7 hops from Tier 0
-        2: 40,    # Tier 2: ego-graph exploration from start_node
+        0: 9999,  # Deterministic: ALL paths (no artificial limit)
+        1: 30,    # Ambiguous: 30 paths
+        2: 40,    # Distant: 40 paths (ego-graph exploration from start_node)
     }
     max_paths = max_paths_by_tier[target_tier]
 
-    # For Mode 2: pass start_id and all_edges to enable ego-graph exploration
+    # Mode 1 (ambiguous) targets T0 objects directly, not T1-classified objects
     if target_tier == 2:
         tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id, start_id, all_edges)
+    elif target_tier == 1:
+        tier_targets = []  # T1 mode finds its own targets (T0 objects via ambiguous rights)
     else:
         tier_targets = get_tier_targets(target_tier, tier_classification, nodes_by_id)
 
-    print(f"\n[MODE {args.mode}] Finding paths to {tier_name} targets...")
-    print(f"  ✓ Found {len(tier_targets)} {tier_name} targets")
+    print(f"\n[MODE {args.mode}] {tier_name}...")
+    if tier_targets:
+        print(f"  ✓ Found {len(tier_targets)} targets")
 
     if tier_targets:
         # Show sample of targets
@@ -1884,17 +1889,21 @@ def main():
             print(f"    ... and {len(tier_targets) - sample_size} more")
 
     # Step 5: Compute shortest paths to tier targets
-    # For Tier 0: filter edges to only use rights that correspond to T0 classification
-    # (CLOSURE rights + machine access + DCSync). This prevents non-deterministic rights
-    # like WriteSPN or GenericWrite from appearing in Tier 0 attack paths.
+    # Build edge index for fast lookup
+    edge_index = defaultdict(list)
+    for e in all_edges:
+        edge_index[(e["src"], e["dst"])].append(e)
+
+    tier0_valid_rights = (
+        TIER0_CLOSURE_RIGHTS
+        | TIER0_DCSYNC_RIGHTS
+        | ADMIN_ACCESS_RIGHTS
+        | REMOTE_ACCESS_RIGHTS
+        | TIER0_READPASS_RIGHTS
+    )
+
     if target_tier == 0:
-        tier0_valid_rights = (
-            TIER0_CLOSURE_RIGHTS
-            | TIER0_DCSYNC_RIGHTS
-            | ADMIN_ACCESS_RIGHTS
-            | REMOTE_ACCESS_RIGHTS
-            | TIER0_READPASS_RIGHTS
-        )
+        # T0 display: deterministic paths only (whitelist rights)
         path_edges = [
             e for e in all_edges
             if e.get("kind") == "memberOf"
@@ -1904,55 +1913,28 @@ def main():
         path_edges = all_edges
 
     all_paths = []
-    for goal_type, target_id, target_name in tier_targets:
-        # Skip if target is the start node
-        if target_id == start_id:
-            continue
 
-        node_paths, _ = k_shortest_loopless_paths(start_id, target_id, path_edges, k=3, max_depth=12)
-        for path in node_paths:
-            all_paths.append({
-                "goal": goal_type,
-                "target_id": target_id,
-                "target_name": target_name,
-                "nodes": path,
-                "length": max(0, len(path) - 1),
-                "tier": target_tier,
-            })
-
-    # For T1: also find AMBIGUOUS paths to Tier 0 objects
-    # These are paths that use non-deterministic rights (GenericWrite, AllExtendedRights, etc.)
-    # which are excluded from the T0 graph (strict whitelist) but still relevant for an auditor.
     if target_tier == 1:
-        tier0_valid_rights = (
-            TIER0_CLOSURE_RIGHTS
-            | TIER0_DCSYNC_RIGHTS
-            | ADMIN_ACCESS_RIGHTS
-            | REMOTE_ACCESS_RIGHTS
-            | TIER0_READPASS_RIGHTS
-        )
-        t0_targets_ambiguous = [
+        # MODE 1 — Ambiguous paths to T0
+        # Find all paths from start to T0 using ALL edges,
+        # keep only those using at least one non-deterministic right.
+        t0_targets = [
             (nodes_by_id.get(nid, {}).get("type", "Unknown").lower(), nid,
              nodes_by_id.get(nid, {}).get("name", nid))
             for nid, t in tier_classification.items()
             if t == 0 and nid != start_id
         ]
-        ambiguous_count = 0
-        for goal_type, target_id, target_name in t0_targets_ambiguous:
-            # Find paths using ALL edges
-            node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_edges, k=3, max_depth=12)
+        for goal_type, target_id, target_name in t0_targets:
+            node_paths, _ = k_shortest_loopless_paths(start_id, target_id, all_edges, k=3, max_depth=7)
             for path in node_paths:
-                # Check if this path uses at least one non-whitelist right (= ambiguous)
-                path_edges_list = []
+                # Check if this path uses at least one non-whitelist right
                 is_ambiguous = False
                 for i in range(len(path) - 1):
-                    for e in all_edges:
-                        if e["src"] == path[i] and e["dst"] == path[i + 1]:
-                            path_edges_list.append(e)
-                            right = e.get("right", "")
-                            if right and e.get("kind") != "memberOf" and right not in tier0_valid_rights:
-                                is_ambiguous = True
-                            break
+                    for e in edge_index.get((path[i], path[i + 1]), []):
+                        right = e.get("right", "")
+                        if right and e.get("kind") != "memberOf" and right not in tier0_valid_rights:
+                            is_ambiguous = True
+                        break
                 if is_ambiguous:
                     all_paths.append({
                         "goal": goal_type,
@@ -1962,14 +1944,26 @@ def main():
                         "length": max(0, len(path) - 1),
                         "tier": 1,
                     })
-                    ambiguous_count += 1
-        if ambiguous_count:
-            print(f"  ✓ Found {ambiguous_count} ambiguous paths to Tier 0 (non-deterministic rights)")
+        print(f"  ✓ Found {len(all_paths)} ambiguous paths to Tier 0 (non-deterministic rights)")
+    else:
+        # MODE 0 (deterministic) and MODE 2 (distant)
+        for goal_type, target_id, target_name in tier_targets:
+            if target_id == start_id:
+                continue
+            node_paths, _ = k_shortest_loopless_paths(start_id, target_id, path_edges, k=3, max_depth=12)
+            for path in node_paths:
+                all_paths.append({
+                    "goal": goal_type,
+                    "target_id": target_id,
+                    "target_name": target_name,
+                    "nodes": path,
+                    "length": max(0, len(path) - 1),
+                    "tier": target_tier,
+                })
 
-    # For T1/T2: extend paths from tier targets to Tier 0 objects
-    # T1: start → T1 → ... → T0 (complete attack path via uncertain rights)
+    # For T2: extend paths from tier targets to Tier 0 objects
     # T2: start → T2 → ... → T0 (if reachable)
-    if target_tier in (1, 2):
+    if target_tier == 2:
         t0_targets = [
             (ntype, nid, nname)
             for nid, t in tier_classification.items()
@@ -1978,7 +1972,7 @@ def main():
                                    nodes_by_id.get(nid, {}).get("name", nid))]
         ]
         extension_paths = []
-        seen_extensions = set()  # (tier_target_id, t0_target_id) to avoid duplicates
+        seen_extensions = set()
         for p in all_paths:
             tier_target_id = p["target_id"]
             already_visited = set(p["nodes"])
@@ -1988,16 +1982,14 @@ def main():
                 ext_key = (tier_target_id, t0_id)
                 if ext_key in seen_extensions:
                     continue
-                # Find path from tier target to T0 object
                 ext_node_paths, _ = k_shortest_loopless_paths(
                     tier_target_id, t0_id, path_edges, k=1, max_depth=8
                 )
                 if ext_node_paths:
                     seen_extensions.add(ext_key)
-                    # Merge: original path + extension (skip first node of extension = tier target)
                     merged = p["nodes"] + ext_node_paths[0][1:]
                     extension_paths.append({
-                        "goal": goal_type,
+                        "goal": "domain",
                         "target_id": t0_id,
                         "target_name": t0_name,
                         "nodes": merged,

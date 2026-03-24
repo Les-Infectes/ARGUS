@@ -1,11 +1,11 @@
-# Affichage des chemins d'attaque par Tier — ARGUS
+# Affichage des chemins d'attaque — ARGUS
 
 ## Table des matières
 
 1. [Classification vs Affichage](#1-classification-vs-affichage)
-2. [Mode T0 — Chemins déterministes](#2-mode-t0--chemins-déterministes)
-3. [Mode T1 — Chemins incertains](#3-mode-t1--chemins-incertains)
-4. [Mode T2 — Chemins éloignés](#4-mode-t2--chemins-éloignés)
+2. [Déterministe → T0](#2-déterministe--t0)
+3. [Ambigu → T0](#3-ambigu--t0)
+4. [Éloigné → T0](#4-éloigné--t0)
 5. [Filtre de nœuds de départ → T0](#5-filtre-de-nœuds-de-départ--t0)
 6. [Cohérence classification / affichage](#6-cohérence-classification--affichage)
 
@@ -13,9 +13,9 @@
 
 ## 1. Classification vs Affichage
 
-L'algorithme ARGUS produit deux résultats distincts qu'il ne faut pas confondre :
+ARGUS distingue deux concepts indépendants :
 
-**Classification des objets** : l'algorithme en 5 phases (voir [03-classification-object.md](03-classification-object.md)) attribue un tier à chaque objet du domaine :
+**Classification des objets** (propriété fixe) : l'algorithme en 5 phases (voir [03-classification-object.md](03-classification-object.md)) attribue un tier à chaque objet du domaine. Le tier est une propriété intrinsèque de l'objet, indépendante du nœud de départ.
 
 ```
   Tier 0 : contrôle déterministe du domaine
@@ -24,44 +24,49 @@ L'algorithme ARGUS produit deux résultats distincts qu'il ne faut pas confondre
   Tier 2 : distance BFS 8+ hops ou inaccessible
 ```
 
-**Affichage des chemins** : à partir d'un nœud de départ choisi par l'utilisateur, ARGUS affiche les chemins d'attaque vers les objets Tier 0, organisés en 3 vues (T0, T1, T2). Chaque vue montre des chemins de nature différente.
+**Modes d'affichage** (dépend du nœud de départ) : à partir d'un nœud de départ choisi par l'auditeur, ARGUS affiche les chemins d'attaque vers les objets Tier 0 selon la **nature des droits utilisés** dans le chemin, pas selon le tier des objets traversés.
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                                                                                       │
-  │  Classification = QUI est dans quel tier (propriété de chaque objet)                                  │
-  │  Affichage      = COMMENT atteindre les objets Tier 0 depuis un nœud de départ                        │
+  │  Classification = QUI est dans quel tier (propriété de chaque objet, fixe)                            │
+  │  Affichage      = COMMENT atteindre Tier 0 (nature du chemin, dépend du nœud de départ)              │
+  │                                                                                                       │
+  │  Les 3 modes d'affichage :                                                                           │
+  │    Déterministe → T0  : chemins utilisant uniquement des droits certains (whitelist)                  │
+  │    Ambigu → T0        : chemins utilisant au moins un droit incertain                                │
+  │    Éloigné → T0       : chemins depuis des objets distants (8+ hops)                                 │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Mode T0 — Chemins déterministes
+## 2. Déterministe → T0
 
-**Bouton** : `départ → T0 → T0`
+**Bouton** : `Déterministe → T0`
 
-**Principe** : affiche les chemins depuis le nœud de départ vers les objets Tier 0, en utilisant uniquement les droits qui provoquent une promotion Tier 0 dans la classification.
+**Principe** : affiche les chemins depuis le nœud de départ vers les objets Tier 0, en utilisant uniquement les droits de la whitelist déterministe. Chaque droit utilisé dans le chemin garantit un contrôle effectif sur la cible.
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  DROITS AUTORISÉS DANS LES CHEMINS T0                                                                 │
+  │  DROITS AUTORISÉS (whitelist déterministe)                                                            │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
-  │  TIER0_DCSYNC_RIGHTS (attribution directe — Phase 1) :                                                 │
+  │  TIER0_DCSYNC_RIGHTS (attribution directe — Phase 1) :                                                │
   │    DCSync, GetChanges, GetChangesAll, GetChangesInFilteredSet                                         │
   │                                                                                                       │
-  │  TIER0_CLOSURE_RIGHTS (héritage direct — Phase 2) :                                                    │
+  │  TIER0_CLOSURE_RIGHTS (héritage direct — Phase 2) :                                                   │
   │    GenericAll, WriteDacl, WriteOwner, Owns, AddMember, WriteMember,                                   │
   │    ForceChangePassword, ResetPassword, AddKeyCredentialLink, WriteKeyCredentialLink                    │
   │                                                                                                       │
-  │  ADMIN_ACCESS_RIGHTS (héritage indirect — Phase 3) :                                                   │
+  │  ADMIN_ACCESS_RIGHTS (héritage indirect — Phase 3) :                                                  │
   │    AdminTo                                                                                            │
   │                                                                                                       │
-  │  REMOTE_ACCESS_RIGHTS (héritage indirect — Phase 3) :                                                  │
+  │  REMOTE_ACCESS_RIGHTS (héritage indirect — Phase 3) :                                                 │
   │    CanRDP, CanPSRemote, ExecuteDCOM, DCOM                                                             │
   │                                                                                                       │
-  │  TIER0_READPASS_RIGHTS (héritage indirect — Phase 3) :                                                 │
+  │  TIER0_READPASS_RIGHTS (héritage indirect — Phase 3) :                                                │
   │    ReadLAPSPassword, ReadGMSAPassword                                                                 │
   │                                                                                                       │
   │  Relations structurelles :                                                                            │
@@ -70,7 +75,7 @@ L'algorithme ARGUS produit deux résultats distincts qu'il ne faut pas confondre
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Propriété clé** : tous les nœuds affichés dans le graphe T0 sont eux-mêmes classifiés Tier 0. C'est garanti par la synchronisation entre les droits d'affichage et les droits de classification (voir §6).
+**Propriété clé** : tous les nœuds affichés sont eux-mêmes classifiés Tier 0. C'est garanti par la synchronisation entre les droits d'affichage et les droits de classification (voir §6).
 
 **Exemple** :
 
@@ -84,88 +89,70 @@ Chaque intermédiaire a été promu T0 par la classification :
 
 ---
 
-## 3. Mode T1 — Chemins incertains
+## 3. Ambigu → T0
 
-**Bouton** : `départ → T1 → T0`
+**Bouton** : `Ambigu → T0`
 
-**Principe** : affiche deux types de chemins d'attaque non déterministes :
-
-1. **Chemins via objets Tier 1** : chemins depuis le nœud de départ vers les objets classifiés Tier 1 (distance 1-7 hops depuis Tier 0), prolongés jusqu'aux objets Tier 0 qu'ils atteignent.
-
-2. **Chemins ambigus vers Tier 0** : chemins depuis le nœud de départ vers des objets Tier 0 qui utilisent au moins un droit non déterministe (GenericWrite, AllExtendedRights, etc.). Ces chemins existent mais ne sont pas affichés en T0 car les droits utilisés ne garantissent pas un contrôle certain.
+**Principe** : affiche les chemins depuis le nœud de départ vers les objets Tier 0 qui utilisent **au moins un droit non déterministe**. Ces chemins existent mais ne sont pas affichés en mode déterministe car les droits utilisés ne garantissent pas un contrôle certain — ils nécessitent une vérification manuelle par l'auditeur.
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │  DROITS AUTORISÉS DANS LES CHEMINS T1                                                                 │
+  │  DROITS AMBIGUS (exclus du mode déterministe, visibles ici)                                           │
   ├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
   │                                                                                                       │
-  │  ALL_PRIVILEGE_RIGHTS — tous les droits significatifs :                                                │
-  │    Inclut tous les droits T0 PLUS les droits incertains :                                             │
-  │    GenericWrite, WriteSPN, AllExtendedRights, WriteAccountRestrictions,                                │
-  │    Enroll, AutoEnroll, HasSession, LoggedOn                                                           │
-  │                                                                                                       │
-  │  DROITS AMBIGUS (exclus du T0, visibles en T1) :                                                      │
-  │    GenericWrite      — dépend de l'attribut modifié                                                   │
-  │    AllExtendedRights — inclut plusieurs droits, faux positifs possibles                                │
-  │    WriteProperty     — attribute-aware requis                                                          │
-  │    WriteSPN          — Targeted Kerberoasting, dépend du crackage                                     │
+  │  GenericWrite             — dépend de l'attribut modifié                                              │
+  │  AllExtendedRights        — inclut plusieurs droits, faux positifs possibles                         │
+  │  WriteProperty            — attribute-aware requis                                                    │
+  │  WriteSPN                 — Targeted Kerberoasting, dépend du crackage                               │
+  │  WriteAccountRestrictions — modification flags UAC                                                    │
+  │  WriteGPO, EditGPO        — modification de GPO                                                      │
+  │  Enroll, AutoEnroll       — ADCS enrollment                                                          │
+  │  HasSession, LoggedOn     — sessions actives (non-déterministe)                                      │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Les nœuds affichés** peuvent être de n'importe quel tier (T0, T1, T2) car les droits incertains ne provoquent pas de promotion T0.
+**Profondeur maximale** : 7 hops (cohérent avec la classification Tier 1 = 1-7 hops BFS).
 
 **Construction des chemins** :
 
 ```
-  Type 1 — Via objets Tier 1 :
-    Étape 1 : Trouver les chemins  départ → objet T1
-    Étape 2 : Pour chaque objet T1 atteint, prolonger vers un objet T0
-    Résultat : départ → ... → objet T1 → ... → objet T0
-
-  Type 2 — Chemins ambigus vers T0 :
-    Étape 1 : Trouver les chemins  départ → objet T0  (en utilisant tous les droits)
-    Étape 2 : Ne garder que les chemins utilisant au moins un droit hors whitelist T0
-    Résultat : départ → ... → objet T0  (via droit ambigu)
+  Étape 1 : Trouver tous les chemins  départ → objet T0  (tous les droits, max 7 hops)
+  Étape 2 : Ne garder que les chemins utilisant au moins un droit hors whitelist déterministe
+  Résultat : départ → ... → objet T0  (via au moins un droit ambigu)
 ```
 
-**Exemple — chemin via objet T1** :
+**Les nœuds affichés** peuvent être de n'importe quel tier (T0, T1, T2). Un chemin ambigu peut passer par un objet T0 qui a lui-même un droit non déterministe vers un autre T0. Le critère est la **nature du droit**, pas le **tier de l'objet**.
 
-```
-  A.WHITE_ADM (T1) ──MemberOf──▶ IT (T1) ──WriteSPN──▶ DC01 (T0) ──MemberOf──▶ DOMAIN CONTROLLERS (T0)
-```
-
-WriteSPN est un droit incertain (Targeted Kerberoasting — dépend du crackage du hash), donc IT reste T1. Le chemin complet montre comment un attaquant pourrait potentiellement atteindre T0 via des droits non déterministes.
-
-**Exemple — chemin ambigu vers T0** :
+**Exemple** :
 
 ```
   EMILY (T0) ──GenericWrite──▶ ETHAN (T0) ──DCSync──▶ ADMINISTRATOR.HTB (T0)
 ```
 
-Emily a GenericWrite sur Ethan (droit ambigu — dépend de l'attribut modifié). Ce chemin n'apparaît pas en T0 car GenericWrite n'est pas dans la whitelist déterministe, mais il représente une voie d'attaque potentielle que l'auditeur doit vérifier.
+Emily a GenericWrite sur Ethan — ce droit dépend de l'attribut modifié. Ce chemin n'apparaît pas en mode déterministe car GenericWrite n'est pas dans la whitelist, mais il représente une voie d'attaque potentielle que l'auditeur doit vérifier manuellement.
 
 ---
 
-## 4. Mode T2 — Chemins éloignés
+## 4. Éloigné → T0
 
-**Bouton** : `départ → T2 → T0`
+**Bouton** : `Éloigné → T0`
 
-**Principe** : affiche les objets Tier 2 (distance 8+ hops ou inaccessibles) reliés au nœud de départ, puis prolonge vers les objets Tier 0 si un chemin existe.
+**Principe** : affiche les objets Tier 2 (distance 8+ hops ou inaccessibles depuis Tier 0) accessibles depuis le nœud de départ, puis prolonge vers les objets Tier 0 si un chemin existe.
 
-**Droits utilisés** : identiques au mode T1 (`ALL_PRIVILEGE_RIGHTS`).
+**Droits utilisés** : tous les droits (`ALL_PRIVILEGE_RIGHTS`).
 
 **Construction du chemin** :
 
 ```
-  Étape 1 : Trouver les objets T2 accessibles depuis le nœud de départ
+  Étape 1 : Trouver les objets classifiés T2 accessibles depuis le nœud de départ
   Étape 2 : Pour chaque objet T2 atteint, prolonger vers un objet T0 (si possible)
 
   Résultat : départ → ... → objet T2 → ... → objet T0  (si chemin existe)
              départ → ... → objet T2                    (si aucun chemin vers T0)
 ```
 
-**Différence avec T1** : les objets T2 peuvent ne pas avoir de chemin vers T0 (distance infinie). Dans ce cas, seul le lien direct depuis le nœud de départ est affiché.
+**Différence avec Ambigu** : le mode Éloigné cible les objets classifiés Tier 2 (distance ≥ 8 hops). Ces objets peuvent ne pas avoir de chemin vers T0 du tout. Ce mode montre l'environnement éloigné du nœud de départ.
 
 ---
 
@@ -173,7 +160,7 @@ Emily a GenericWrite sur Ethan (droit ambigu — dépend de l'attribut modifié)
 
 **Bouton** : `départ → X → T0`
 
-Ce filtre apparaît dans le formulaire d'import lors de la sélection du nœud de départ. Il identifie tous les objets qui ont **au moins un chemin d'attaque vers un objet Tier 0**, quel que soit le tier de l'objet lui-même.
+Ce filtre apparaît dans la barre de sélection du nœud de départ. Il identifie tous les objets qui ont **au moins un chemin d'attaque vers un objet Tier 0**, quel que soit le tier de l'objet lui-même.
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -192,15 +179,10 @@ Ce filtre apparaît dans le formulaire d'import lors de la sélection du nœud d
   │     → trouve tous les objets qui peuvent atteindre T0                                                 │
   │                                                                                                       │
   │  4. Ajout des objets T0 qui ont un edge vers un autre T0                                              │
-  │     → car ils produisent un graphe T0 non vide comme nœud de départ                                   │
+  │     → car ils produisent un graphe déterministe non vide comme nœud de départ                         │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-**Le filtre inclut** :
-- Des objets T0 (qui ont des edges vers d'autres T0) → produisent un graphe T0 intéressant
-- Des objets T1 (chemins incertains vers T0) → produisent un graphe T1
-- Des objets T2 (chemins éloignés vers T0) → produisent un graphe T2
 
 **Utilité** : sur un domaine inconnu, ce filtre permet d'identifier rapidement les nœuds de départ les plus intéressants pour explorer les chemins d'attaque vers le contrôle du domaine.
 
@@ -213,9 +195,12 @@ La règle fondamentale qui garantit la cohérence entre classification et affich
 ```
   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                                                                                       │
-  │  Si un droit est utilisé dans l'affichage T0, il DOIT être dans la classification T0.                 │
+  │  Le mode Déterministe n'utilise que des droits de la classification T0.                               │
+  │  Sinon, des intermédiaires non-T0 apparaîtraient dans le graphe — incohérent.                        │
   │                                                                                                       │
-  │  Sinon, des intermédiaires non-T0 apparaîtraient dans le graphe T0 — incohérent.                     │
+  │  Le mode Ambigu utilise tous les droits, mais ne garde que les chemins                                │
+  │  contenant au moins un droit hors whitelist. Ces chemins sont le complément                           │
+  │  exact du mode Déterministe : même cibles (T0), droits différents.                                   │
   │                                                                                                       │
   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -223,8 +208,8 @@ La règle fondamentale qui garantit la cohérence entre classification et affich
 Les constantes correspondantes dans `argus_builder.py` :
 
 ```
-  Classification T0                                  Affichage T0 (tier0_valid_rights)
-  ─────────────────────────────────────────          ─────────────────────────────────
+  Classification T0                                  Affichage Déterministe (tier0_valid_rights)
+  ─────────────────────────────────────────          ─────────────────────────────────────────────
   TIER0_DCSYNC_RIGHTS   (attribution directe)  ←→   TIER0_DCSYNC_RIGHTS
   TIER0_CLOSURE_RIGHTS  (héritage direct)      ←→   TIER0_CLOSURE_RIGHTS
   ADMIN_ACCESS_RIGHTS   (héritage indirect)    ←→   ADMIN_ACCESS_RIGHTS
@@ -232,11 +217,9 @@ Les constantes correspondantes dans `argus_builder.py` :
   TIER0_READPASS_RIGHTS (héritage indirect)    ←→   TIER0_READPASS_RIGHTS
 ```
 
-**Ajout d'un nouveau droit T0** : si un nouveau droit doit apparaître dans les chemins T0, il faut l'ajouter simultanément dans :
+**Ajout d'un nouveau droit** : si un nouveau droit doit apparaître dans les chemins déterministes, il faut l'ajouter simultanément dans :
 1. La constante appropriée (héritage direct, héritage indirect, etc.)
 2. La phase de classification correspondante (Phase 2, 3, etc.)
 3. Il sera automatiquement inclus dans `tier0_valid_rights` via l'union des constantes
 
-**Droits T1/T2 uniquement** : les droits comme GenericWrite, WriteSPN, Enroll, HasSession ne sont dans aucune constante T0. Ils n'apparaissent que dans `ALL_PRIVILEGE_RIGHTS` et donc uniquement dans les graphes T1/T2.
-
-**Chemins ambigus vers T0 en mode T1** : lorsqu'un chemin vers un objet T0 utilise un droit hors whitelist (ex: GenericWrite), ce chemin est exclu du graphe T0 (pas déterministe) et affiché dans le graphe T1 (à vérifier par l'auditeur). L'objet cible reste classifié T0, mais le chemin emprunté est ambigu.
+**Droits ambigus** : les droits comme GenericWrite, WriteSPN, Enroll, HasSession ne sont dans aucune constante T0. Ils n'apparaissent que dans `ALL_PRIVILEGE_RIGHTS` et donc uniquement dans les modes Ambigu et Éloigné.
